@@ -1,9 +1,3 @@
-class Order:
-    orderId = 0
-    initPrice = 0
-    initAmount = 0
-    coinPaire = ('eth', 'usdt')
-    state = 'panding'
 
 def GetBuySell(exchange, coinPair):
     return ([], [])
