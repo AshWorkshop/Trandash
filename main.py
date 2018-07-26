@@ -3,12 +3,20 @@ import time
 
 def verifyExchanges(
         exchangesData: {
-            'exchangeName': (
-                [('buyPriceArgN, handling fee considered, from HIGH to LOW',
-                  'buyTotalAmountN'), ],
-                [('sellPriceArgN, handling fee considered, from LOW to HIGH',
-                  'sellTotalAmountN'), ]
-            ),
+            'exchangeName': {
+                'avg': (
+                    [('buyPriceArgN, handling fee considered, from HIGH to LOW',
+                      'buyTotalAmountN'), ],
+                    [('sellPriceArgN, handling fee considered, from LOW to HIGH',
+                      'sellTotalAmountN'), ]
+                ),
+                'actual': (
+                    [('buyPriceArgN, handling fee considered, from HIGH to LOW',
+                      'buyTotalAmountN'), ],
+                    [('sellPriceArgN, handling fee considered, from LOW to HIGH',
+                      'sellTotalAmountN'), ]
+                ),
+            },
         }
     ) -> [
         (
@@ -27,46 +35,42 @@ def verifyExchanges(
 
     validExPairs = []
     for buyExName, buyEx in exchangesData.items():
+        # print(buyEx)
         for sellExName, sellEx in exchangesData.items():
             if buyExName == sellExName: continue
-            if buyEx[BUY][0][PRICE] < sellEx[SELL][0][PRICE]: continue
+            if buyEx['avg'][BUY][0][PRICE] * FEE[buyExName][BUY] <= sellEx['avg'][SELL][0][PRICE] * FEE[sellExName][SELL]: continue
 
             level = 0
             amount = 0
 
-            for i, (buy, sell) in enumerate(zip(buyEx[BUY], sellEx[SELL])):
-                if buy[PRICE] < sell[PRICE]:
+            for i, (buy, sell) in enumerate(zip(buyEx['avg'][BUY], sellEx['avg'][SELL])):
+                # print(buy, sell)
+                level = i
+                if buy[PRICE] * FEE[buyExName][BUY] <= sell[PRICE] * FEE[sellExName][SELL]:
                     level = i - 1
-                    amount = min(buyEx[BUY][level][AMOUNT], sellEx[SELL][level][AMOUNT])
                     break
 
-            validExPairs.append( ((buyExName, sellExName), (level, amount)) )
+            amount = min(buyEx['avg'][BUY][level][AMOUNT], sellEx['avg'][SELL][level][AMOUNT])
+            buyPrice = float(buyEx['actual'][BUY][level][PRICE])
+            sellPrice = float(sellEx['actual'][SELL][level][PRICE])
+
+            validExPairs.append( ((buyExName, sellExName), (buyPrice, sellPrice), (level, amount)) )
 
     return validExPairs
 
-def run(exchanges, coinPairs):
+def run(exchanges, coinPair):
     while True:
         exchangeState = dict()
         for exchange in exchanges:
-            buys, sells = GetBuySell(exchange, coinPair)
-            total = 0
-            totalAmount = 0
-            buyAvg = []
-            for price, amount in buys:
-                total += price * amount
-                totalAmount += amount
-                buyAvg.append((total / totalAmount, totalAmount))
+            exchangeState[exchange] = dict()
+            # print(exchange)
+            actual, avg = GetBuySell(exchange, coinPair)
 
-            total = 0
-            totalAmount = 0
-            sellAvg = []
-            for price, amount in sells:
-                total += price * amount
-                totalAmount += amount
-                sellAvg.append((total / totalAmount, totalAmount))
-            exchangeState[exchange] = (buyAvg, sellAvg)
+            exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = actual, avg
+
 
         exchangePairs = verifyExchanges(exchangeState)
+        print(exchangePairs)
 
-if __name__ == "main":
-    run(['huobi', 'gate', 'bitfinex'], ('eth', 'usdt'))
+if __name__ == "__main__":
+    run(['huobipro', 'gateio'], ('eth', 'usdt'))

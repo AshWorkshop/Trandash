@@ -28,10 +28,10 @@ def GetBuySell(coinPair):
     # print(data)
     asks = data['asks']
     bids = data['bids']
-    asks = calcMean(asks, True)
-    bids = calcMean(bids)
+    avgAsks = calcMean(asks, True)
+    avgBids = calcMean(bids)
 
-    return (bids, asks)
+    return ((bids, asks), (avgBids, avgAsks))
 
 def GetBalance(coin):
     data = json.loads(gate_trade.balances())

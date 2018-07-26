@@ -1,6 +1,6 @@
-from HuobiAPI import *
+from exchanges.huobi.HuobiAPI import *
 from utils import calcMean,Order
-from HttpUtil import set_key
+from exchanges.huobi.HttpUtil import set_key
 
 
 
@@ -14,11 +14,11 @@ def GetBuySell(coinPair,grade=0):
     depth = get_depth(toCoinPairStr(coinPair),toGradeStr(grade))
     asks = depth['tick']['asks']  #卖单
     bids = depth['tick']['bids']  #买单
-    asks = calcMean(asks)
-    bids = calcMean(bids)
+    avgAsks = calcMean(asks)
+    avgBids = calcMean(bids)
     #print('卖单',asks)
     #print('买单',bids)
-    return (asks,bids)
+    return ((bids, asks), (avgBids, avgAsks))
 
 def GetBalance(coin):
     restant = {}

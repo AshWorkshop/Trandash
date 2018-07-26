@@ -17,8 +17,10 @@ import requests
 
 # 此处填写APIKEY
 
-ACCESS_KEY = ""
-SECRET_KEY = ""
+from .huobipro_key import AccessKey, SecretKey
+
+ACCESS_KEY = AccessKey
+SECRET_KEY = SecretKey
 
 def set_key(access_key,secret_key):
     ACCESS_KEY=access_key
