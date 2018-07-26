@@ -29,14 +29,12 @@ def verifyExchanges(
     for buyExName, buyEx in exchangesData.items():
         for sellExName, sellEx in exchangesData.items():
             if buyExName == sellExName: continue
-            print('{} {}'.format(buyExName, sellExName))
             if buyEx[BUY][0][PRICE] < sellEx[SELL][0][PRICE]: continue
 
             level = 0
             amount = 0
 
             for i, (buy, sell) in enumerate(zip(buyEx[BUY], sellEx[SELL])):
-                print('{} {}'.format(buy[PRICE], sell[PRICE]))
                 if buy[PRICE] < sell[PRICE]:
                     level = i - 1
                     amount = min(buyEx[BUY][level][AMOUNT], sellEx[SELL][level][AMOUNT])
