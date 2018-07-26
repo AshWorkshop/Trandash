@@ -1,5 +1,6 @@
 from HuobiAPI import *
 from utils import calcMean,Order
+from HttpUtil import set_key
 
 
 
@@ -20,9 +21,9 @@ def GetBuySell(coinPair,grade=0):
     return (asks,bids)
 
 def GetBalance(coin):
-    coin = 'eth'
     restant = {}
-    balance = get_balance()['data']['list']
+    balance = get_balance()
+    balance = balance['data']['list']
     for b in balance:
         if b['currency'] == coin:
             if b['type'] == 'trade':
@@ -35,12 +36,12 @@ def Sell(coinPair, price, amount):
 #    {amount: "0.001", price: "466.10", type: "sell-limit", source: "web", symbol: "ethusdt",…}
     data = send_order(amount=amount, source="web", symbol=toCoinPairStr(coinPair), _type="sell-limit", price=price)
     print(data)
-    return int(order['data'])
+    return int(data['data'])
 
 def Buy(coinPair,price,amount):
     data = send_order(amount = amount,source = "web",symbol=toCoinPairStr(coinPair), _type="buy-limit", price=price)
     print(data)
-    return int(order['data'])
+    return int(data['data'])
 
 def GetOrder(coinPair, orderId):
     data = order_info(orderId)
@@ -56,5 +57,5 @@ def GetOrder(coinPair, orderId):
         float(data['data']['price']),
         float(data['data']['amount']),
         coinPair,
-        data['order']['status'],
+        data['status'],
     )
