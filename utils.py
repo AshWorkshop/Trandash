@@ -27,3 +27,12 @@ def calcMean(dataList, reverse=False):
         totalAmount += float(amount)
         result.append((total / totalAmount, totalAmount))
     return result
+
+#用于将json列表转化为二维列表[[price, amount],...]的形式
+def jsonToList(dataList):
+    result_list = []
+    for dic in dataList:
+        price = float(dic['price'])
+        amount = float(dic['amount'])
+        result_list.append([price, amount])
+    return result_list
