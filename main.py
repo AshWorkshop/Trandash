@@ -1,4 +1,4 @@
-from exchange import *
+from exchange import GetBuySell, GetOrder, Buy, Sell, FEE
 import time
 
 def verifyExchanges(
@@ -72,5 +72,29 @@ def run(exchanges, coinPair):
         exchangePairs = verifyExchanges(exchangeState)
         print(exchangePairs)
 
+
+        # for exchangePair, pricePair, amountPair in exchangePairs[:1]:
+        #     buyExName, sellExName = exchangePair
+        #     buyPrice, sellPrice = pricePair
+        #     level, amount = amountPair
+        #
+        #     buyOrderId = Buy(sellExName, coinPair, sellPrice, amount)
+        #     sellOrderId = Sell(buyExName, coinPair, buyPrice, amount)
+        #
+        #     buyOrder = None
+        #     sellOrder = None
+        #
+        #     while True:
+        #         if not buyOrder or buyOrder.status == 'open':
+        #             buyOrder = GetOrder(sellExName, coinPair, buyOrderId)
+        #         if not sellOrder or sellOrder.status == 'open':
+        #             sellOrder = GetOrder(buyExName, coinPair, sellOrderId)
+        #         if buyOrder.status == 'done' and sellOrder.status == 'done':
+        #             break
+        #
+        #     print(buyOrder)
+        #     print(sellOrder)
+
 if __name__ == "__main__":
-    run(['huobipro', 'gateio'], ('eth', 'usdt'))
+    run(['gateio', 'bitfinex'], ('btc', 'usdt'))
+    # print(GetBuySell('bitfinex', ('eth', 'usdt')))
