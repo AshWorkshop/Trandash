@@ -44,7 +44,7 @@ def Buy(coinPair, price, amount):
         str(price),
         str(amount)
     ))
-    print(data)
+    # print(data)
     return int(data['orderNumber'])
 
 def Sell(coinPair, price, amount):
@@ -53,7 +53,7 @@ def Sell(coinPair, price, amount):
         str(price),
         str(amount)
     ))
-    print(data)
+    # print(data)
     return int(data['orderNumber'])
 
 def GetOrder(coinPair, orderId):
@@ -62,6 +62,9 @@ def GetOrder(coinPair, orderId):
         toCoinPairStr(coinPair)
     ))
     print(data)
+    status = data['order']['message']
+    if status == 'Success':
+        status = 'done'
     return Order(
         'gateio',
         orderId,
@@ -69,5 +72,5 @@ def GetOrder(coinPair, orderId):
         float(data['order']['initialRate']),
         float(data['order']['initialAmount']),
         coinPair,
-        data['order']['status']
+        status
     )

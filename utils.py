@@ -16,6 +16,17 @@ class Order:
         self.type = type
         self.exchange = exchange
 
+    def __str__(self):
+        return str({
+            'orderId': self.orderId,
+            'type': self.type,
+            'iniPrice': self.initPrice,
+            'initAmount': self.initAmount,
+            'coinPair': self.coinPair,
+            'status': self.status,
+            'exchange': self.exchange
+        })
+
 def calcMean(dataList, reverse=False):
     total = 0
     totalAmount = 0

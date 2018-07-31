@@ -1,4 +1,4 @@
-from exchange import GetBuySell, GetOrder, Buy, Sell, FEE
+from exchange import GetBuySell, GetOrder, Buy, Sell, FEE, GetBalance
 import time
 
 def verifyExchanges(
@@ -43,12 +43,12 @@ def verifyExchanges(
             level = 0
             amount = 0
 
-            for i, (buy, sell) in enumerate(zip(buyEx['avg'][BUY], sellEx['avg'][SELL])):
-                # print(buy, sell)
-                level = i
-                if buy[PRICE] * FEE[buyExName][BUY] <= sell[PRICE] * FEE[sellExName][SELL]:
-                    level = i - 1
-                    break
+            # for i, (buy, sell) in enumerate(zip(buyEx['avg'][BUY], sellEx['avg'][SELL])):
+            #     # print(buy, sell)
+            #     level = i
+            #     if buy[PRICE] * FEE[buyExName][BUY] <= sell[PRICE] * FEE[sellExName][SELL]:
+            #         level = i - 1
+            #         break
 
             amount = min(buyEx['avg'][BUY][level][AMOUNT], sellEx['avg'][SELL][level][AMOUNT])
             buyPrice = float(buyEx['actual'][BUY][level][PRICE])
@@ -73,27 +73,62 @@ def run(exchanges, coinPair):
         print(exchangePairs)
 
 
-        # for exchangePair, pricePair, amountPair in exchangePairs[:1]:
-        #     buyExName, sellExName = exchangePair
-        #     buyPrice, sellPrice = pricePair
-        #     level, amount = amountPair
-        #
-        #     buyOrderId = Buy(sellExName, coinPair, sellPrice, amount)
-        #     sellOrderId = Sell(buyExName, coinPair, buyPrice, amount)
-        #
-        #     buyOrder = None
-        #     sellOrder = None
-        #
-        #     while True:
-        #         if not buyOrder or buyOrder.status == 'open':
-        #             buyOrder = GetOrder(sellExName, coinPair, buyOrderId)
-        #         if not sellOrder or sellOrder.status == 'open':
-        #             sellOrder = GetOrder(buyExName, coinPair, sellOrderId)
-        #         if buyOrder.status == 'done' and sellOrder.status == 'done':
-        #             break
-        #
-        #     print(buyOrder)
-        #     print(sellOrder)
+        for exchangePair, pricePair, amountPair in exchangePairs[:1]:
+            buyExName, sellExName = exchangePair
+            buyPrice, sellPrice = pricePair
+            level, amount = amountPair
+
+            amount = 0.02
+            coin, money = coinPair
+            flag = True
+            while flag:
+                try:
+                    coinAmount = GetBalance(buyExName, coin)
+                    flag = False
+                except:
+                    flag = True
+
+            flag = True
+            while flag:
+                try:
+                    moneyAmount = GetBalance(sellExName, money)
+                    flag = False
+                except:
+                    flag = True
+
+            if coinAmount < amount:
+                print(buyExName, coin, '数量不足')
+                print(coinAmount)
+                continue
+
+            if moneyAmount < amount * sellPrice:
+                print(sellExName, money, '数量不足')
+                print(moneyAmount)
+                continue
+
+            try:
+                buyOrderId = Buy(sellExName, coinPair, sellPrice, amount)
+            except:
+                continue
+            try:
+                sellOrderId = Sell(buyExName, coinPair, buyPrice, amount)
+            except:
+                continue
+
+            buyOrder = None
+            sellOrder = None
+
+            while True:
+                if not buyOrder or buyOrder.status != 'done':
+                    buyOrder = GetOrder(sellExName, coinPair, buyOrderId)
+                if not sellOrder or sellOrder.status != 'done':
+                    sellOrder = GetOrder(buyExName, coinPair, sellOrderId)
+                if buyOrder.status == 'done' and sellOrder.status == 'done':
+                    break
+
+            print(buyOrder)
+            print(sellOrder)
+            return None
 
 if __name__ == "__main__":
     run(['gateio', 'bitfinex'], ('btc', 'usdt'))

@@ -62,7 +62,7 @@ def Buy(coinPair, price, amount):
         side='buy',
         order_type='exchange limit'
     )
-    print(data)
+    # print(data)
     return int(data['order_id'])
 
 def Sell(coinPair, price, amount):
@@ -73,7 +73,7 @@ def Sell(coinPair, price, amount):
         side='sell',
         order_type='exchange limit'
     )
-    print(data)
+    # print(data)
     return int(data['order_id'])
 
 def GetOrder(coinPair, orderId):
@@ -85,7 +85,7 @@ def GetOrder(coinPair, orderId):
         status = 'cancelled'
     elif not data['is_live']:      #若没有被取消，并且不能继续被填充（not live），
         status = 'done'            #则表示交易已完成（done）
-    print(data)
+    # print(data)
     return Order(
         'bitfinex',
         orderId,

@@ -30,7 +30,7 @@ def GetBalance(coin):
                 restant['trade'] = b['balance']
             elif b['type'] == 'frozen':
                 restant['frozen'] = b['balance']
-    return restant
+    return float(restant['trade'])
 
 def Sell(coinPair, price, amount):
 #    {amount: "0.001", price: "466.10", type: "sell-limit", source: "web", symbol: "ethusdt",…}
@@ -50,12 +50,15 @@ def GetOrder(coinPair, orderId):
     elif data['data']['type']=='sell-limit':
         data['data']['type']='sell'
     print(data)
+    status = data['status']
+    if status == 'ok':
+        status = 'done'
     return Order(
-        'huobi',
+        'huobipro',
         orderId,
         data['data']['type'],
         float(data['data']['price']),
         float(data['data']['amount']),
         coinPair,
-        data['status'],
+        status,
     )
