@@ -1,135 +1,62 @@
-from exchange import GetBuySell, GetOrder, Buy, Sell, FEE, GetBalance
+
+from sys import argv
+from pprint import pformat
+import json
 import time
 
-def verifyExchanges(
-        exchangesData: {
-            'exchangeName': {
-                'avg': (
-                    [('buyPriceArgN, handling fee considered, from HIGH to LOW',
-                      'buyTotalAmountN'), ],
-                    [('sellPriceArgN, handling fee considered, from LOW to HIGH',
-                      'sellTotalAmountN'), ]
-                ),
-                'actual': (
-                    [('buyPriceArgN, handling fee considered, from HIGH to LOW',
-                      'buyTotalAmountN'), ],
-                    [('sellPriceArgN, handling fee considered, from LOW to HIGH',
-                      'sellTotalAmountN'), ]
-                ),
-            },
-        }
-    ) -> [
-        (
-            ('buyExchange: the exchange to sell assets',
-            'sellExchange: the exchange to buy assets'),
-            ('level',
-            'amount'),
-        ),
-    ]:
-
-    # index enumeration for taking buy/sell data from exchange tuple
-    BUY, SELL = range(2)
-
-    # index enumeration for taking price/amount data from price/amount tuple
-    PRICE, AMOUNT = range(2)
-
-    validExPairs = []
-    for buyExName, buyEx in exchangesData.items():
-        # print(buyEx)
-        for sellExName, sellEx in exchangesData.items():
-            if buyExName == sellExName: continue
-            if buyEx['avg'][BUY][0][PRICE] * FEE[buyExName][BUY] <= sellEx['avg'][SELL][0][PRICE] * FEE[sellExName][SELL]: continue
-
-            level = 0
-            amount = 0
-
-            # for i, (buy, sell) in enumerate(zip(buyEx['avg'][BUY], sellEx['avg'][SELL])):
-            #     # print(buy, sell)
-            #     level = i
-            #     if buy[PRICE] * FEE[buyExName][BUY] <= sell[PRICE] * FEE[sellExName][SELL]:
-            #         level = i - 1
-            #         break
-
-            amount = min(buyEx['avg'][BUY][level][AMOUNT], sellEx['avg'][SELL][level][AMOUNT])
-            buyPrice = float(buyEx['actual'][BUY][level][PRICE])
-            sellPrice = float(sellEx['actual'][SELL][level][PRICE])
-
-            validExPairs.append( ((buyExName, sellExName), (buyPrice, sellPrice), (level, amount)) )
-
-    return validExPairs
-
-def run(exchanges, coinPair):
-    while True:
-        exchangeState = dict()
-        for exchange in exchanges:
-            exchangeState[exchange] = dict()
-            # print(exchange)
-            actual, avg = GetBuySell(exchange, coinPair)
-
-            exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = actual, avg
+from twisted.internet import task, defer
+from twisted.internet import reactor
+from twisted.web.client import Agent, readBody
+from twisted.web.http_headers import Headers
 
 
-        exchangePairs = verifyExchanges(exchangeState)
-        print(exchangePairs)
+def cbRequest(response):
+    # print('Response version:', response.version)
+    # print('Response code:', response.code)
+    # print('Response phrase:', response.phrase)
+    # print('Response headers:')
+    # print(pformat(list(response.headers.getAllRawHeaders())))
+    d = readBody(response)
+    d.addCallback(cbBody)
+    return d
+
+def cbBody(body):
+    # print('Response body:')
+    return body
+
+def getData(reactor, url=b"http://data.gateio.io/api2/1/orderBook/ETH_USDT"):
+    agent = Agent(reactor)
+    d = agent.request(
+        b'GET', url,
+        Headers({'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36']}),
+        None)
+    d.addCallback(cbRequest)
+    return d
+
+def cbCondition(body1, body2):
+    ob1 = json.loads(body1)
+    ob2 = json.loads(body2)
+    print(ob1['asks'][0], ob2['bids'][0])
+
+@defer.inlineCallbacks
+def cbNext():
+    print('looping')
+    time.sleep(1)
+    # d = task.deferLater(reactor, 0, main, reactor)
+    try:
+        body1 = yield getData(reactor, b"http://data.gateio.io/api2/1/orderBook/ETH_USDT")
+        # body2 = yield getData(reactor, b"http://data.gateio.io/api2/1/orderBook/ETH_USDT")
+        body2 = yield getData(reactor, b"https://api.bitfinex.com/v1/book/ETHUSD")
+    except Exception as err:
+        print(err)
+    cbCondition(body1, body2)
+
+    yield cbNext()
 
 
-        for exchangePair, pricePair, amountPair in exchangePairs[:1]:
-            buyExName, sellExName = exchangePair
-            buyPrice, sellPrice = pricePair
-            level, amount = amountPair
 
-            amount = 0.02
-            coin, money = coinPair
-            flag = True
-            while flag:
-                try:
-                    coinAmount = GetBalance(buyExName, coin)
-                    flag = False
-                except:
-                    flag = True
-
-            flag = True
-            while flag:
-                try:
-                    moneyAmount = GetBalance(sellExName, money)
-                    flag = False
-                except:
-                    flag = True
-
-            if coinAmount < amount:
-                print(buyExName, coin, '数量不足')
-                print(coinAmount)
-                continue
-
-            if moneyAmount < amount * sellPrice:
-                print(sellExName, money, '数量不足')
-                print(moneyAmount)
-                continue
-
-            try:
-                buyOrderId = Buy(sellExName, coinPair, sellPrice, amount)
-            except:
-                continue
-            try:
-                sellOrderId = Sell(buyExName, coinPair, buyPrice, amount)
-            except:
-                continue
-
-            buyOrder = None
-            sellOrder = None
-
-            while True:
-                if not buyOrder or buyOrder.status != 'done':
-                    buyOrder = GetOrder(sellExName, coinPair, buyOrderId)
-                if not sellOrder or sellOrder.status != 'done':
-                    sellOrder = GetOrder(buyExName, coinPair, sellOrderId)
-                if buyOrder.status == 'done' and sellOrder.status == 'done':
-                    break
-
-            print(buyOrder)
-            print(sellOrder)
-            return None
-
-if __name__ == "__main__":
-    run(['gateio', 'bitfinex'], ('btc', 'usdt'))
-    # print(GetBuySell('bitfinex', ('eth', 'usdt')))
+# loop = task.LoopingCall(cbLoop)
+# loopDeferred = loop.start(1.0)
+dfd = defer.Deferred()
+reactor.callWhenRunning(cbNext)
+reactor.run()
