@@ -6,8 +6,8 @@ from twisted.internet import defer
 
 FEE = {
     'huobipro': [0.998, 1.002],
-    'gateio': [0.998, 1.002],
-    'bitfinex': [0.998, 1.002],
+    'gateio': [1.0, 1.0],
+    'bitfinex': [1.0, 1.0],
 }
 
 EXCHANGE = {

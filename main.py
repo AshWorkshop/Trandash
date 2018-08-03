@@ -71,17 +71,42 @@ def cbRun():
     global count
     count += 1
     print(count)
-    time.sleep(1)
+    # time.sleep(1)
+    exchangeState = dict()
+
+    hasData = True
+
     for exchange, slot in orderBooks.slots.items():
         bids, asks = slot.getOrderBook()
-        if len(bids) > 0:
-            print(exchange, ': ', bids[0], asks[0])
+        exchangeState[exchange] = dict()
+        if len(bids) == 0:
+            hasData = False
+        avgBids = calcMean(bids)
+        if exchange == 'gateio':
+            avgAsks = calcMean(asks, True)
+        else:
+            avgAsks = calcMean(asks)
+
+        exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bids, asks], [avgBids, avgAsks]
+
+    # print(exchangeState)
+
+    if hasData:
+        exchangePairs = verifyExchanges(exchangeState)
+        print(exchangePairs)
 
     # yield cbRun()
+def ebLoopFailed(failure):
+    """
+    Called when loop execution failed.
+    """
+    print(failure.getBriefTraceback())
+    reactor.stop()
 
 # reactor.callWhenRunning(cbRun)
 loop = task.LoopingCall(cbRun)
 
-loopDeferred = loop.start(1)
+loopDeferred = loop.start(1.0)
+loopDeferred.addErrback(ebLoopFailed)
 
 reactor.run()
