@@ -30,6 +30,7 @@ def cbRun():
 
     for exchange, slot in orderBooks.slots.items():
         bids, asks = slot.getOrderBook()
+        slot.setOrderBook()
         exchangeState[exchange] = dict()
         if len(bids) == 0:
             hasData = False

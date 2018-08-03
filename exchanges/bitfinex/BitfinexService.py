@@ -5,6 +5,7 @@ from .bitfinex_key import ApiKey, SecretKey
 from twisted.internet import reactor
 
 import json
+import time
 
 class Bitfinex(ExchangeService):
 
@@ -31,8 +32,17 @@ class Bitfinex(ExchangeService):
             # print(body)
             data = json.loads(body)
             # print(data)
-            rawBids = data['bids']
-            rawAsks = data['asks']
+
+            try:
+                rawBids = data['bids']
+                rawAsks = data['asks']
+            except KeyError:
+                rawBids = []
+                rawAsks = []
+                if 'error' in data:
+                    err = data['error']
+                    if err == 'ERR_RATE_LIMIT':
+                        time.sleep(1)
 
             bids = []
             asks = []

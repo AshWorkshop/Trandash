@@ -3,6 +3,7 @@ import exchanges.huobi.Huobipro as huobipro
 from exchanges.bitfinex.BitfinexService import bitfinex
 
 from twisted.internet import defer
+from twisted.python.failure import Failure
 
 FEE = {
     'huobipro': [0.998, 1.002],
@@ -26,7 +27,7 @@ class Slot(object):
     def getOrderBook(self):
         return self.orderBook.copy()
 
-    def setOrderBook(self, orderBook):
+    def setOrderBook(self, orderBook=[[], []]):
         self.orderBook = orderBook.copy()
 
 class OrderBooks(object):
@@ -43,10 +44,12 @@ class OrderBooks(object):
     def cbRun(self, exchange):
         if self.running:
             # print('running')
+            orderBook = [[], []]
             try:
                 orderBook = yield EXCHANGE[exchange].getOrderBook(self.pairs)
             except Exception as err:
-                print(err)
+                failure = Failure(err)
+                print(failure.getBriefTraceback())
             self.slots[exchange].setOrderBook(orderBook)
             # print(orderBook)
 
