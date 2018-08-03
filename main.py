@@ -7,68 +7,13 @@ from twisted.internet import defer
 from twisted.internet import reactor
 from request import get
 from utils import calcMean
-from exchange import FEE
+from exchange import verifyExchanges
 from exchanges.gateio.GateIOService import gateio
 from exchanges.bitfinex.BitfinexService import bitfinex
 
+from exchange import OrderBooks
+
 count = 0
-
-def verifyExchanges(
-        exchangesData: {
-            'exchangeName': {
-                'avg': (
-                    [('buyPriceArgN, handling fee considered, from HIGH to LOW',
-                      'buyTotalAmountN'), ],
-                    [('sellPriceArgN, handling fee considered, from LOW to HIGH',
-                      'sellTotalAmountN'), ]
-                ),
-                'actual': (
-                    [('buyPriceArgN, handling fee considered, from HIGH to LOW',
-                      'buyTotalAmountN'), ],
-                    [('sellPriceArgN, handling fee considered, from LOW to HIGH',
-                      'sellTotalAmountN'), ]
-                ),
-            },
-        }
-    ) -> [
-        (
-            ('buyExchange: the exchange to sell assets',
-            'sellExchange: the exchange to buy assets'),
-            ('level',
-            'amount'),
-        ),
-    ]:
-
-    # index enumeration for taking buy/sell data from exchange tuple
-    BUY, SELL = range(2)
-
-    # index enumeration for taking price/amount data from price/amount tuple
-    PRICE, AMOUNT = range(2)
-
-    validExPairs = []
-    for buyExName, buyEx in exchangesData.items():
-        # print(buyEx)
-        for sellExName, sellEx in exchangesData.items():
-            if buyExName == sellExName: continue
-            if buyEx['avg'][BUY][0][PRICE] * FEE[buyExName][BUY] <= sellEx['avg'][SELL][0][PRICE] * FEE[sellExName][SELL]: continue
-
-            level = 0
-            amount = 0
-
-            # for i, (buy, sell) in enumerate(zip(buyEx['avg'][BUY], sellEx['avg'][SELL])):
-            #     # print(buy, sell)
-            #     level = i
-            #     if buy[PRICE] * FEE[buyExName][BUY] <= sell[PRICE] * FEE[sellExName][SELL]:
-            #         level = i - 1
-            #         break
-
-            amount = min(buyEx['avg'][BUY][level][AMOUNT], sellEx['avg'][SELL][level][AMOUNT])
-            buyPrice = float(buyEx['actual'][BUY][level][PRICE])
-            sellPrice = float(sellEx['actual'][SELL][level][PRICE])
-
-            validExPairs.append( ((buyExName, sellExName), (buyPrice, sellPrice), (level, amount)) )
-
-    return validExPairs
 
 def cbCondition(body1, body2):
     ob1 = json.loads(body1)
@@ -118,6 +63,20 @@ def cbNext():
 
     yield cbNext()
 
+orderBooks = OrderBooks(['gateio', 'bitfinex'], ('eth', 'usdt'))
+orderBooks.start(reactor)
 
-reactor.callWhenRunning(cbNext)
+@defer.inlineCallbacks
+def cbRun():
+    global count
+    count += 1
+    print(count)
+    time.sleep(1)
+    for exchange, slot in orderBooks.slots.items():
+        bids, asks = slot.getOrderBook()
+        print(exchange, ': ', len(bids), len(asks))
+
+    yield cbRun()
+
+reactor.callWhenRunning(cbRun)
 reactor.run()
