@@ -42,12 +42,13 @@ class OrderBooks(object):
     @defer.inlineCallbacks
     def cbRun(self, exchange):
         if self.running:
+            # print('running')
             try:
                 orderBook = yield EXCHANGE[exchange].getOrderBook(self.pairs)
             except Exception as err:
                 print(err)
             self.slots[exchange].setOrderBook(orderBook)
-            print(orderBook)
+            # print(orderBook)
 
             yield self.cbRun(exchange)
 
@@ -58,6 +59,10 @@ class OrderBooks(object):
 
     def stop(self):
         self.running = False
+
+    def getOrderBooks(self):
+        result = self.slots.copy()
+        return result
 
 
 def verifyExchanges(exchangesData):

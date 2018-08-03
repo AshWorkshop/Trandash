@@ -3,7 +3,7 @@
 import json
 import time
 
-from twisted.internet import defer
+from twisted.internet import defer, task
 from twisted.internet import reactor
 from request import get
 from utils import calcMean
@@ -66,7 +66,7 @@ def cbNext():
 orderBooks = OrderBooks(['gateio', 'bitfinex'], ('eth', 'usdt'))
 orderBooks.start(reactor)
 
-@defer.inlineCallbacks
+
 def cbRun():
     global count
     count += 1
@@ -74,9 +74,14 @@ def cbRun():
     time.sleep(1)
     for exchange, slot in orderBooks.slots.items():
         bids, asks = slot.getOrderBook()
-        print(exchange, ': ', len(bids), len(asks))
+        if len(bids) > 0:
+            print(exchange, ': ', bids[0], asks[0])
 
-    yield cbRun()
+    # yield cbRun()
 
-reactor.callWhenRunning(cbRun)
+# reactor.callWhenRunning(cbRun)
+loop = task.LoopingCall(cbRun)
+
+loopDeferred = loop.start(1)
+
 reactor.run()
