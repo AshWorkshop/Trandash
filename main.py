@@ -33,6 +33,7 @@ def cbRun():
         exchangeState[exchange] = dict()
         if len(bids) == 0:
             hasData = False
+            break
         avgBids = calcMean(bids)
         if exchange == 'gateio':
             avgAsks = calcMean(asks, True)
