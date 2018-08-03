@@ -41,6 +41,7 @@ class Bitfinex(ExchangeService):
                 rawAsks = []
                 if 'error' in data:
                     err = data['error']
+                    print(err)
                     if err == 'ERR_RATE_LIMIT':
                         time.sleep(1)
 
