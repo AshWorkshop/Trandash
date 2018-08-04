@@ -1,5 +1,6 @@
 from sys import argv
 from pprint import pformat
+import json
 from twisted.web.client import readBody
 from twisted.web.client import BrowserLikePolicyForHTTPS
 from twisted.web.http_headers import Headers
@@ -27,5 +28,16 @@ def get(reactor, url):
         b'GET', url,
         Headers({'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36']}),
         None)
+    d.addCallback(cbRequest)
+    return d
+
+def post(reactor, url, data):
+    url = bytes(str(url), encoding="utf8")
+    agent = TunnelingAgent(reactor, ('127.0.0.1', 1087, None), BrowserLikePolicyForHTTPS())
+    body = BytesProducer(bytes(json.dumps(data), encoding='utf8'))
+    d = agent.request(
+        b'POST', url,
+        Headers({'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36']}),
+        body)
     d.addCallback(cbRequest)
     return d
