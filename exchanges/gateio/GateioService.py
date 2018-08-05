@@ -29,6 +29,7 @@ class GateIO(ExchangeService):
             data = json.loads(body)
             bids = data['bids']
             asks = data['asks']
+            # print(asks)
             asks.reverse()
             return [bids, asks]
 
