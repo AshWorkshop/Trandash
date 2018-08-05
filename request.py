@@ -4,8 +4,10 @@ import json
 from twisted.web.client import readBody
 from twisted.web.client import BrowserLikePolicyForHTTPS
 from twisted.web.http_headers import Headers
+from twisted.web.client import Agent
 from agent import TunnelingAgent
 from bytesprod import BytesProducer
+
 
 
 def cbRequest(response):
@@ -23,8 +25,14 @@ def cbBody(body):
     return body
 
 def get(reactor, url, headers={}, body=None):
+
+    ssl = url.split(':')[0]
+
+    if ssl == 'https':
+        agent = TunnelingAgent(reactor, ('127.0.0.1', 1087, None), BrowserLikePolicyForHTTPS())
+    else:
+        agent = Agent(reactor)
     url = bytes(str(url), encoding="utf8")
-    agent = TunnelingAgent(reactor, ('127.0.0.1', 1087, None), BrowserLikePolicyForHTTPS())
     _body = None
     if body:
         _body = BytesProducer(body)
@@ -36,8 +44,14 @@ def get(reactor, url, headers={}, body=None):
     return d
 
 def post(reactor, url, headers={}, body=None):
+
+    ssl = url.split(':')[0]
+
+    if ssl == 'https':
+        agent = TunnelingAgent(reactor, ('127.0.0.1', 1087, None), BrowserLikePolicyForHTTPS())
+    else:
+        agent = Agent(reactor)
     url = bytes(str(url), encoding="utf8")
-    agent = TunnelingAgent(reactor, ('127.0.0.1', 1087, None), BrowserLikePolicyForHTTPS())
     _body = None
     if body:
         _body = BytesProducer(body)
