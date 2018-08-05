@@ -1,6 +1,6 @@
-from sys import argv
 from pprint import pformat
 import json
+
 from twisted.web.client import readBody
 from twisted.web.client import BrowserLikePolicyForHTTPS
 from twisted.web.http_headers import Headers

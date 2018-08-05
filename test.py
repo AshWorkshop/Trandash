@@ -32,7 +32,7 @@ def test():
         reactor,
         url="https://api.gateio.io/api2/1/private/buy",
         headers=headers,
-        body=to_bytes(postdata)
+        body=postdata
     )
 
 
