@@ -25,8 +25,8 @@ class Bitfinex(ExchangeService):
         # print(self.__url)
         url = self.__url + URL + self.getSymbol(pairs)
         # print(url)
-
-        d = get(reactor, url)
+        headers = {'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36']}
+        d = get(reactor, url, headers=headers)
 
         def handleBody(body):
             # print(body)
