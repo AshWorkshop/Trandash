@@ -8,6 +8,8 @@ from twisted.web.client import Agent
 from agent import TunnelingAgent
 from bytesprod import BytesProducer
 
+from utils import to_bytes
+
 
 
 def cbRequest(response):
@@ -35,7 +37,7 @@ def get(reactor, url, headers={}, body=None):
     url = bytes(str(url), encoding="utf8")
     _body = None
     if body:
-        _body = BytesProducer(body)
+        _body = BytesProducer(to_bytes(body))
     d = agent.request(
         b'GET', url,
         Headers(headers),
@@ -54,7 +56,7 @@ def post(reactor, url, headers={}, body=None):
     url = bytes(str(url), encoding="utf8")
     _body = None
     if body:
-        _body = BytesProducer(body)
+        _body = BytesProducer(to_bytes(body))
     d = agent.request(
         b'POST', url,
         Headers(headers),
