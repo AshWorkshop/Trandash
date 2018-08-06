@@ -71,13 +71,75 @@ class OKexFuture(ExchangeService):
             money = 'usd'
         return '_'.join((coin, money)).lower()
 
+    def getTicker(self, pairs, contractType='quarter'):
+        URL = "/api/v1/future_ticker.do"
+
+        params = {
+            'symbol': self.getSymbol(pairs),
+            'contract_type': contractType
+        }
+
+        def handleBody(body):
+            data = json.loads(body)
+            print(data['date'])
+            print(time.time())
+            return data.get('ticker', {})
+
+        return httpGet(self.__url, URL, params, callback=handleBody)
+
+    def getKLine(self, pairs, contractType='quarter', ktype='1min', size=0, since=0):
+        URL = "/api/v1/future_kline"
+
+        params = {
+            'symbol': self.getSymbol(pairs),
+            'contract_type': contractType,
+            'type': ktype,
+            'size': str(size),
+            'since': str(since)
+        }
+
+        def handleBody(body):
+            data = json.loads(body)
+            return data
+
+        return httpGet(self.__url, URL, params, callback=handleBody)
+
+    def getKLineLastMin(self, pairs, contractType='quarter', last=0):
+        t = int(round(time.time() * 1000))
+        sincet = t - last * 60 * 1100
+        d = self.getKLine(pairs, contractType=contractType, since=sincet)
+
+        def handleList(KLines):
+            return KLines[-last:]
+        d.addCallback(handleList)
+
+        return d
+
+
+    def getHoldAmount(self, pairs, contractType='quarter'):
+        URL = "/api/v1/future_hold_amount"
+
+        params = {
+            'symbol': self.getSymbol(pairs),
+            'contract_type': contractType
+        }
+
+        def handleBody(body):
+            data = json.loads(body)
+
+            if len(data) > 0:
+                return data[0].get('amount')
+            return 0
+        
+        return httpGet(self.__url, URL, params, callback=handleBody)
+
     def getOrderBook(self, pairs):
         URL = "/api/v1/future_depth.do"
         # print(self.__url)
         
         params = {
             'symbol': self.getSymbol(pairs),
-            'contract_type': 'this_week',
+            'contract_type': 'quarter',
         }
 
         def handleBody(body):
@@ -96,7 +158,7 @@ class OKexFuture(ExchangeService):
 
         params = {
             'symbol': self.getSymbol(pairs),
-            'contract_type': 'this_week',
+            'contract_type': 'quarter',
             'api_key': self.__accessKey,
         }
         sign = buildMySign(params, self.__secretKey)
@@ -109,7 +171,16 @@ class OKexFuture(ExchangeService):
 
         return d
 
-    def trade(self, pairs, contractType="this_week", price="", amount="", tradeType="", matchPrice="", leverRate=""):
+    def trade(self, pairs, contractType="quarter", price="", amount="", tradeType="", matchPrice="", leverRate=""):
+        """
+        参数名	参数类型	必填	描述
+        api_key	String	是	用户申请的apiKey
+        symbol	String	是	btc_usd ltc_usd eth_usd etc_usd bch_usd
+        contract_type	String	是	合约类型: this_week:当周 next_week:下周 quarter:季度
+        orders_data	String	是	JSON类型的字符串 例：[{price:5,amount:2,type:1,match_price:1},{price:2,amount:3,type:1,match_price:1}] 最大下单量为5，price,amount,type,match_price参数参考future_trade接口中的说明
+        sign	String	是	请求参数的签名
+        lever_rate	String	否	杠杆倍数，下单时无需传送，系统取用户在页面上设置的杠杆倍数。且“开仓”若有10倍多单，就不能再下20倍多单
+        """
         URL = "/api/v1/future_trade.do"
         params = {
             'api_key': self.__accessKey,
@@ -137,7 +208,7 @@ class OKexFuture(ExchangeService):
         d = httpPost(self.__url, URL, params, callback=handleBody)
         return d
 
-    def cancle(self, pairs, contractType="this_week", orderId=""):
+    def cancle(self, pairs, contractType="quarter", orderId=""):
         URL = "/api/v1/future_cancel"
         params = {
             "api_key": self.__accessKey,
@@ -160,7 +231,7 @@ class OKexFuture(ExchangeService):
 
         return d
 
-    def getOrder(self, pairs, contractType='this_week', orderId="", status=""):
+    def getOrder(self, pairs, contractType='quarter', orderId="", status=""):
         URL = "/api/v1/future_order_info"
         params = {
             "api_key": self.__accessKey,

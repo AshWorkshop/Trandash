@@ -61,3 +61,11 @@ def to_bytes(text, encoding=None, errors='strict'):
     if encoding is None:
         encoding = 'utf-8'
     return text.encode(encoding, errors)
+
+
+def calcMA(KLines):
+    result = 0
+    for KLine in KLines:
+        timestamp, _, _, _, close, _, _ = KLine
+        result += close
+    return result / len(KLines)

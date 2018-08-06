@@ -13,12 +13,12 @@ from exchanges.okex.OKexService import okexFuture
 count = 0
 
 @defer.inlineCallbacks
-def myTask():
+def priceCycle():
     pairs = ('eth', 'usdt')
     bids, asks = yield okexFuture.getOrderBook(pairs)
     print(bids, asks)
 
-    yield myTask()
+    yield priceCycle()
 
 def cbRun():
     global count

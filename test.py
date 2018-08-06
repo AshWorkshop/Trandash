@@ -2,11 +2,12 @@ from exchanges.gateio.GateIOService import gateio
 from exchanges.okex.OKexService import okexFuture
 from twisted.internet import reactor
 from request import get, post
-from utils import to_bytes
+from utils import to_bytes, calcMA
 from exchanges.gateio.HttpUtil import getSign
 from exchanges.gateio.gateio_key import ApiKey, SecretKey
 
 import urllib
+import time
 
 def test():
 
@@ -36,7 +37,8 @@ def test():
     #     body=postdata
     # )
     # d = okexFuture.trade(('eth', 'usdt'), price="1", amount="2", tradeType="1", matchPrice="0", leverRate="10")
-    d = okexFuture.getOrder(('eth', 'usdt'), orderId="1212")
+    pairs = ('eth', 'usdt')
+    d = okexFuture.getHoldAmount(pairs)
     def cbPrint(result):
         print(result)
         return result
