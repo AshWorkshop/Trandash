@@ -52,6 +52,7 @@ def GetBalance(coin):
             if b['currency'] == coin:
                 # print(b['currency'])
                 balance = float(b['available'])  #balance that is available to trade
+                break
     return balance
 
 def Buy(coinPair, price, amount):
