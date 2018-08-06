@@ -6,7 +6,7 @@ import time
 from .bitfinex_key import ApiKey, SecretKey
 
 
-def getHeaders(url, URL, auth=True, payload_params=None):
+def getPostHeaders(url, URL, auth=True, payload_params=None):
 
     if auth:
         payload_object = {

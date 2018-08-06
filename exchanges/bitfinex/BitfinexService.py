@@ -1,7 +1,7 @@
 from exchanges.base import ExchangeService
 from request import get, post
 from .bitfinex_key import ApiKey, SecretKey
-from .HttpUtil import getHeaders
+from .HttpUtil import getPostHeaders
 from utils import Order
 
 from twisted.internet import reactor
@@ -62,12 +62,12 @@ class Bitfinex(ExchangeService):
 
         return d
 
-def GetBalance(self, coin):
+    def getBalance(self, coin):
         URL = "/v1/balances/"
         # print(self.__url)
         url = self.__url + URL
         # print(url)
-        headers = getHeaders(url, URL)
+        headers = getPostHeaders(url, URL)
         d = post(reactor, url, headers=headers)
         if coin == 'usdt':
             coin = 'usd'
@@ -103,20 +103,21 @@ def GetBalance(self, coin):
 
         return d
 
-def Buy(self. pairs, price, amount):
+    def buy(self, pairs, price, amount):
         URL = "/v1/order/new/"
         # print(self.__url)
         url = self.__url + URL
         # print(url)
         symbol = self.getSymbol(pairs)
-        params = {}
-        params['symbol'] = symbol
-        params['amount'] = str(amount)
-        params['price'] = str(price)
-        params['side'] = 'buy'
-        params['type'] = 'exchange limit'
-        params['exchange'] = 'bitfinex'
-        headers = getHeaders(url, URL, payload_params=params)
+        params = {
+            'symbol': symbol,
+            'amount': str(amount),
+            'price': str(price),
+            'side': 'buy',
+            'type': 'exchange limit',
+            'exchange': 'bitfinex'
+            }
+        headers = getPostHeaders(url, URL, payload_params=params)
         d = post(reactor, url, headers=headers)
 
         def handleBody(body):
@@ -140,20 +141,21 @@ def Buy(self. pairs, price, amount):
 
         return d
 
-def Sell(self. pairs, price, amount):
+    def sell(self, pairs, price, amount):
         URL = "/v1/order/new/"
         # print(self.__url)
         url = self.__url + URL
         # print(url)
         symbol = self.getSymbol(pairs)
-        params = {}
-        params['symbol'] = symbol
-        params['amount'] = str(amount)
-        params['price'] = str(price)
-        params['side'] = 'sell'
-        params['type'] = 'exchange limit'
-        params['exchange'] = 'bitfinex'
-        headers = getHeaders(url, URL, payload_params=params)
+        params = {
+            'symbol': symbol,
+            'amount': str(amount),
+            'price': str(price),
+            'side': 'sell',
+            'type': 'exchange limit',
+            'exchange': 'bitfinex'
+            }
+        headers = getPostHeaders(url, URL, payload_params=params)
         d = post(reactor, url, headers=headers)
 
         def handleBody(body):
@@ -177,15 +179,15 @@ def Sell(self. pairs, price, amount):
 
         return d
 
-def GetOrder(self. pairs, orderId):
+    def getOrder(self, pairs, orderId):
         URL = "/v1/order/status/"
         # print(self.__url)
         url = self.__url + URL
         # print(url)
         symbol = self.getSymbol(pairs)
         params = {}
-        params['order_id'] = order_id
-        headers = getHeaders(url, URL, payload_params=params)
+        params['order_id'] = orderId
+        headers = getPostHeaders(url, URL, payload_params=params)
         d = post(reactor, url, headers=headers)
 
         def handleBody(body):
@@ -232,5 +234,38 @@ def GetOrder(self. pairs, orderId):
         d.addCallback(handleBody)
 
         return d
+
+    def cancel(self, pairs, orderId):
+        URL = "/v1/order/cancel/"
+        # print(self.__url)
+        url = self.__url + URL
+        # print(url)
+        symbol = self.getSymbol(pairs)
+        params = {}
+        params['order_id'] = orderId
+        headers = getPostHeaders(url, URL, payload_params=params)
+        d = post(reactor, url, headers=headers)
+
+        def handleBody(body):
+            # print(body)
+            data = json.loads(body)
+            # print(data)
+            
+            try:
+                is_cancelled = data['is_cancelled']
+            except KeyError:
+                is_cancelled = False
+                if 'error' in data:
+                    err = data['error']
+                    print(err)
+                    if err == 'ERR_RATE_LIMIT':
+                        time.sleep(1)
+                return (False, data)
+            if is_cancelled:
+                return(True, data)
+
+        d.addCallback(handleBody)
+
+        return d       
 
 bitfinex = Bitfinex('https://api.bitfinex.com', ApiKey, SecretKey)
