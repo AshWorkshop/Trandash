@@ -149,9 +149,7 @@ class OKexFuture(ExchangeService):
             asks.reverse()
             return [bids, asks]
 
-        d = httpGet(self.__url, URL, params, callback=handleBody)
-
-        return d
+        return httpGet(self.__url, URL, params, callback=handleBody)
 
     def getPosition(self, pairs):
         URL = "/api/v1/future_position_4fix"
@@ -167,9 +165,7 @@ class OKexFuture(ExchangeService):
         def handleBody(body):
             return body
 
-        d = httpPost(self.__url, URL, params, callback=handleBody)
-
-        return d
+        return httpPost(self.__url, URL, params, callback=handleBody)
 
     def trade(self, pairs, contractType="quarter", price="", amount="", tradeType="", matchPrice="", leverRate=""):
         """
@@ -205,8 +201,7 @@ class OKexFuture(ExchangeService):
                 orderId = data['order_id']
             return orderId
 
-        d = httpPost(self.__url, URL, params, callback=handleBody)
-        return d
+        return httpPost(self.__url, URL, params, callback=handleBody)
 
     def cancle(self, pairs, contractType="quarter", orderId=""):
         URL = "/api/v1/future_cancel"
@@ -227,9 +222,7 @@ class OKexFuture(ExchangeService):
                 print(data)
                 return (False, data.get("error", ""))
 
-        d = httpPost(self.__url, URL, params, callback=handleBody)
-
-        return d
+        return httpPost(self.__url, URL, params, callback=handleBody)
 
     def getOrder(self, pairs, contractType='quarter', orderId="", status=""):
         URL = "/api/v1/future_order_info"
@@ -248,8 +241,7 @@ class OKexFuture(ExchangeService):
             data = json.loads(body)
             return data
         
-        d = httpPost(self.__url, URL, params, callback=handleBody)
-        return d
+        return httpPost(self.__url, URL, params, callback=handleBody)
 
 okexFuture = OKexFuture(
     'https://www.okex.com',
