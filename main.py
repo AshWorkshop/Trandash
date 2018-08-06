@@ -10,6 +10,7 @@ from utils import calcMean
 from exchange import verifyExchanges
 from exchanges.gateio.GateIOService import gateio
 from exchanges.bitfinex.BitfinexService import bitfinex
+from exchanges.huobi.HuobiproService import huobi
 
 from exchange import OrderBooks
 

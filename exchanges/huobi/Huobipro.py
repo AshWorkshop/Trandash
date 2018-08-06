@@ -1,7 +1,5 @@
 from exchanges.huobi.HuobiAPI import *
 from utils import calcMean,Order
-from exchanges.huobi.HttpUtil import set_key
-
 
 
 def toCoinPairStr(coinPair):

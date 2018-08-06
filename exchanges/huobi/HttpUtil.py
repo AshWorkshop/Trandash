@@ -22,10 +22,6 @@ from .huobipro_key import AccessKey, SecretKey
 ACCESS_KEY = AccessKey
 SECRET_KEY = SecretKey
 
-def set_key(access_key,secret_key):
-    ACCESS_KEY=access_key
-    SECRET_KEY=secret_key
-
 # API 请求地址
 MARKET_URL = "https://api.huobi.pro"
 TRADE_URL = "https://api.huobi.pro"
