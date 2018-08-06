@@ -5,7 +5,7 @@ from .huobipro_key import AccessKey, SecretKey
 from twisted.internet import reactor
 
 import json
-
+import urllib.parse
 
 class Huobipro(ExchangeService):
 
@@ -15,22 +15,33 @@ class Huobipro(ExchangeService):
         self.__secretKey = secretKey
 
     def getSymbol(self, pairs):
-        return ''.join(pairs).upper()
+        return ''.join(pairs)
 
-    def getOrderBook(self, pairs):
-        URL = "/market/depth/"
+    def toGradeStr(self,grade):
+        return ('step'+str(grade))
 
-        url = self.__url + URL + self.getSymbol(pairs)
+    def getOrderBook(self, pairs,grade=0):
+        URL = "/market/depth?"
 
-        d = get(reactor,url)
+        params={'symbol':self.getSymbol(pairs),
+                'type':self.toGradeStr(grade),
+        }
+        postdata = urllib.parse.urlencode(params)
+        url = self.__url + URL + postdata
+
+        headers = {
+            "Content-type": ["application/x-www-form-urlencoded"],
+            'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36'],
+        }
+        d = get(reactor,url,headers = headers)
 
         def handleBody(body):
-            print(body)
-            data = body
-            #data = json.load(body)
-            print(data)
-            bids = data['bids']
-            asks = data['asks']
+            #print(body)
+            data = json.loads(body)
+            #print(data)
+            bids = data['tick']['bids']
+            asks = data['tick']['asks']
+            return [bids, asks]
 
         d.addCallback(handleBody)
         #print(b)
