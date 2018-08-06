@@ -1,10 +1,15 @@
-from sys import argv
 from pprint import pformat
 import json
+
 from twisted.web.client import readBody
 from twisted.web.client import BrowserLikePolicyForHTTPS
 from twisted.web.http_headers import Headers
+from twisted.web.client import Agent
 from agent import TunnelingAgent
+from bytesprod import BytesProducer
+
+from utils import to_bytes
+
 
 
 def cbRequest(response):
@@ -21,23 +26,40 @@ def cbBody(body):
     # print('Response body:')
     return body
 
-def get(reactor, url):
+def get(reactor, url, headers={}, body=None):
+
+    ssl = url.split(':')[0]
+
+    if ssl == 'https':
+        agent = TunnelingAgent(reactor, ('127.0.0.1', 1087, None), BrowserLikePolicyForHTTPS())
+    else:
+        agent = Agent(reactor)
     url = bytes(str(url), encoding="utf8")
-    agent = TunnelingAgent(reactor, ('127.0.0.1', 1087, None), BrowserLikePolicyForHTTPS())
+    _body = None
+    if body:
+        _body = BytesProducer(to_bytes(body))
     d = agent.request(
         b'GET', url,
-        Headers({'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36']}),
-        None)
+        Headers(headers),
+        _body)
     d.addCallback(cbRequest)
     return d
 
-def post(reactor, url, data):
+def post(reactor, url, headers={}, body=None):
+
+    ssl = url.split(':')[0]
+
+    if ssl == 'https':
+        agent = TunnelingAgent(reactor, ('127.0.0.1', 1087, None), BrowserLikePolicyForHTTPS())
+    else:
+        agent = Agent(reactor)
     url = bytes(str(url), encoding="utf8")
-    agent = TunnelingAgent(reactor, ('127.0.0.1', 1087, None), BrowserLikePolicyForHTTPS())
-    body = BytesProducer(bytes(json.dumps(data), encoding='utf8'))
+    _body = None
+    if body:
+        _body = BytesProducer(to_bytes(body))
     d = agent.request(
         b'POST', url,
-        Headers({'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36']}),
-        body)
+        Headers(headers),
+        _body)
     d.addCallback(cbRequest)
     return d
