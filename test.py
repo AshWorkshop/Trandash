@@ -1,4 +1,5 @@
 from exchanges.gateio.GateIOService import gateio
+from exchanges.okex.OKexService import okexFuture
 from twisted.internet import reactor
 from request import get, post
 from utils import to_bytes
@@ -12,30 +13,30 @@ def test():
     # 在这里放你想测试的异步函数(返回一个Deferred的函数)
     # d = gateio.getOrderBook(('eth', 'usdt'))
 
-    params = {'currencyPair': 'eth_usdt','rate':'1', 'amount':'2'}
-    headers = {
-        "Content-type": ["application/x-www-form-urlencoded"],
-        'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36'],
-        'KEY': [ApiKey],
-        'SIGN': [getSign(params, SecretKey)]
-    }
-    # params = {'symbol': 'ethusdt',
-    #           'type': 'step0'}
-    postdata = urllib.parse.urlencode(params)
+    # params = {'symbol': 'eth_usd', 'contract_type': 'this_week'}
+    # headers = {
+    #     "Content-type": ["application/x-www-form-urlencoded"],
+    #     'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36'],
+    #     'KEY': [ApiKey],
+    #     'SIGN': [getSign(params, SecretKey)]
+    # }
+    # # params = {'symbol': 'ethusdt',
+    # #           'type': 'step0'}
+    # postdata = urllib.parse.urlencode(params)
     # d = get(
     #     reactor,
-    #     url="https://api.huobi.pro/market/depth?" + postdata,
+    #     url="https://www.okex.com/api/v1/future_depth.do?" + postdata,
     #     headers=headers,
     # )
 
-    d = post(
-        reactor,
-        url="https://api.gateio.io/api2/1/private/buy",
-        headers=headers,
-        body=postdata
-    )
-
-
+    # d = post(
+    #     reactor,
+    #     url="https://api.gateio.io/api2/1/private/buy",
+    #     headers=headers,
+    #     body=postdata
+    # )
+    # d = okexFuture.trade(('eth', 'usdt'), price="1", amount="2", tradeType="1", matchPrice="0", leverRate="10")
+    d = okexFuture.getOrder(('eth', 'usdt'), orderId="1212")
     def cbPrint(result):
         print(result)
         return result

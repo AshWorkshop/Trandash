@@ -109,3 +109,4 @@ venv.bak/
 # loacl
 
 .DS_Store
+.vscode/

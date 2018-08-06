@@ -7,8 +7,8 @@ from twisted.python.failure import Failure
 
 FEE = {
     'huobipro': [0.998, 1.002],
-    'gateio': [1.0, 1.0],
-    'bitfinex': [1.0, 1.0],
+    'gateio': [0.998, 1.002],
+    'bitfinex': [0.998, 1.002],
 }
 
 EXCHANGE = {
@@ -86,12 +86,12 @@ def verifyExchanges(exchangesData):
             level = 0
             amount = 0
 
-            # for i, (buy, sell) in enumerate(zip(buyEx['avg'][BUY], sellEx['avg'][SELL])):
-            #     # print(buy, sell)
-            #     level = i
-            #     if buy[PRICE] * FEE[buyExName][BUY] <= sell[PRICE] * FEE[sellExName][SELL]:
-            #         level = i - 1
-            #         break
+            for i, (buy, sell) in enumerate(zip(buyEx['avg'][BUY], sellEx['avg'][SELL])):
+                # print(buy, sell)
+                level = i
+                if buy[PRICE] * FEE[buyExName][BUY] <= sell[PRICE] * FEE[sellExName][SELL]:
+                    level = i - 1
+                    break
 
             amount = min(buyEx['avg'][BUY][level][AMOUNT], sellEx['avg'][SELL][level][AMOUNT])
             buyPrice = float(buyEx['actual'][BUY][level][PRICE])

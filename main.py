@@ -22,7 +22,7 @@ orderBooks.start(reactor)
 def cbRun():
     global count
     count += 1
-    print(count)
+    # print(count)
     # time.sleep(1)
     exchangeState = dict()
 
@@ -44,7 +44,7 @@ def cbRun():
 
     if hasData:
         exchangePairs = verifyExchanges(exchangeState)
-        print(exchangePairs)
+        print(count, exchangePairs)
 
     # yield cbRun()
 def ebLoopFailed(failure):
