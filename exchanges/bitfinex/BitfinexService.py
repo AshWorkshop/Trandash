@@ -92,7 +92,7 @@ class Bitfinex(ExchangeService):
                         if err == 'ERR_RATE_LIMIT':
                             time.sleep(1)
                 if b_type == 'exchange':
-                    print(b)
+                    # print(b)
                     if b_currency == coin:
                         # print(b['currency'])
                         balance = float(b_available)  #balance that is available to trade
@@ -162,7 +162,7 @@ class Bitfinex(ExchangeService):
         def handleBody(body):
             # print(body)
             data = json.loads(body)
-            print(data)
+            # print(data)
 
             try:
                 order_id = data['order_id']
@@ -250,7 +250,7 @@ class Bitfinex(ExchangeService):
         def handleBody(body):
             # print(body)
             data = json.loads(body)
-            print(data)
+            # print(data)
             
             try:
                 is_cancelled = data['is_cancelled']
