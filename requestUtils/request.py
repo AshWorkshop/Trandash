@@ -5,8 +5,8 @@ from twisted.web.client import readBody
 from twisted.web.client import BrowserLikePolicyForHTTPS
 from twisted.web.http_headers import Headers
 from twisted.web.client import Agent
-from agent import TunnelingAgent
-from bytesprod import BytesProducer
+from requestUtils.agent import TunnelingAgent
+from requestUtils.bytesprod import BytesProducer
 
 from utils import to_bytes
 

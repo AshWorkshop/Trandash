@@ -1,6 +1,6 @@
 from utils import Order
 from exchanges.base import ExchangeService
-from request import get, post
+from requestUtils.request import get, post
 from exchanges.okex.okex_key import ApiKey, SecretKey
 
 import hashlib
@@ -24,7 +24,7 @@ def httpGet(url, resource, params, callback=None, errback=None):
         'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36'],
     }
     postdata = urllib.parse.urlencode(params)
-    print(url + resource + '?' + postdata)
+    # print(url + resource + '?' + postdata)
     d = get(
         reactor,
         url=url + resource + '?' + postdata,
@@ -42,8 +42,8 @@ def httpPost(url, resource, params, callback=None, errback=None):
         'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36'],
     }
     postdata = urllib.parse.urlencode(params)
-    print(url + resource)
-    print(postdata)
+    # print(url + resource)
+    # print(postdata)
     d = post(
         reactor,
         url=url + resource,
@@ -81,8 +81,6 @@ class OKexFuture(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            print(data['date'])
-            print(time.time())
             return data.get('ticker', {})
 
         return httpGet(self.__url, URL, params, callback=handleBody)
@@ -110,7 +108,14 @@ class OKexFuture(ExchangeService):
         d = self.getKLine(pairs, contractType=contractType, since=sincet)
 
         def handleList(KLines):
-            return KLines[-last:]
+            result = []
+            try:
+                result = KLines[-last:]
+            except Exception as err:
+                print(err)
+                return []
+            return result
+
         d.addCallback(handleList)
 
         return d

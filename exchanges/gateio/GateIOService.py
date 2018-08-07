@@ -1,6 +1,6 @@
 from utils import Order
 from exchanges.base import ExchangeService
-from request import get, post
+from requestUtils.request import get, post
 from .gateio_key import ApiKey, SecretKey
 from hashlib import sha512 as encodeMethod
 import hmac
