@@ -5,7 +5,7 @@ import time
 
 from twisted.internet import defer, task
 from twisted.internet import reactor
-from request import get
+from requestUtils.request import get
 from utils import calcMean
 from exchange import verifyExchanges
 from exchanges.gateio.GateIOService import gateio

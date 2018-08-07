@@ -8,35 +8,31 @@ from twisted.internet import reactor
 
 
 from exchanges.okex.OKexService import okexFuture
+from cycle.klineCycle import KLineCycle, TickerCycle
+from utils import calcMAs, calcBolls
 
 
 count = 0
-
-@defer.inlineCallbacks
-def priceCycle():
-    pairs = ('eth', 'usdt')
-    bids, asks = yield okexFuture.getOrderBook(pairs)
-    print(bids, asks)
-
-    yield priceCycle()
+klineCycle = KLineCycle('okexFuture')
+tickerCycle = TickerCycle('okexFuture')
+pairs = ('eth', 'usdt')
+klineCycle.start(reactor, pairs, last=200)
+tickerCycle.start(reactor, pairs)
 
 def cbRun():
     global count
     count += 1
-    # print(count)
+    print('[', count, ']')
     # time.sleep(1)
-    pairs = ('eth', 'usdt')
-    d = okexFuture.getOrderBook(pairs)
-    def cbPrint(result):
-        print(result)
-        return result
+    data = klineCycle.getData()
+    ticker = tickerCycle.getData()
+    if data != {} and ticker != {}:
+        MAs = calcMAs(data['klines'])
+        Bolls = calcBolls(data['klines'])
+        print(ticker['ticker']['last'])
+        print(len(MAs))
+        print(len(Bolls))
 
-    def ebPrint(failure):
-        print(failure.getBriefTraceback())
-        reactor.stop()
-
-    d.addCallback(cbPrint)
-    d.addErrback(ebPrint)
 
     # yield cbRun()
 def ebLoopFailed(failure):
@@ -46,10 +42,10 @@ def ebLoopFailed(failure):
     print(failure.getBriefTraceback())
     reactor.stop()
 
-reactor.callWhenRunning(priceCycle)
-# loop = task.LoopingCall(cbRun)
+# reactor.callWhenRunning(priceCycle)
+loop = task.LoopingCall(cbRun)
 
-# loopDeferred = loop.start(1.0)
-# loopDeferred.addErrback(ebLoopFailed)
+loopDeferred = loop.start(1.0)
+loopDeferred.addErrback(ebLoopFailed)
 
 reactor.run()

@@ -2,7 +2,7 @@ from exchanges.gateio.GateIOService import gateio
 from exchanges.bitfinex.BitfinexService import bitfinex
 from exchanges.okex.OKexService import okexFuture
 from twisted.internet import reactor
-from request import get, post
+from requestUtils.request import get, post
 from utils import to_bytes, calcMAs, calcBolls
 from exchanges.gateio.HttpUtil import getSign
 from exchanges.gateio.gateio_key import ApiKey, SecretKey

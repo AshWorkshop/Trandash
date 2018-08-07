@@ -1,5 +1,5 @@
 from exchanges.base import ExchangeService
-from request import get, post
+from requestUtils.request import get, post
 from .bitfinex_key import ApiKey, SecretKey
 from .HttpUtil import getPostHeaders
 from utils import Order
