@@ -63,7 +63,7 @@ class Bitfinex(ExchangeService):
         return d
 
     def getBalance(self, coin):
-        URL = "/v1/balances/"
+        URL = "/v1/balances"
         # print(self.__url)
         url = self.__url + URL
         # print(url)
@@ -77,7 +77,7 @@ class Bitfinex(ExchangeService):
             data = json.loads(body)
             # print(data)
             balance = 0.0
-            for b in balance_list:
+            for b in data:
                 try:
                     b_type = b['type']
                     b_currency = b['currency']
@@ -92,6 +92,7 @@ class Bitfinex(ExchangeService):
                         if err == 'ERR_RATE_LIMIT':
                             time.sleep(1)
                 if b_type == 'exchange':
+                    # print(b)
                     if b_currency == coin:
                         # print(b['currency'])
                         balance = float(b_available)  #balance that is available to trade
@@ -104,7 +105,7 @@ class Bitfinex(ExchangeService):
         return d
 
     def buy(self, pairs, price, amount):
-        URL = "/v1/order/new/"
+        URL = "/v1/order/new"
         # print(self.__url)
         url = self.__url + URL
         # print(url)
@@ -142,7 +143,7 @@ class Bitfinex(ExchangeService):
         return d
 
     def sell(self, pairs, price, amount):
-        URL = "/v1/order/new/"
+        URL = "/v1/order/new"
         # print(self.__url)
         url = self.__url + URL
         # print(url)
@@ -180,7 +181,7 @@ class Bitfinex(ExchangeService):
         return d
 
     def getOrder(self, pairs, orderId):
-        URL = "/v1/order/status/"
+        URL = "/v1/order/status"
         # print(self.__url)
         url = self.__url + URL
         # print(url)
@@ -236,7 +237,7 @@ class Bitfinex(ExchangeService):
         return d
 
     def cancel(self, pairs, orderId):
-        URL = "/v1/order/cancel/"
+        URL = "/v1/order/cancel"
         # print(self.__url)
         url = self.__url + URL
         # print(url)
@@ -268,4 +269,8 @@ class Bitfinex(ExchangeService):
 
         return d       
 
-bitfinex = Bitfinex('https://api.bitfinex.com', ApiKey, SecretKey)
+bitfinex = Bitfinex(
+    'https://api.bitfinex.com',
+    ApiKey,
+    SecretKey
+    )

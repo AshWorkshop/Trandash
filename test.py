@@ -1,4 +1,5 @@
 from exchanges.gateio.GateIOService import gateio
+from exchanges.bitfinex.BitfinexService import bitfinex
 from exchanges.okex.OKexService import okexFuture
 from twisted.internet import reactor
 from requestUtils.request import get, post
@@ -37,8 +38,19 @@ def test():
     #     body=postdata
     # )
     # d = okexFuture.trade(('eth', 'usdt'), price="1", amount="2", tradeType="1", matchPrice="0", leverRate="10")
+ 
     pairs = ('eth', 'usdt')
     d = okexFuture.getKLineLastMin(pairs, last=200)
+    
+    '''
+    #test of bitfinex:
+    pairs = ('eth', 'usdt')
+    d = bitfinex.cancel(pairs,15172894785) 
+    d = bitfinex.getOrder(pairs,15172894785) 
+    d = bitfinex.sell(pairs,409,0.02)  #ps. fail to test buy() because money is not enough LOL
+    d = bitfinex.getOrderBook(pairs)
+    d = bitfinex.getBalance('usdt')
+    '''
 
     def calc(KLines):
         # print(KLines[-3:])
