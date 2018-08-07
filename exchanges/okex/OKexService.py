@@ -157,7 +157,7 @@ class OKexFuture(ExchangeService):
         return httpGet(self.__url, URL, params, callback=handleBody)
 
     def getPosition(self, pairs):
-        URL = "/api/v1/future_position_4fix"
+        URL = "/api/v1/future_position"
 
         params = {
             'symbol': self.getSymbol(pairs),
@@ -168,7 +168,16 @@ class OKexFuture(ExchangeService):
         params['sign'] = sign
 
         def handleBody(body):
-            return body
+            data = json.loads(body)
+            result = dict()
+            if 'holding' in data:
+                data = data['holding'][0]
+                result['buy_price_avg'] = data['buy_price_avg']
+                result['buy_amount'] = data['buy_amount']
+                result['sell_price_avg'] = data['sell_price_avg']
+                result['sell_amount'] = data['sell_amount']
+            
+            return result
 
         return httpPost(self.__url, URL, params, callback=handleBody)
 
@@ -190,11 +199,14 @@ class OKexFuture(ExchangeService):
             'amount': amount,
             'type': tradeType,
             'match_price': matchPrice,
-            'lever_rate': leverRate
         }
 
         if price:
             params['price'] = price
+
+        if leverRate:
+            params['lever_rate'] = leverRate
+
 
         sign = buildMySign(params, self.__secretKey)
         params['sign'] = sign
@@ -204,6 +216,8 @@ class OKexFuture(ExchangeService):
             orderId = None
             if data.get('result', False):
                 orderId = data['order_id']
+            else:
+                print(data)
             return orderId
 
         return httpPost(self.__url, URL, params, callback=handleBody)
