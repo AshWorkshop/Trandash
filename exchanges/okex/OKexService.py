@@ -1,7 +1,7 @@
 from utils import Order
 from exchanges.base import ExchangeService
 from request import get, post
-from .okex_key import ApiKey, SecretKey
+from exchanges.okex.okex_key import ApiKey, SecretKey
 
 import hashlib
 import urllib

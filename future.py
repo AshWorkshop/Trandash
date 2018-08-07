@@ -46,7 +46,7 @@ def ebLoopFailed(failure):
     print(failure.getBriefTraceback())
     reactor.stop()
 
-reactor.callWhenRunning(myTask)
+reactor.callWhenRunning(priceCycle)
 # loop = task.LoopingCall(cbRun)
 
 # loopDeferred = loop.start(1.0)

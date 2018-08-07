@@ -1,4 +1,5 @@
 import six
+import math
 
 class Order:
     orderId = 0
@@ -65,7 +66,44 @@ def to_bytes(text, encoding=None, errors='strict'):
 
 def calcMA(KLines):
     result = 0
+    timestamp = KLines[-1][0]
+    # print(len(KLines))
     for KLine in KLines:
-        timestamp, _, _, _, close, _, _ = KLine
+        _, _, _, _, close, _, _ = KLine
         result += close
-    return result / len(KLines)
+    return (timestamp, result / len(KLines))
+
+def calcMAs(KLines, ma=200):
+    result = []
+    for i in range(ma - 1, len(KLines)):
+        result.append(calcMA(KLines[i - ma + 1: i + 1]))
+
+    return result
+
+def calcBoll(KLines):
+    result = 0
+    timestamp = KLines[-1][0]
+    # print(timestamp)
+    N = len(KLines)
+    for KLine in KLines:
+        _, _, _, _, close, _, _ = KLine
+        result += close
+    mid = result / N
+
+    result = 0
+    for KLine in KLines:
+        _, _, _, _, close, _, _ = KLine
+        result += (close - mid) ** 2
+    sigma = math.sqrt(result / N)
+
+    up = mid + 2 * sigma
+    down = mid - 2 * sigma
+    
+    return (timestamp, up, mid, down)
+
+def calcBolls(KLines, ma=20):
+    result = []
+    for i in range(ma - 1, len(KLines)):
+        result.append(calcBoll(KLines[i - ma + 1: i + 1]))
+    return result
+        
