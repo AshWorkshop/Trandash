@@ -63,7 +63,7 @@ def buy(amount=1.0, price=""):
             data = shelve.open('data')
             data['buys'] = buys
             data.close()
-            time.sleep(1)
+            # time.sleep(1)
             
 
     state = 'GO'
@@ -127,7 +127,7 @@ def sell(amount=1.0, price=""):
             data = shelve.open('data')
             data['sells'] = sells
             data.close()
-            time.sleep(1)
+            # time.sleep(1)
 
     state = 'GO'
 
@@ -214,13 +214,13 @@ def cbRun():
             print('ticker && ma:', ticker, ma)
             print(buy_amount, sell_amount)
 
-            if ticker > ma and buy_amount == 0:
+            if ticker > ma and buy_amount == 0 and len(buys) == 0:
                 print('BUY')
                 state = 'WAIT'
                 reactor.callWhenRunning(buy)
                 # reactor.callWhenRunning(buy)
             
-            if ticker < ma and sell_amount == 0:
+            if ticker < ma and sell_amount == 0 and len(sells) == 0:
                 print('SELL')
                 state = 'WAIT'
                 reactor.callWhenRunning(sell)
