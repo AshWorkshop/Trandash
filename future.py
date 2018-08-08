@@ -285,7 +285,10 @@ def cbRun():
                 if buy_amount > 0:
                     buy_price_last, buy_amount_last = buys[-1]
                     if (buy_price_last - ticker) / buy_price_last >= 0.005:
-                        buy_amount_new = buy_amount_last * 1.382
+                        if len(buys) < 6:
+                            buy_amount_new = buy_amount_last * 1.618
+                        else:
+                            buy_amount_new = buy_amount_last
                         print('BUY', buy_amount_new)
                         state = 'WAIT'
                         reactor.callWhenRunning(buy, amount=buy_amount_new)
@@ -295,7 +298,10 @@ def cbRun():
                 if sell_amount > 0:
                     sell_price_last, sell_amount_last = sells[-1]
                     if (ticker - sell_price_last) / sell_price_last >= 0.005:
-                        sell_amount_new = sell_amount_last * 1.382
+                        if len(sells) < 6:
+                            sell_amount_new = sell_amount_last * 1.618
+                        else:
+                            sell_amount_new = sell_amount_last
                         print('SELL', sell_amount_new)
                         state = 'WAIT'
                         reactor.callWhenRunning(sell, amount=sell_amount_new)
