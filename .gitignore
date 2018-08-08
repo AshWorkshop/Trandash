@@ -111,3 +111,4 @@ venv.bak/
 .DS_Store
 .vscode/
 genCertifi.bat
+*.db
