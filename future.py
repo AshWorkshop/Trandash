@@ -192,11 +192,12 @@ def cbRun():
         print('buys && sells:', buys, sells)
         state = 'GO'
 
+    KLinesData = klineCycle.getData()
+    tickerData = tickerCycle.getData()
+    positionData = positionCycle.getData()
+    orderBookData = orderBookCycle.getData()
+
     if state != 'WAIT':
-        KLinesData = klineCycle.getData()
-        tickerData = tickerCycle.getData()
-        positionData = positionCycle.getData()
-        orderBookData = orderBookCycle.getData()
         # print(len(klines), ticker, position)
         if KLinesData != {} and tickerData != {} and positionData != {}:
             total += 1
@@ -280,7 +281,7 @@ def cbRun():
             _, llb_u, _, llb_d = llb
             _, lb_u, _, lb_d = lb
             _, b_u, _, b_d = b
-            if llk_close > llb_d and lk_close < lb_d and ticker < b_d:
+            if llk_close > llb_d and lk_close < lb_d:
                 print('BUYBOLL')
                 if buy_amount > 0:
                     buy_price_last, buy_amount_last = buys[-1]
@@ -293,7 +294,7 @@ def cbRun():
                         state = 'WAIT'
                         reactor.callWhenRunning(buy, amount=buy_amount_new)
 
-            if llk_close < llb_u and lk_close > lb_u and ticker > b_u:
+            if llk_close < llb_u and lk_close > lb_u:
                 print('SELLBOLL')
                 if sell_amount > 0:
                     sell_price_last, sell_amount_last = sells[-1]
