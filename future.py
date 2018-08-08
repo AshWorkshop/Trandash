@@ -63,6 +63,7 @@ def buy(amount=1.0, price=""):
             data = shelve.open('data')
             data['buys'] = buys
             data.close()
+            time.sleep(1)
             
 
     state = 'GO'
@@ -126,6 +127,7 @@ def sell(amount=1.0, price=""):
             data = shelve.open('data')
             data['sells'] = sells
             data.close()
+            time.sleep(1)
 
     state = 'GO'
 
