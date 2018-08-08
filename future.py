@@ -252,13 +252,13 @@ def cbRun():
             if buyRate >= 0.03 and buy_amount != 0:
                 print('BUYP')
                 state = 'WAIT'
-                reactor.callWhenRunning(buyp, amount=str(buy_amount), price = str(buy2))
+                reactor.callWhenRunning(buyp, amount=buy_amount, price = str(buy2))
                 
 
             if sellRate >= 0.03 and sell_amount != 0:
                 print('SELLP')
                 state = 'WAIT'
-                reactor.callWhenRunning(sellp, amount=str(sell_amount), price = str(sell2))
+                reactor.callWhenRunning(sellp, amount=sell_amount, price = str(sell2))
 
 
         if tickerData != {} and KLinesData != {} and positionData != {}:
