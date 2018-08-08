@@ -5,7 +5,7 @@ import time
 
 from twisted.internet import defer, task
 from twisted.internet import reactor
-from request import get
+from requestUtils.request import get
 from utils import calcMean
 from exchange import verifyExchanges
 from exchanges.gateio.GateIOService import gateio
@@ -23,7 +23,7 @@ orderBooks.start(reactor)
 def cbRun():
     global count
     count += 1
-    print(count)
+    # print(count)
     # time.sleep(1)
     exchangeState = dict()
 
@@ -45,7 +45,7 @@ def cbRun():
 
     if hasData:
         exchangePairs = verifyExchanges(exchangeState)
-        print(exchangePairs)
+        print(count, exchangePairs)
 
     # yield cbRun()
 def ebLoopFailed(failure):

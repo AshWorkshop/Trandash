@@ -1,5 +1,5 @@
 from exchanges.base import ExchangeService
-from request import get
+from requestUtils.request import get
 from .huobipro_key import AccessKey, SecretKey
 import requests
 import datetime
