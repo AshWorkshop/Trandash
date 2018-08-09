@@ -269,6 +269,53 @@ class Bitfinex(ExchangeService):
 
         return d       
 
+    def getOrderHistory(self, pairs, givenTime=time.time()):
+        #View your latest inactive orders. Limited to last 3 days and 1 request per minute.
+        URL = "/v1/orders/hist"
+        # print(self.__url)
+        url = self.__url + URL
+        # print(url)
+        symbol = self.getSymbol(pairs)
+        headers = getPostHeaders(url, URL)
+        d = post(reactor, url, headers=headers)
+
+        def handleBody(body):
+            # print(body)
+            data = json.loads(body)
+            # print(data)
+            orderList = []
+
+            for order in data:
+                try:
+                    timestamp = order['timestamp']
+                    if float(timestamp) >= givenTime:
+                        status = 'open'
+                        if order['is_cancelled']:
+                            status = 'cancelled'
+                        elif not order['is_live']:      #若没有被取消，并且不能继续被填充（not live），
+                            status = 'done'             #则表示交易已完成（done）                        
+                        orderList.append({
+                            'orderId': order['id'],
+                            'timestamp': timestamp,     #返回的字典中添加了时间戳信息
+                            'type': order['side'],
+                            'iniPrice': float(order['price']),
+                            'initAmount': float(order['original_amount']),
+                            'coinPair': symbol,
+                            'status': status
+                            })
+                except KeyError:
+                    if 'error' in data:
+                        err = data['error']
+                        print(err)
+                        if err == 'ERR_RATE_LIMIT':
+                            time.sleep(1)
+        
+            return orderList
+
+        d.addCallback(handleBody)
+
+        return d
+
 bitfinex = Bitfinex(
     'https://api.bitfinex.com',
     ApiKey,

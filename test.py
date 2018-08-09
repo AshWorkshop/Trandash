@@ -1,6 +1,6 @@
 from exchanges.gateio.GateIOService import gateio
 from exchanges.bitfinex.BitfinexService import bitfinex
-from exchanges.okex.OKexService import okexFuture
+# from exchanges.okex.OKexService import okexFuture
 # from exchanges.huobi.HuobiproService import huobi
 
 from twisted.internet import reactor
@@ -21,7 +21,8 @@ def test():
     # d = bitfinex.getOrder(pairs,15172894785)
     # d = bitfinex.sell(pairs,409,0.02)  #ps. fail to test buy() because money is not enough LOL
     # d = bitfinex.getOrderBook(pairs)
-    d = bitfinex.getBalance('eth')
+    # d = bitfinex.getBalance('eth')
+    d = bitfinex.getOrderHistory(pairs, givenTime=1531065600)   #1531065600:2018/7/9 0:0:0
     
 
     def calc(KLines):
