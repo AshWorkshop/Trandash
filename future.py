@@ -21,6 +21,7 @@ wait = 0
 leverage = 20
 buys = []
 sells = []
+maxProfit = 0.0
 klineCycle = Cycle(okexFuture.getKLineLastMin, 'getKLineLastMin')
 tickerCycle = Cycle(okexFuture.getTicker, 'getTicker')
 positionCycle = Cycle(okexFuture.getPosition, 'getPosition', limit=5)
@@ -70,12 +71,16 @@ def buy(amount=1.0, price=""):
     state = 'GO'
 
 @defer.inlineCallbacks
-def buyp(amount, price):
+def buyp(amount, price="", sellAmount=0):
     global state
     global buys
     orderId = None
     try:
-        orderId = yield okexFuture.trade(pairs, price=price, amount=str(round(amount)), tradeType="3", matchPrice="0")
+        if price == "":
+            matchPrice = "1"
+        else:
+            matchPrice = "0"
+        orderId = yield okexFuture.trade(pairs, price=price, amount=str(round(amount)), tradeType="3", matchPrice=matchPrice)
         print(orderId)
     except Exception as err:
         failure = Failure(err)
@@ -94,8 +99,12 @@ def buyp(amount, price):
             data = shelve.open('data')
             data['buys'] = buys
             data.close()
-
-    state = 'GO'
+    if state == 'PPP':
+        state = 'PPPsell'
+        if sellAmount > 0:
+            reactor.callWhenRunning(sell, amount=sellAmount)
+    else:
+        state = 'GO'
 
 
 @defer.inlineCallbacks
@@ -133,12 +142,16 @@ def sell(amount=1.0, price=""):
     state = 'GO'
 
 @defer.inlineCallbacks
-def sellp(amount, price):
+def sellp(amount, price=""):
     global state
     global sells
     orderId = None
     try:
-        orderId = yield okexFuture.trade(pairs, price=price, amount=str(round(amount)), tradeType="4", matchPrice="0")
+        if price == "":
+            matchPrice = "1"
+        else:
+            matchPrice = "0"
+        orderId = yield okexFuture.trade(pairs, price=price, amount=str(round(amount)), tradeType="4", matchPrice=matchPrice)
         print(orderId)
     except Exception as err:
         failure = Failure(err)
@@ -182,6 +195,7 @@ def cbRun():
     global total
     global buys
     global sells
+    global maxProfit
     count += 1
     wait += 1
     print('[', count, state, ']')
@@ -198,8 +212,9 @@ def cbRun():
     positionData = positionCycle.getData()
     orderBookData = orderBookCycle.getData()
 
-    if state != 'WAIT':
+    if state == 'GO':
         # print(len(klines), ticker, position)
+        # 是否开初始单
         if KLinesData != [] and tickerData != [] and positionData != []:
             total += 1
             wait -= 1
@@ -226,6 +241,7 @@ def cbRun():
                 state = 'WAIT'
                 reactor.callWhenRunning(sell)
 
+        # 是否平
         if orderBookData != [] and positionData != []:
             position = positionData[0]
             # print(position)
@@ -236,6 +252,9 @@ def cbRun():
             sell_price_avg = getAvg(sells)
             buy_amount = position['buy_amount']
             sell_amount = position['sell_amount']
+
+            buy_profit = position['buy_profit_real']
+            sell_profit = position['sell_profit_real']
 
             print('buy_price_avg && buy2:', buy_price_avg, buy2)
             print('sell_price_avg && sell2:', sell_price_avg, sell2)
@@ -255,15 +274,25 @@ def cbRun():
             if buyRate >= 0.03 and buy_amount != 0:
                 print('BUYP')
                 state = 'WAIT'
-                reactor.callWhenRunning(buyp, amount=buy_amount, price = str(buy2))
+                reactor.callWhenRunning(buyp, amount=buy_amount, price=str(buy2))
                 
 
             if sellRate >= 0.03 and sell_amount != 0:
                 print('SELLP')
                 state = 'WAIT'
-                reactor.callWhenRunning(sellp, amount=sell_amount, price = str(sell2))
+                reactor.callWhenRunning(sellp, amount=sell_amount, price=str(sell2))
 
+            # 止损
+            if maxProfit < buy_profit + sell_profit:
+                maxProfit = buy_profit + sell_profit
+            
+            if 0.1 * (1.0 + maxProfit) <= - (buyRate + sellRate) and buy_amount != 0 and sell_amount != 0:
+                print('PPP')
+                state = 'PPP'
+                reactor.callWhenRunning(buyp, amount=buy_amount, sellAmount=sell_amount)
+                
 
+        # 布林
         if tickerData != [] and KLinesData != [] and positionData != []:
             ticker = tickerData[0]['last']
             KLines = KLinesData[0]
@@ -306,6 +335,8 @@ def cbRun():
                         print('SELL', sell_amount_new)
                         state = 'WAIT'
                         reactor.callWhenRunning(sell, amount=sell_amount_new)
+
+
 
 
 
