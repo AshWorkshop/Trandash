@@ -252,7 +252,7 @@ def cbRun():
             sell_price_avg = getAvg(sells)
             buy_amount = position['buy_amount']
             sell_amount = position['sell_amount']
-
+            # print(position)
             buy_profit = position['buy_profit_real']
             sell_profit = position['sell_profit_real']
 

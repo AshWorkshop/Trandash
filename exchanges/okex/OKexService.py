@@ -176,6 +176,8 @@ class OKexFuture(ExchangeService):
                 result['buy_amount'] = data['buy_amount']
                 result['sell_price_avg'] = data['sell_price_avg']
                 result['sell_amount'] = data['sell_amount']
+                result['buy_profit_real'] = data['buy_profit_real']
+                result['sell_profit_real'] = data['sell_profit_real']
             else:
                 print(data)
             
