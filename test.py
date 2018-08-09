@@ -1,6 +1,8 @@
 from exchanges.gateio.GateIOService import gateio
 from exchanges.bitfinex.BitfinexService import bitfinex
-from exchanges.okex.OKexService import okexFuture
+#from exchanges.okex.OKexService import okexFuture
+from exchanges.huobi.HuobiproService import huobi
+
 from twisted.internet import reactor
 from requestUtils.request import get, post
 from utils import to_bytes, calcMAs, calcBolls
@@ -13,7 +15,7 @@ import time
 def test():
 
     # 在这里放你想测试的异步函数(返回一个Deferred的函数)
-    # d = gateio.getOrderBook(('eth', 'usdt'))
+    d = huobi.cancelOrder(9668933237)
 
     # params = {'symbol': 'eth_usd', 'contract_type': 'this_week'}
     # headers = {
@@ -40,7 +42,7 @@ def test():
     # d = okexFuture.trade(('eth', 'usdt'), price="1", amount="2", tradeType="1", matchPrice="0", leverRate="10")
 
     pairs = ('eth', 'usdt')
-    d = okexFuture.getKLineLastMin(pairs, last=200)
+    #d = okexFuture.getKLineLastMin(pairs, last=200)
 
     '''
     #test of bitfinex:

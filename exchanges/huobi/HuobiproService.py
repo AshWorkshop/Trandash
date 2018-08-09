@@ -1,6 +1,7 @@
 from exchanges.base import ExchangeService
-from requestUtils.request import get
+from requestUtils.request import get,post
 from .huobipro_key import AccessKey, SecretKey
+from utils import Order
 import requests
 import datetime
 import hashlib
@@ -19,6 +20,21 @@ class Huobipro(ExchangeService):
         self.__trade_url = url['TRADE_URL']
         self.__accessKey = accessKey
         self.__secretKey = secretKey
+        self.__acct_id = self.get_accounts()
+    def getHeaders(self):
+        return {
+            "Content-type": ["application/x-www-form-urlencoded"],
+            'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36'],
+        }
+
+    def postHeaders(self):
+        return {
+            "Accept": ["application/json"],
+            'Content-Type': ['application/json']
+        }
+
+    def getAcctId(self):
+        return self.__acct_id
 
     def getSymbol(self, pairs):
         return ''.join(pairs)
@@ -42,7 +58,7 @@ class Huobipro(ExchangeService):
     def api_key_get(self,params, request_path):
         method = 'GET'
         timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
-        params.update({'AccessKeyId': AccessKey,
+        params.update({'AccessKeyId': self.__accessKey,
                        'SignatureMethod': 'HmacSHA256',
                        'SignatureVersion': '2',
                        'Timestamp': timestamp})
@@ -53,12 +69,12 @@ class Huobipro(ExchangeService):
         params['Signature'] = self.createSign(params, method, host_name, request_path, self.__secretKey)
 
         url = host_url + request_path
-        return (url, params)
+        return url, params
 
     def api_key_post(self,params, request_path):
         method = 'POST'
         timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
-        params_to_sign = {'AccessKeyId': AccessKey,
+        params_to_sign = {'AccessKeyId': self.__accessKey,
                           'SignatureMethod': 'HmacSHA256',
                           'SignatureVersion': '2',
                           'Timestamp': timestamp}
@@ -66,9 +82,9 @@ class Huobipro(ExchangeService):
         host_url = self.__trade_url
         host_name = urllib.parse.urlparse(host_url).hostname
         host_name = host_name.lower()
-        params_to_sign['Signature'] = createSign(params_to_sign, method, host_name, request_path, self.__secretKey)
+        params_to_sign['Signature'] = self.createSign(params_to_sign, method, host_name, request_path, self.__secretKey)
         url = host_url + request_path + '?' + urllib.parse.urlencode(params_to_sign)
-        return http_post_request(url, params)
+        return url, params
 
     def getOrderBook(self, pairs,grade=0):
         URL = "/market/depth?"
@@ -101,31 +117,34 @@ class Huobipro(ExchangeService):
         """
         :return:
         """
+
         path = "/v1/account/accounts"
         params = {}
         url,params = self.api_key_get(params, path)
         headers = {
-            "Accept": "application/json",
-            'Content-Type': 'application/json'
+            "Content-type": "application/x-www-form-urlencoded",
+            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36',
         }
         postdata = urllib.parse.urlencode(params)
-        response = requests.get(url, postdata, headers=headers, timeout=5)
-        print(response.json())
-
-        return response.json()
+        response = requests.get(url,postdata, headers=headers,timeout=5)
+        data = response.json()
+        try:
+            if response.status_code == 200 and data['status'] == 'ok':
+                return data['data'][0]['id']
+        except :
+            print("No acct_id")
+            return
 
     def getBalance(self, coin):
 
-        accounts = self.get_accounts()
-        acct_id = accounts['data'][0]['id'];
+        #accounts = self.get_accounts()
+        #print(accounts)
+        acct_id = self.getAcctId()
 
         url = "/v1/account/accounts/{0}/balance".format(acct_id)
         params = {"account-id": acct_id}
         url,params = self.api_key_get(params, url)
-        headers = {
-            "Content-type": ["application/x-www-form-urlencoded"],
-            'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36'],
-        }
+        headers = self.postHeaders()
         postdata = urllib.parse.urlencode(params)
         url = url +'?'+ postdata
 
@@ -133,12 +152,13 @@ class Huobipro(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            print(data['data']['list'])
             for b in data['data']['list']:
-                if b['currency'] == 'hb10':
+                if b['currency'] == 'eth':
                     balance = b['balance']
+                    break
                 else:
-                    balance = None
+                    balance = 0.0
+            print(balance)
             return balance
 
         d.addCallback(handleBody)
@@ -146,7 +166,111 @@ class Huobipro(ExchangeService):
         return d
 
     def buy(self, coinPair, price, amount):
-        pass
+
+#    {amount: "0.001", price: "466.10", type: "sell-limit", source: "web", symbol: "ethusdt",…}
+        params = {"account-id": self.getAcctId(),
+                  "amount": amount,
+                  "symbol": self.getSymbol(coinPair),
+                  "type": "buy-limit",
+                  "source": "web",
+                  "price":price
+                  }
+        url = '/v1/order/orders/place'
+        url,params = self.api_key_post(params,url)
+        headers = self.postHeaders()
+        postdata = json.dumps(params)
+        d = post(reactor,url, headers=headers, body = postdata)
+
+        def handleBody(body):
+            data = json.loads(body)
+            if data['status'] == 'ok':
+                return (True,data['data'])
+            else:
+                return False
+
+        d.addCallback(handleBody)
+
+        return d
+
+    def sell(self, coinPair, price, amount):
+
+        params = {"account-id": self.getAcctId(),
+                  "amount": amount,
+                  "symbol": self.getSymbol(coinPair),
+                  "type": "sell-limit",
+                  "source": "web",
+                  "price":price
+                  }
+        url = '/v1/order/orders/place'
+        url,params = self.api_key_post(params,url)
+        headers = self.postHeaders()
+        postdata = json.dumps(params)
+        d = post(reactor,url,headers=headers,body=postdata)
+
+        def handleBody(body):
+            data = json.loads(body)
+            if data['status'] == 'ok':
+                return (True,data['data'])
+            else:
+                return False
+
+        d.addCallback(handleBody)
+
+        return d
+
+    def getOrder(self, orderId, coinPair=None):
+        params = {}
+        url = "/v1/order/orders/{0}".format(orderId)
+        url,params = self.api_key_get(params,url)
+        headers = self.getHeaders()
+        postdata = urllib.parse.urlencode(params)
+        url = url + '?' +postdata
+        d = get(reactor,url,headers=headers)
+
+        def handleBody(body):
+            data = json.loads(body)
+            if data['data']['type']=='buy-limit':
+                data['data']['type']='buy'
+            elif data['data']['type']=='sell-limit':
+                data['data']['type']='sell'
+
+            status = data['status']
+            if status == 'ok':
+                status = 'done'
+
+            orders = []
+            order = Order(
+                'huobipro',
+                orderId,
+                data['data']['type'],
+                float(data['data']['price']),
+                float(data['data']['amount']),
+                tuple(data['data']['symbol'].split('_')),
+                status,
+            )
+            orders.append(order)
+            return (True, orders)
+
+        d.addCallback(handleBody)
+
+        return d
+
+    def cancelOrder(self, orderId, coinPair=None):
+        params = {}
+        url = "/v1/order/orders/{0}/submitcancel".format(orderId)
+        url,params = self.api_key_post(params,url)
+        headers = self.postHeaders()
+        postdata = json.dumps(params)
+        d = post(reactor,url,headers=headers,body=postdata)
+
+        def handleBody(body):
+            data = json.loads(body)
+            print(data)
+
+        d.addCallback(handleBody)
+
+        return d
+
 
 
 huobi = Huobipro({'MARKET_URL':"https://api.huobi.pro",
