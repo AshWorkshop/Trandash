@@ -285,6 +285,8 @@ def cbRun():
             # 止损
             if maxProfit < buy_profit + sell_profit:
                 maxProfit = buy_profit + sell_profit
+
+            print('maxProfit:', maxProfit)
             
             if 0.1 * (1.0 + maxProfit) <= - (buyRate + sellRate) and buy_amount != 0 and sell_amount != 0:
                 print('PPP')
