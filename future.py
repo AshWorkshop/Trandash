@@ -139,8 +139,6 @@ def sell(amount=1.0, price=""):
             data.close()
             # time.sleep(1)
 
-    state = 'GO'
-
 @defer.inlineCallbacks
 def sellp(amount, price=""):
     global state
@@ -171,7 +169,10 @@ def sellp(amount, price=""):
             data['sells'] = sells
             data.close()
 
-    state = 'GO'
+    if state == 'PPPsell':
+        state = 'STOP'
+    else:
+        state = 'GO'
 
 # def get_buy_avg_price(buys):
 #     for buy in buys:
@@ -337,6 +338,10 @@ def cbRun():
                         print('SELL', sell_amount_new)
                         state = 'WAIT'
                         reactor.callWhenRunning(sell, amount=sell_amount_new)
+        
+    if state == 'STOP':
+        print('************** STOP **************')
+        reactor.stop()
 
 
 
