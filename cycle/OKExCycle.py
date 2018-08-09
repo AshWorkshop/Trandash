@@ -1,6 +1,8 @@
 from twisted.internet import defer
 from twisted.python.failure import Failure
 
+import time
+
 from exchanges.okex.OKexService import okexFuture
 
 EXCHANGE = {
@@ -100,6 +102,8 @@ class PositionCycle(object):
         self.running = False
         self.key = key
         self.slot = Slot(key)
+        self.count = 0
+        self.LIMIT = 5
 
     @defer.inlineCallbacks
     def cbRun(self, *args, **kwargs):
@@ -114,7 +118,10 @@ class PositionCycle(object):
                 self.slot.setData()
             else:
                 self.slot.setData({'position': data})
-
+            self.count += 1
+            if self.count % self.LIMIT == 0:
+                time.sleep(1)
+                self.count = 0
             yield self.cbRun(*args, **kwargs)
 
     def start(self, reactor, *args, **kwargs):

@@ -258,7 +258,7 @@ class OKexFuture(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            return data
+            return data.get('orders', [])
         
         return httpPost(self.__url, URL, params, callback=handleBody)
 
