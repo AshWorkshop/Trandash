@@ -26,7 +26,7 @@ positionCycle = PositionCycle('okexFuture')
 orderBookCycle = OrderBookCycle('okexFuture')
 
 pairs = ('eth', 'usdt')
-klineCycle.start(reactor, pairs, last=200)
+klineCycle.start(reactor, pairs, last=30)
 tickerCycle.start(reactor, pairs)
 positionCycle.start(reactor, pairs)
 orderBookCycle.start(reactor, pairs)
