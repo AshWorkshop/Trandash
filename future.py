@@ -3,6 +3,7 @@
 import json
 import time
 import shelve
+from sys import argv
 
 from twisted.internet import defer, task
 from twisted.internet import reactor
@@ -14,6 +15,11 @@ from cycle.OKExCycle import KLineCycle, TickerCycle, PositionCycle, OrderBookCyc
 from cycle.cycle import Cycle
 from utils import calcMAs, calcBolls
 
+if len(argv) == 4:
+    _, coin, money, dataFile = argv
+else:
+    print("ERROR!")
+    quit()
 
 count = 0
 total = 0
@@ -27,7 +33,7 @@ tickerCycle = Cycle(okexFuture.getTicker, 'getTicker')
 positionCycle = Cycle(okexFuture.getPosition, 'getPosition', limit=5)
 orderBookCycle = Cycle(okexFuture.getOrderBook, 'getOrderBook')
 
-pairs = ('eth', 'usdt')
+pairs = (coin, money)
 klineCycle.start(reactor, pairs, last=30)
 tickerCycle.start(reactor, pairs)
 positionCycle.start(reactor, pairs)
@@ -62,7 +68,7 @@ def buy(amount=1.0, price=""):
             print(order)
             price = order[0]['price']
             buys.append((price, float(amount)))
-            data = shelve.open('data')
+            data = shelve.open(dataFile)
             data['buys'] = buys
             data.close()
             # time.sleep(1)
@@ -96,7 +102,7 @@ def buyp(amount, price="", sellAmount=0):
         else:
             print(order)
             buys = []
-            data = shelve.open('data')
+            data = shelve.open(dataFile)
             data['buys'] = buys
             data.close()
     if state == 'PPP':
@@ -134,7 +140,7 @@ def sell(amount=1.0, price=""):
             print(order)
             price = order[0]['price']
             sells.append((price, float(amount)))
-            data = shelve.open('data')
+            data = shelve.open(dataFile)
             data['sells'] = sells
             data.close()
             # time.sleep(1)
@@ -166,7 +172,7 @@ def sellp(amount, price=""):
         else:
             print()
             sells = []
-            data = shelve.open('data')
+            data = shelve.open(dataFile)
             data['sells'] = sells
             data.close()
 
@@ -203,7 +209,7 @@ def cbRun():
     print('[', count, state, ']')
     # time.sleep(1)
     if state == 'FIRST':
-        data = shelve.open('data')
+        data = shelve.open(dataFile)
         buys = data.get('buys', [])
         sells = data.get('sells', [])
         print('buys && sells:', buys, sells)

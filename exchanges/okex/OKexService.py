@@ -172,14 +172,16 @@ class OKexFuture(ExchangeService):
             result = dict()
             if 'holding' in data and len(data['holding']) > 0:
                 data = data['holding'][0]
-                result['buy_price_avg'] = data['buy_price_avg']
-                result['buy_amount'] = data['buy_amount']
-                result['sell_price_avg'] = data['sell_price_avg']
-                result['sell_amount'] = data['sell_amount']
-                result['buy_profit_real'] = data['buy_profit_real']
-                result['sell_profit_real'] = data['sell_profit_real']
             else:
                 print(data)
+                data = dict()
+
+            result['buy_price_avg'] = data.get('buy_price_avg', 0.0)
+            result['buy_amount'] = data.get('buy_amount', 0.0)
+            result['sell_price_avg'] = data.get('sell_price_avg', 0.0)
+            result['sell_amount'] = data.get('sell_amount', 0.0)
+            result['buy_profit_real'] = data.get('buy_profit_real', 0.0)
+            result['sell_profit_real'] = data.get('sell_profit_real', 0.0)
             
             return result
 
