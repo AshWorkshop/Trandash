@@ -138,6 +138,7 @@ def sell(amount=1.0, price=""):
             data['sells'] = sells
             data.close()
             # time.sleep(1)
+    state = 'GO'
 
 @defer.inlineCallbacks
 def sellp(amount, price=""):
