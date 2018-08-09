@@ -9,7 +9,7 @@ class Slot(object):
         self.key = key
         self.data = list()
     
-    def setData(self, data=list()):
+    def setData(self, data=[]):
         self.data = data
 
     def getData(self):

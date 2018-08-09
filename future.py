@@ -34,7 +34,7 @@ positionCycle = Cycle(okexFuture.getPosition, 'getPosition', limit=5)
 orderBookCycle = Cycle(okexFuture.getOrderBook, 'getOrderBook')
 
 pairs = (coin, money)
-klineCycle.start(reactor, pairs, last=30)
+klineCycle.start(reactor, pairs, last=100)
 tickerCycle.start(reactor, pairs)
 positionCycle.start(reactor, pairs)
 orderBookCycle.start(reactor, pairs)
@@ -227,6 +227,7 @@ def cbRun():
             total += 1
             wait -= 1
             print('avg wait:', wait / total)
+            assert len(KLinesData[0]) >= 30
             MAs = calcMAs(KLinesData[0], ma=30)
             position = positionData[0]
             buy_amount = position['buy_amount']
