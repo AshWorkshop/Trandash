@@ -43,11 +43,15 @@ class Cycle(object):
                 self.slot.setData()
             else:
                 self.slot.setData([data])
+                # print(self.slot.getData())
 
-            self.count += 1
-            if self.limit > 0 and self.count % self.limit == 0:
-                self.count = 0
-                time.sleep(1)
+            if self.limit > 0 :
+                self.count += 1
+                if self.count % self.limit == 0:
+                    self.count = 0
+                    # print('Wait for 1 second')
+                    time.sleep(1)
+                    # print('Continue')
 
             yield self.cbRun(*args, **kwargs)
 
