@@ -23,7 +23,7 @@ buys = []
 sells = []
 klineCycle = Cycle(okexFuture.getKLineLastMin, 'getKLineLastMin')
 tickerCycle = Cycle(okexFuture.getTicker, 'getTicker')
-positionCycle = Cycle(okexFuture.getPosition, 'getPosition')
+positionCycle = Cycle(okexFuture.getPosition, 'getPosition', limit=5)
 orderBookCycle = Cycle(okexFuture.getOrderBook, 'getOrderBook')
 
 pairs = ('eth', 'usdt')
