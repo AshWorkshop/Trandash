@@ -269,7 +269,7 @@ class Bitfinex(ExchangeService):
 
         return d       
 
-    def getOrderHistory(self, pairs, givenTime=time.time()):
+    def getOrderHistory(self, pairs, givenTime=float(time.time())):
         #View your latest inactive orders. Limited to last 3 days and 1 request per minute.
         URL = "/v1/orders/hist"
         # print(self.__url)
