@@ -203,7 +203,7 @@ def cbRun():
             total += 1
             wait -= 1
             print('avg wait:', wait / total)
-            MAs = calcMAs(KLinesData['klines'])
+            MAs = calcMAs(KLinesData['klines'], ma=30)
             position = positionData['position']
             buy_amount = position['buy_amount']
             sell_amount = position['sell_amount']
