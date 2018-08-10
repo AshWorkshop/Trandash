@@ -7,6 +7,7 @@ from twisted.web.http_headers import Headers
 from twisted.web.client import Agent
 from requestUtils.agent import TunnelingAgent
 from requestUtils.bytesprod import BytesProducer
+from settings import USE_PROXY
 
 from utils import to_bytes
 
@@ -30,7 +31,7 @@ def get(reactor, url, headers={}, body=None):
 
     ssl = url.split(':')[0]
 
-    if ssl == 'https':
+    if ssl == 'https' and  USE_PROXY:
         agent = TunnelingAgent(reactor, ('127.0.0.1', 1087, None), BrowserLikePolicyForHTTPS())
     else:
         agent = Agent(reactor)
@@ -49,7 +50,7 @@ def post(reactor, url, headers={}, body=None):
 
     ssl = url.split(':')[0]
 
-    if ssl == 'https':
+    if ssl == 'https' and USE_PROXY:
         agent = TunnelingAgent(reactor, ('127.0.0.1', 1087, None), BrowserLikePolicyForHTTPS())
     else:
         agent = Agent(reactor)
