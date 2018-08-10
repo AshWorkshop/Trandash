@@ -25,6 +25,7 @@ def cbRequest(response):
 
 def cbBody(body):
     # print('Response body:')
+    body = body.decode('utf8')
     return body
 
 def get(reactor, url, headers={}, body=None):
