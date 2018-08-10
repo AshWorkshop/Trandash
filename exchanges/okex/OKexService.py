@@ -113,7 +113,7 @@ class OKexFuture(ExchangeService):
                 result = KLines[-last:]
             except Exception as err:
                 print(err)
-                return []
+                return None
             return result
 
         d.addCallback(handleList)
@@ -135,13 +135,13 @@ class OKexFuture(ExchangeService):
             if len(data) > 0:
                 return data[0].get('amount')
             return 0
-        
+
         return httpGet(self.__url, URL, params, callback=handleBody)
 
     def getOrderBook(self, pairs):
         URL = "/api/v1/future_depth.do"
         # print(self.__url)
-        
+
         params = {
             'symbol': self.getSymbol(pairs),
             'contract_type': 'quarter',
@@ -182,7 +182,7 @@ class OKexFuture(ExchangeService):
             result['sell_amount'] = data.get('sell_amount', 0.0)
             result['buy_profit_real'] = data.get('buy_profit_real', 0.0)
             result['sell_profit_real'] = data.get('sell_profit_real', 0.0)
-            
+
             return result
 
         return httpPost(self.__url, URL, params, callback=handleBody)
@@ -265,7 +265,7 @@ class OKexFuture(ExchangeService):
         def handleBody(body):
             data = json.loads(body)
             return data.get('orders', [])
-        
+
         return httpPost(self.__url, URL, params, callback=handleBody)
 
 okexFuture = OKexFuture(

@@ -72,7 +72,7 @@ def buy(amount=1.0, price=""):
             data['buys'] = buys
             data.close()
             # time.sleep(1)
-            
+
 
     state = 'GO'
 
@@ -195,7 +195,7 @@ def getAvg(things):
         return 0
     return total / totalAmount
 
-    
+
 def cbRun():
     global count
     global state
@@ -227,7 +227,7 @@ def cbRun():
             total += 1
             wait -= 1
             print('avg wait:', wait / total)
-            assert len(KLinesData[0]) >= 30
+
             MAs = calcMAs(KLinesData[0], ma=30)
             position = positionData[0]
             buy_amount = position['buy_amount']
@@ -244,7 +244,7 @@ def cbRun():
                 state = 'WAIT'
                 reactor.callWhenRunning(buy)
                 # reactor.callWhenRunning(buy)
-            
+
             if ticker < ma and sell_amount == 0 and len(sells) == 0:
                 print('SELL')
                 state = 'WAIT'
@@ -277,14 +277,14 @@ def cbRun():
                 sellRate = 0
             else:
                 sellRate = (sell_price_avg - sell2) / sell_price_avg * leverage
-            
+
             print('buyRate && sellRate:', buyRate, sellRate)
 
             if buyRate >= 0.03 and buy_amount != 0:
                 print('BUYP')
                 state = 'WAIT'
                 reactor.callWhenRunning(buyp, amount=buy_amount, price=str(buy2))
-                
+
 
             if sellRate >= 0.03 and sell_amount != 0:
                 print('SELLP')
@@ -296,12 +296,12 @@ def cbRun():
                 maxProfit = buy_profit + sell_profit
 
             print('maxProfit:', maxProfit)
-            
+
             if 0.5 * (1.0 + maxProfit) <= - (buyRate + sellRate) and buy_amount != 0 and sell_amount != 0:
                 print('PPP')
                 state = 'PPP'
                 reactor.callWhenRunning(buyp, amount=buy_amount, sellAmount=sell_amount)
-                
+
 
         # 布林
         if tickerData != [] and KLinesData != [] and positionData != []:
@@ -346,7 +346,7 @@ def cbRun():
                         print('SELL', sell_amount_new)
                         state = 'WAIT'
                         reactor.callWhenRunning(sell, amount=sell_amount_new)
-        
+
     if state == 'STOP':
         print('************** STOP **************')
         reactor.stop()
@@ -356,7 +356,7 @@ def cbRun():
 
 
 
-            
+
 
 
     # yield cbRun()
@@ -365,7 +365,7 @@ def ebLoopFailed(failure):
     Called when loop execution failed.
     """
     print(failure.getBriefTraceback())
-    reactor.stop()
+    # reactor.stop()
 
 
 # d = defer.Deferred()
