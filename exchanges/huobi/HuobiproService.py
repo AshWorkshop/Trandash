@@ -6,6 +6,7 @@ import requests
 import datetime
 import hashlib
 import hmac
+import time
 import base64
 
 from twisted.internet import reactor
@@ -228,28 +229,25 @@ class Huobipro(ExchangeService):
         d = get(reactor,url,headers=headers)
 
         def handleBody(body):
+            print(body)
             data = json.loads(body)
             if data['data']['type']=='buy-limit':
                 data['data']['type']='buy'
             elif data['data']['type']=='sell-limit':
                 data['data']['type']='sell'
 
-            status = data['status']
-            if status == 'ok':
-                status = 'done'
+            #print(data)
 
-            orders = []
-            order = Order(
-                'huobipro',
-                orderId,
-                data['data']['type'],
-                float(data['data']['price']),
-                float(data['data']['amount']),
-                tuple(data['data']['symbol'].split('_')),
-                status,
-            )
-            orders.append(order)
-            return (True, orders)
+            order = {
+                "orderId":orderId,
+                "type":data['data']['type'],
+                "initPrice":float(data['data']['price']),
+                "initAmount":float(data['data']['amount']),
+                "coinPair":data['data']['symbol'],
+                "status": data['states']
+            }
+
+            return (True, order)
 
         d.addCallback(handleBody)
 
@@ -265,12 +263,65 @@ class Huobipro(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            print(data)
+            if data['status'] == 'ok':
+                return (True,data)
+            elif data['status'] == 'error':
+                return (False,data['err-code'],data['err-msg'])
 
         d.addCallback(handleBody)
 
         return d
 
+    def getOrderHistory(self, pairs, start_date=None,end_date=float(time.time())):
+        """
+
+        :param symbol:
+        :param states: 可选值 {pre-submitted 准备提交, submitted 已提交, partial-filled 部分成交, partial-canceled 部分成交撤销, filled 完全成交, canceled 已撤销}
+        :param types: 可选值 {buy-market：市价买, sell-market：市价卖, buy-limit：限价买, sell-limit：限价卖}
+        :param start_date:
+        :param end_date:
+        :param _from:
+        :param direct: 可选值{prev 向前，next 向后}
+        :param size:
+        :return:
+        """
+        _from = None
+        types = None
+        states = None
+        size = 11
+        direct = "prev"
+        symbol = self.getSymbol(pairs)
+        params = {'symbol': symbol,
+                  'states': states}
+
+        if types:
+            params['types'] = types
+        if start_date:
+            params['start-date'] = start_date
+        if end_date:
+            params['end-date'] = end_date
+        if _from:
+            params['from'] = _from
+        if direct:
+            params['direct'] = direct
+        if size:
+            params['size'] = size
+        url = '/v1/order/orders'
+        url,params = self.api_key_get(params, url)
+        headers = self.getHeaders()
+        postdata = urllib.parse.urlencode(params)
+        url = url + '?' +postdata
+        d = get(reactor,url,headers=headers)
+
+        def handleBody(body):
+            data = json.loads(body)
+            print(data)
+
+        d.addCallback(handleBody)
+
+        return d
+#1533793328920
+#1533870669146 2018:11:11
 
 
 huobi = Huobipro({'MARKET_URL':"https://api.huobi.pro",
