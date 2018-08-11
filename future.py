@@ -27,16 +27,16 @@ leverage = 20
 buys = []
 sells = []
 maxProfit = 0.0
-klineCycle = Cycle(okexFuture.getKLineLastMin, 'getKLineLastMin')
-tickerCycle = Cycle(okexFuture.getTicker, 'getTicker')
-positionCycle = Cycle(okexFuture.getPosition, 'getPosition', limit=5)
-orderBookCycle = Cycle(okexFuture.getOrderBook, 'getOrderBook')
+klineCycle = Cycle(reactor, okexFuture.getKLineLastMin, 'getKLineLastMin')
+tickerCycle = Cycle(reactor, okexFuture.getTicker, 'getTicker')
+positionCycle = Cycle(reactor, okexFuture.getPosition, 'getPosition', limit=5)
+orderBookCycle = Cycle(reactor, okexFuture.getOrderBook, 'getOrderBook')
 
 pairs = (coin, money)
-klineCycle.start(reactor, pairs, last=100)
-tickerCycle.start(reactor, pairs)
-positionCycle.start(reactor, pairs)
-orderBookCycle.start(reactor, pairs)
+klineCycle.start(pairs, last=100)
+tickerCycle.start(pairs)
+positionCycle.start(pairs)
+orderBookCycle.start(pairs)
 
 state = 'FIRST'
 

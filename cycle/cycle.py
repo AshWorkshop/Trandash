@@ -44,7 +44,7 @@ class Cycle(object):
                 self.slot.setData()
             else:
                 self.slot.setData(data)
-                print(self.getData())
+                # print(self.getData())
 
             if self.limit > 0 :
                 self.count += 1
