@@ -22,13 +22,14 @@ class Slot(object):
 
 
 class Cycle(object):
-    def __init__(self, f, key, limit=0):
+    def __init__(self, reactor, f, key, limit=0):
         self.running = False
         self.fun = f
         self.limit = limit
         self.count = 0
         self.key = key
         self.slot = Slot(key)
+        self.reactor = reactor
 
     @defer.inlineCallbacks
     def cbRun(self, *args, **kwargs):
@@ -53,14 +54,17 @@ class Cycle(object):
                     time.sleep(1)
                     # print('Continue')
 
-            yield self.cbRun(*args, **kwargs)
+            self.next(*args, **kwargs)
 
-    def start(self, reactor, *args, **kwargs):
+    def start(self, *args, **kwargs):
         if self.running:
             print('Cycle is running.')
         else:
             self.running = True
-            reactor.callWhenRunning(self.cbRun, *args, **kwargs)
+            self.reactor.callWhenRunning(self.cbRun, *args, **kwargs)
+
+    def next(self, *args, **kwargs):
+        self.reactor.callWhenRunning(self.cbRun, *args, **kwargs)
 
     def stop(self):
         self.running = False

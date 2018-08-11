@@ -29,7 +29,7 @@ def test():
 
     return d
 
-tickerCycle = Cycle(okexFuture.getTicker, 'getTicker')
-tickerCycle.start(reactor, pairs)
+tickerCycle = Cycle(reactor, okexFuture.getTicker, 'getTicker')
+tickerCycle.start(pairs)
 # reactor.callWhenRunning(test)
 reactor.run()
