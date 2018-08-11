@@ -297,7 +297,7 @@ def cbRun():
 
             print('maxProfit:', maxProfit)
 
-            if 0.5 * (1.0 + maxProfit) <= - (buyRate + sellRate) and buy_amount != 0 and sell_amount != 0:
+            if 0.7 * (1.0 + maxProfit) <= - (buyRate + sellRate) and buy_amount != 0:
                 print('PPP')
                 state = 'PPP'
                 reactor.callWhenRunning(buyp, amount=buy_amount, sellAmount=sell_amount)
