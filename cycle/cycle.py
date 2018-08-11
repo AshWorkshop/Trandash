@@ -7,13 +7,13 @@ import time
 class Slot(object):
     def __init__(self, key):
         self.key = key
-        self.data = list()
-    
-    def setData(self, data=[]):
+        self.data = None
+
+    def setData(self, data=None):
         self.data = data
 
     def getData(self):
-        return self.data.copy()
+        return self.data
 
     def pop(self):
         result = self.getData()
@@ -42,7 +42,7 @@ class Cycle(object):
             if data is None:
                 self.slot.setData()
             else:
-                self.slot.setData([data])
+                self.slot.setData(data)
                 # print(self.slot.getData())
 
             if self.limit > 0 :

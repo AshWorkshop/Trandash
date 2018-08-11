@@ -11,7 +11,6 @@ from twisted.python.failure import Failure
 
 
 from exchanges.okex.OKexService import okexFuture
-from cycle.OKExCycle import KLineCycle, TickerCycle, PositionCycle, OrderBookCycle
 from cycle.cycle import Cycle
 from utils import calcMAs, calcBolls
 
@@ -108,7 +107,7 @@ def buyp(amount, price="", sellAmount=0):
     if state == 'PPP':
         state = 'PPPsell'
         if sellAmount > 0:
-            reactor.callWhenRunning(sell, amount=sellAmount)
+            reactor.callWhenRunning(sellp, amount=sellAmount)
     else:
         state = 'GO'
 
@@ -195,7 +194,6 @@ def getAvg(things):
         return 0
     return total / totalAmount
 
-
 def cbRun():
     global count
     global state
@@ -220,21 +218,23 @@ def cbRun():
     positionData = positionCycle.getData()
     orderBookData = orderBookCycle.getData()
 
+    print(bool(KLinesData), bool(tickerData), bool(positionData), bool(orderBookData))
+
     if state == 'GO':
         # print(len(klines), ticker, position)
         # 是否开初始单
-        if KLinesData != [] and tickerData != [] and positionData != []:
+        if KLinesData != None and tickerData != None and positionData != None:
             total += 1
             wait -= 1
             print('avg wait:', wait / total)
 
-            MAs = calcMAs(KLinesData[0], ma=30)
-            position = positionData[0]
+            MAs = calcMAs(KLinesData, ma=30)
+            position = positionData
             buy_amount = position['buy_amount']
             sell_amount = position['sell_amount']
             timestamp, ma = MAs[-1]
 
-            ticker = tickerData[0]['last']
+            ticker = tickerData['last']
 
             print('ticker && ma:', ticker, ma)
             print('buy_amount && sell_amount:', buy_amount, sell_amount)
@@ -251,10 +251,10 @@ def cbRun():
                 reactor.callWhenRunning(sell)
 
         # 是否平
-        if orderBookData != [] and positionData != []:
-            position = positionData[0]
+        if orderBookData != None and positionData != None:
+            position = positionData
             # print(position)
-            bids, asks = orderBookData[0]
+            bids, asks = orderBookData
             buy2, _ = bids[1]
             sell2, _ = asks[1]
             buy_price_avg = getAvg(buys)
@@ -304,10 +304,10 @@ def cbRun():
 
 
         # 布林
-        if tickerData != [] and KLinesData != [] and positionData != []:
-            ticker = tickerData[0]['last']
-            KLines = KLinesData[0]
-            position = positionData[0]
+        if tickerData != None and KLinesData != None and positionData != None:
+            ticker = tickerData['last']
+            KLines = KLinesData
+            position = positionData
             buy_amount = position['buy_amount']
             sell_amount = position['sell_amount']
 
