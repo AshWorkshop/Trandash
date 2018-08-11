@@ -1,13 +1,9 @@
-from exchanges.gateio.GateIOService import gateio
-from exchanges.bitfinex.BitfinexService import bitfinex
+
 from exchanges.okex.OKexService import okexFuture
-from exchanges.huobi.HuobiproService import huobi
+
 
 from twisted.internet import reactor
-from requestUtils.request import get, post
-from utils import to_bytes, calcMAs, calcBolls
-from exchanges.gateio.HttpUtil import getSign
-from exchanges.gateio.gateio_key import ApiKey, SecretKey
+
 from cycle.cycle import Cycle
 
 import urllib
