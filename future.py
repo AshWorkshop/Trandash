@@ -38,7 +38,7 @@ klineCycle.start(pairs, last=100)
 tickerCycle.start(pairs)
 positionCycle.start(pairs)
 orderBookCycle.start(pairs)
-userInfoCycle.strat(coin)
+userInfoCycle.start(coin)
 
 state = 'FIRST'
 
