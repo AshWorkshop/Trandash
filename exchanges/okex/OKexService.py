@@ -281,7 +281,7 @@ class OKexFuture(ExchangeService):
             data = json.loads(body)
             print(data)
             if data.get('result', False):
-                return data.get(coin)
+                return data..get('info', {}).get(coin)
             else:
                 return None
 
