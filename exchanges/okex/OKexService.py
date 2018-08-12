@@ -279,6 +279,7 @@ class OKexFuture(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
+            print(data)
             if data.get('result', False):
                 return data.get(coin)
             else:
