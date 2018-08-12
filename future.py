@@ -213,6 +213,8 @@ def cbRun():
     global total
     global buys
     global sells
+    global buypId
+    global sellpId
     global maxRight
     count += 1
     wait += 1
