@@ -266,7 +266,7 @@ class OKexFuture(ExchangeService):
             data = json.loads(body)
             return data.get('orders', [])
 
-            return httpPost(self.__url, URL, params, callback=handleBody)
+        return httpPost(self.__url, URL, params, callback=handleBody)
 
 
     def getUserInfo(self, coin):
