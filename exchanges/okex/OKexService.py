@@ -278,10 +278,10 @@ class OKexFuture(ExchangeService):
         params['sign'] = sign
 
         def handleBody(body):
-            data = json.loads(body)
+            # data = json.loads(body)
             print(data)
             if data.get('result', False):
-                return data..get('info', {}).get(coin)
+                return data.get('info', {}).get(coin)
             else:
                 return None
 
