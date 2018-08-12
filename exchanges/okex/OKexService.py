@@ -274,7 +274,7 @@ class OKexFuture(ExchangeService):
         params = {
             "api_key": self.__accessKey,
         }
-        sign = buildMySign(parmas, self.__secretKey)
+        sign = buildMySign(params, self.__secretKey)
         params['sign'] = sign
 
         def handleBody(body):
