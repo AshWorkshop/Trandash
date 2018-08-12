@@ -26,10 +26,11 @@ wait = 0
 leverage = 20
 buys = []
 sells = []
-maxProfit = 0.0
+maxRight = 0.0
 klineCycle = Cycle(reactor, okexFuture.getKLineLastMin, 'getKLineLastMin')
 tickerCycle = Cycle(reactor, okexFuture.getTicker, 'getTicker')
 positionCycle = Cycle(reactor, okexFuture.getPosition, 'getPosition', limit=5)
+userInfoCycle = Cycle(reactor, okexFuture.getUserInfo, 'getUserInfo', limit=5)
 orderBookCycle = Cycle(reactor, okexFuture.getOrderBook, 'getOrderBook')
 
 pairs = (coin, money)
@@ -37,6 +38,7 @@ klineCycle.start(pairs, last=100)
 tickerCycle.start(pairs)
 positionCycle.start(pairs)
 orderBookCycle.start(pairs)
+userInfoCycle.strat(coin)
 
 state = 'FIRST'
 
@@ -217,6 +219,7 @@ def cbRun():
     tickerData = tickerCycle.getData()
     positionData = positionCycle.getData()
     orderBookData = orderBookCycle.getData()
+    userInfoData = userInfoCycle.getData()
 
     print(bool(KLinesData), bool(tickerData), bool(positionData), bool(orderBookData))
 
@@ -291,16 +294,6 @@ def cbRun():
                 state = 'WAIT'
                 reactor.callWhenRunning(sellp, amount=sell_amount, price=str(sell2))
 
-            # 止损
-            if maxProfit < buy_profit + sell_profit:
-                maxProfit = buy_profit + sell_profit
-
-            print('maxProfit:', maxProfit)
-
-            if 0.7 * (1.0 + maxProfit) <= - (buyRate + sellRate) and buy_amount != 0:
-                print('PPP')
-                state = 'PPP'
-                reactor.callWhenRunning(buyp, amount=buy_amount, sellAmount=sell_amount)
 
 
         # 布林
@@ -346,6 +339,32 @@ def cbRun():
                         print('SELL', sell_amount_new)
                         state = 'WAIT'
                         reactor.callWhenRunning(sell, amount=sell_amount_new)
+        if userInfoData is not None and positionData is not None:
+            # 止损
+            account_rights = userInfoData['account_rights']
+            keep_deposit = userInfoData['keep_deposit']
+            profit_real = userInfoData['profit_real']
+            profit_unreal = userInfoData['profit_unreal']
+
+            position = positionData
+            buy_amount = position['buy_amount']
+            sell_amount = position['sell_amount']
+
+            print('account_rights && keep_deposit:', account_rights, keep_deposit)
+            print('profit_real && profit_unreal:', profit_real, profit_unreal)
+
+            if account_rights > maxRight:
+                maxRight = account_rights
+            print('maxRight:', maxRight)
+
+            if -(profit_real + profit_unreal) > 0.5 * maxRight and buy_amount > 0:
+                print('PPP')
+                state = 'PPP'
+                reactor.callWhenRunning(buyp, amount=buy_amount, sellAmount=sell_amount)
+
+
+            # if 0.7 * (1.0 + maxProfit) <= - (buyRate + sellRate) and buy_amount != 0:
+
 
     if state == 'STOP':
         print('************** STOP **************')

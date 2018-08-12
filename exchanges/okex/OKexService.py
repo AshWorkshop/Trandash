@@ -268,6 +268,22 @@ class OKexFuture(ExchangeService):
 
         return httpPost(self.__url, URL, params, callback=handleBody)
 
+
+    def getUserInfo(self, coin):
+        URL = "/api/v1/future_userinfo"
+        params = {
+            "api_key": self.__accessKey,
+        }
+        sign = buildMySign(parmas, self.__secretKey)
+        params['sign'] = sign
+
+        def handleBody(body):
+            data = json.loads(body)
+            if data.get('result', False):
+                return data.get(coin)
+            else:
+                return None
+
 okexFuture = OKexFuture(
     'https://www.okex.com',
     ApiKey,

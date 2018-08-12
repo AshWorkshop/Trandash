@@ -13,9 +13,8 @@ pairs = ('eth', 'usdt')
 
 def test():
 
+    
 
-
-    # d.addCallback(calc)
     def cbPrint(result):
         print(result)
         return result
