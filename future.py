@@ -26,6 +26,8 @@ wait = 0
 leverage = 20
 buys = []
 sells = []
+buypId = None
+sellpId = None
 maxRight = 0.0
 klineCycle = Cycle(reactor, okexFuture.getKLineLastMin, 'getKLineLastMin')
 tickerCycle = Cycle(reactor, okexFuture.getTicker, 'getTicker')
@@ -81,6 +83,7 @@ def buy(amount=1.0, price=""):
 def buyp(amount, price="", sellAmount=0):
     global state
     global buys
+    global buypId
     orderId = None
     try:
         if price == "":
@@ -95,6 +98,7 @@ def buyp(amount, price="", sellAmount=0):
 
     if orderId:
         print("SUCCESSFULLY BUYP:", orderId)
+        buypId = orderId
         try:
             order = yield okexFuture.getOrder(pairs, orderId=orderId)
         except Exception as err:
@@ -102,16 +106,12 @@ def buyp(amount, price="", sellAmount=0):
             print(failure.getBriefTraceback())
         else:
             print(order)
-            buys = []
-            data = shelve.open(dataFile)
-            data['buys'] = buys
-            data.close()
     if state == 'PPP':
         state = 'PPPsell'
         if sellAmount > 0:
             reactor.callWhenRunning(sellp, amount=sellAmount)
     else:
-        state = 'GO'
+        state = 'BUYPCHECK'
 
 
 @defer.inlineCallbacks
@@ -151,6 +151,7 @@ def sell(amount=1.0, price=""):
 def sellp(amount, price=""):
     global state
     global sells
+    global sellpId
     orderId = None
     try:
         if price == "":
@@ -165,21 +166,30 @@ def sellp(amount, price=""):
 
     if orderId:
         print("SUCCESSFULLY SELLP:", orderId)
+        sellpId = orderId
         try:
             order = yield okexFuture.getOrder(pairs, orderId=orderId)
         except Exception as err:
             failure = Failure(err)
             print(failure.getBriefTraceback())
         else:
-            print()
-            sells = []
-            data = shelve.open(dataFile)
-            data['sells'] = sells
-            data.close()
+            print(order)
 
     if state == 'PPPsell':
         state = 'STOP'
     else:
+        state = 'SELLPCHECK'
+
+@defer.inlineCallbacks
+def cancle(orderId):
+    try:
+        result, _ = yield okexFuture.cancle(pairs, orderId=orderId)
+    except Exception as err:
+        failure = Failure(err)
+        print(failure.getBriefTraceback())
+
+    if result:
+        print('SUCCESSFULLY CANCLE:', orderId)
         state = 'GO'
 
 # def get_buy_avg_price(buys):
@@ -226,7 +236,7 @@ def cbRun():
     if state == 'GO':
         # print(len(klines), ticker, position)
         # 是否开初始单
-        if KLinesData != None and tickerData != None and positionData != None:
+        if KLinesData is not None and tickerData is not None and positionData is not None:
             total += 1
             wait -= 1
             print('avg wait:', wait / total)
@@ -369,6 +379,34 @@ def cbRun():
     if state == 'STOP':
         print('************** STOP **************')
         reactor.stop()
+
+    if state == 'BUYPCHECK':
+        if positionData is not None:
+            buy_amount = positionData['buy_amount']
+            if buy_amount == 0:
+                buys = []
+                data = shelve.open(dataFile)
+                data['buys'] = buys
+                data.close()
+                buypId = None
+                state = 'GO'
+            else:
+                reactor.callWhenRunning(cancle, buypId)
+
+
+    if state == 'SELLPCHECK':
+        if positionData is not None:
+            sell_amount = positionData['sell_amount']
+            if sell_amount == 0:
+                sells = []
+                data = shelve.open(dataFile)
+                data['sells'] = sells
+                data.close()
+                sellpId = None
+                state = 'GO'
+            else:
+                reactor.callWhenRunning(cancle, sellpId)
+
 
 
 
