@@ -221,7 +221,7 @@ def cbRun():
     orderBookData = orderBookCycle.getData()
     userInfoData = userInfoCycle.getData()
 
-    print(bool(KLinesData), bool(tickerData), bool(positionData), bool(orderBookData))
+    print(bool(KLinesData), bool(tickerData), bool(positionData), bool(orderBookData), bool(userInfoData))
 
     if state == 'GO':
         # print(len(klines), ticker, position)
