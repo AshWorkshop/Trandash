@@ -2,6 +2,8 @@ from twisted.internet import task
 from twisted.internet import reactor
 from twisted.python.failure import Failure
 from exchanges.bitfinex.BitfinexService import bitfinex
+import time
+from sys import argv
 
 
 from cycle.cycle import Cycle
@@ -25,6 +27,7 @@ class BitfinexRobot(Robot):
         if orderHistory is not None:
             print('orderHistory:', orderHistory)
 
-
-bitfinexRobot(reactor, states, [orderHistoryCycle])
-# bitfinexRobot.start()
+pairs = (coin, money)
+orderHistoryCycle.start(pairs, float(time.time()))
+bitfinexRobot = BitfinexRobot(reactor, states, [orderHistoryCycle])
+bitfinexRobot.start('run')

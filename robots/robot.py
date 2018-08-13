@@ -1,3 +1,5 @@
+from twisted.internet import task
+
 class Robot(object):
 
     def __init__(self, reactor, states=[], cycles=[]):
@@ -10,12 +12,14 @@ class Robot(object):
         self.waits = dict()
         self.cycles = cycles
 
-        for state in stateList:
+        for state in states:
             assert hasattr(self, state)
             self.waits[state] = 0
 
     def cbRun(self):
         state = self.state
+        self.count += 1
+        print('[', self.count, state, ']')
         for cycle in self.cycles:
             self.data['cycleData'][cycle.key] = cycle.getData()
 
@@ -24,9 +28,19 @@ class Robot(object):
 
         print('')
 
-        count += 1
-        print('[', count, state, ']')
-
-        if status:
+        if state:
             fun = getattr(self, state)
             fun()
+
+    def ebFailed(failure):
+        print(failure.getBriefTranceback())
+
+
+    def start(self, state=None):
+        # self.init(self.cycles)
+        self.state = state
+        self.loop = task.LoopingCall(self.cbRun)
+        loopDeferred = self.loop.start(1.0)
+        loopDeferred.addErrback(self.ebFailed)
+
+        self.reactor.run()

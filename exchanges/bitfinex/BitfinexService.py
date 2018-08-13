@@ -97,7 +97,7 @@ class Bitfinex(ExchangeService):
                         # print(b['currency'])
                         balance = float(b_available)  #balance that is available to trade
                         break
-            
+
             return balance
 
         d.addCallback(handleBody)
@@ -135,7 +135,7 @@ class Bitfinex(ExchangeService):
                     print(err)
                     if err == 'ERR_RATE_LIMIT':
                         time.sleep(1)
-            
+
             return int(order_id)
 
         d.addCallback(handleBody)
@@ -195,7 +195,7 @@ class Bitfinex(ExchangeService):
             # print(body)
             data = json.loads(body)
             # print(data)
-            
+
             try:
                 side = data['side']
                 price = data['price']
@@ -213,7 +213,7 @@ class Bitfinex(ExchangeService):
                     print(err)
                     if err == 'ERR_RATE_LIMIT':
                         time.sleep(1)
-            
+
             status = 'open'
             if 'error' in data:    #若有错误，status置为'error'
                 status = 'error'
@@ -251,7 +251,7 @@ class Bitfinex(ExchangeService):
             # print(body)
             data = json.loads(body)
             # print(data)
-            
+
             try:
                 is_cancelled = data['is_cancelled']
             except KeyError:
@@ -267,7 +267,7 @@ class Bitfinex(ExchangeService):
 
         d.addCallback(handleBody)
 
-        return d       
+        return d
 
     def getOrderHistory(self, pairs, givenTime=float(time.time())):
         #View your latest inactive orders. Limited to last 3 days and 1 request per minute.
@@ -293,7 +293,7 @@ class Bitfinex(ExchangeService):
                         if order['is_cancelled']:
                             status = 'cancelled'
                         elif not order['is_live']:      #若没有被取消，并且不能继续被填充（not live），
-                            status = 'done'             #则表示交易已完成（done）                        
+                            status = 'done'             #则表示交易已完成（done）
                         orderList.append({
                             'orderId': order['id'],
                             'timestamp': timestamp,     #返回的字典中添加了时间戳信息
@@ -309,8 +309,10 @@ class Bitfinex(ExchangeService):
                         print(err)
                         if err == 'ERR_RATE_LIMIT':
                             time.sleep(1)
-        
-            return orderList
+            if orderList != []:
+                return orderList
+            else:
+                return None
 
         d.addCallback(handleBody)
 
