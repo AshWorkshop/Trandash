@@ -10,18 +10,18 @@ from utils import calcMean
 from exchange import verifyExchanges
 from exchanges.gateio.GateIOService import gateio
 from exchanges.bitfinex.BitfinexService import bitfinex
-from exchanges.huobi.HuobiproService import huobi
+from exchanges.huobi.HuobiproService import huobipro
 
 from exchange import OrderBooks
 
 count = 0
 
-orderBooks = OrderBooks(['gateio', 'bitfinex'], ('eth', 'usdt'))
+orderBooks = OrderBooks(['gateio', 'huobipro'], ('eth', 'usdt'))
 orderBooks.start(reactor)
-
 
 def cbRun():
     global count
+
     count += 1
     # print(count)
     # time.sleep(1)
@@ -41,13 +41,13 @@ def cbRun():
 
         exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bids, asks], [avgBids, avgAsks]
 
-    print(exchangeState)
+    #print(exchangeState)
 
     if hasData:
         exchangePairs = verifyExchanges(exchangeState)
         print(count, exchangePairs)
 
-    # yield cbRun()
+
 def ebLoopFailed(failure):
     """
     Called when loop execution failed.

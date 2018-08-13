@@ -33,7 +33,7 @@ def get(reactor, url, headers={}, body=None):
     ssl = url.split(':')[0]
 
     if ssl == 'https' and  USE_PROXY:
-        agent = TunnelingAgent(reactor, ('127.0.0.1', 1080, None), BrowserLikePolicyForHTTPS())
+        agent = TunnelingAgent(reactor, ('127.0.0.1', 1087, None), BrowserLikePolicyForHTTPS())
     else:
         agent = Agent(reactor)
     url = bytes(str(url), encoding="utf8")
@@ -52,7 +52,7 @@ def post(reactor, url, headers={}, body=None):
     ssl = url.split(':')[0]
 
     if ssl == 'https' and USE_PROXY:
-        agent = TunnelingAgent(reactor, ('127.0.0.1', 1080, None), BrowserLikePolicyForHTTPS())
+        agent = TunnelingAgent(reactor, ('127.0.0.1', 1087, None), BrowserLikePolicyForHTTPS())
     else:
         agent = Agent(reactor)
     url = bytes(str(url), encoding="utf8")

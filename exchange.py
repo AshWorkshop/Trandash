@@ -6,9 +6,9 @@ from twisted.internet import defer
 from twisted.python.failure import Failure
 
 FEE = {
-    'huobipro': [0.999, 1.001],
-    'gateio': [0.999, 1.001],
-    'bitfinex': [0.999, 1.001],
+    'huobipro': [1,1],
+    'gateio': [1,1],
+    'bitfinex': [1,1],
 }
 
 EXCHANGE = {
