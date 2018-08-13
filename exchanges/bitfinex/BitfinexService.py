@@ -8,6 +8,7 @@ from twisted.internet import reactor
 
 import json
 import time
+import urllib
 
 class Bitfinex(ExchangeService):
 
@@ -280,7 +281,7 @@ class Bitfinex(ExchangeService):
         d = post(reactor, url, headers=headers)
 
         def handleBody(body):
-            print(body)
+            # print(body)
             data = json.loads(body)
             # print(data)
             orderList = []
@@ -316,6 +317,49 @@ class Bitfinex(ExchangeService):
             return orderList
 
         d.addCallback(handleBody)
+
+        return d
+
+    def getKLine(self, pairs, timeFrame='1m', start=None, end=None, sort=-1, limit=None):
+        URL = "/v2/candles/trade:"
+        symbol = self.getSymbol(pairs)
+        url = self.__url + URL + timeFrame + ':t' + symbol + '/hist'
+        params = {
+            'start': start
+            'sort': sort
+        }
+        if end:
+            params['end'] = end
+        if limit:
+            parmas['limit'] = limit
+        postdata = urllib.parse.urlencode(params)
+        headers = {'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36']}
+        d = get(
+            reactor,
+            url=url + '?' + postdata,
+            headers=headers
+        )
+        def handleBody(body):
+            data = json.loads(body)
+            return data
+        d.addCallback(handleBody)
+
+        return d
+
+    def getKLineLastMin(self, pairs, last=0):
+        t = int(round(time.time() * 1000))
+        sincet = t - last * 60 * 1100
+        d = self.getKLine(pairs, start=sincet)
+
+        def handleList(KLines):
+            result = []
+            try:
+                result = KLines[-last:]
+            except Exception as err:
+                print(err)
+                return None
+            return result
+        d.addCallback(handleList)
 
         return d
 
