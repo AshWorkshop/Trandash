@@ -391,9 +391,9 @@ def cbRun():
             account_rights = userInfoData['account_rights']
             if count % 60 == 0:
                 maxRightEveryPeriod = account_rights
-                dataFile = open('okex_' + coin, 'a+')
-                dataFile.write("%d,%d" % (count, maxDrawdown))
-                dataFile.close()
+                staFile = open('okex_' + coin, 'a+')
+                staFile.write("%d,%d" % (count, maxDrawdown))
+                staFile.close()
             if maxRightEveryPeriod != 0.0:
                 drawdown = (maxRightEveryPeriod - account_rights) / maxRightEveryPeriod
             else:
