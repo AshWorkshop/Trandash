@@ -41,7 +41,7 @@ def cbRun():
 
         exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bids, asks], [avgBids, avgAsks]
 
-    # print(exchangeState)
+    print(exchangeState)
 
     if hasData:
         exchangePairs = verifyExchanges(exchangeState)

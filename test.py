@@ -1,5 +1,6 @@
 
-from exchanges.okex.OKexService import okexFuture
+#from exchanges.okex.OKexService import okexFuture
+from exchanges.huobi.HuobiproService import huobi
 
 
 from twisted.internet import reactor
@@ -13,7 +14,8 @@ pairs = ('eth', 'usdt')
 
 def test():
 
-    
+    d = huobi.getOrderHistory(pairs,"2018-02-13","2018-08-12")
+
 
     def cbPrint(result):
         print(result)
@@ -28,7 +30,7 @@ def test():
 
     return d
 
-tickerCycle = Cycle(reactor, okexFuture.getTicker, 'getTicker')
-tickerCycle.start(pairs)
-# reactor.callWhenRunning(test)
+#tickerCycle = Cycle(reactor, okexFuture.getTicker, 'getTicker')
+#tickerCycle.start(pairs)
+reactor.callWhenRunning(test)
 reactor.run()

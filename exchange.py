@@ -1,14 +1,14 @@
 from exchanges.gateio.GateIOService import gateio
-import exchanges.huobi.Huobipro as huobipro
+from exchanges.huobi.HuobiproService import huobipro
 from exchanges.bitfinex.BitfinexService import bitfinex
 
 from twisted.internet import defer
 from twisted.python.failure import Failure
 
 FEE = {
-    'huobipro': [0.998, 1.002],
-    'gateio': [0.998, 1.002],
-    'bitfinex': [0.998, 1.002],
+    'huobipro': [0.999, 1.001],
+    'gateio': [0.999, 1.001],
+    'bitfinex': [0.999, 1.001],
 }
 
 EXCHANGE = {
