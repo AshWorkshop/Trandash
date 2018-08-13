@@ -344,8 +344,10 @@ class Bitfinex(ExchangeService):
             result = []
             if isinstance(data, list):
                 for kline in data:
-                    t, o, c, h, l, v = kline
-                    result.append([t, o, h, l, c, v, 0])
+                    if len(kline) == 6:
+                        t, o, c, h, l, v = kline
+                    else:
+                        print(kline)
             return result
         d.addCallback(handleBody)
 
