@@ -8,6 +8,7 @@ from sys import argv
 
 from cycle.cycle import Cycle
 from robots.robot import Robot
+from utils import calcMAs, calccalcBolls
 
 if len(argv) == 4:
     _, coin, money, dataFile = argv
@@ -25,7 +26,9 @@ class BitfinexRobot(Robot):
         klines = cycleData['klines']
 
         if klines is not None:
-            print('klines:', len(klines))
+            MAs = calcMAs(klines, ma=30)
+            ma = MAs[-1]
+            print('ma:', ma)
 
 pairs = (coin, money)
 klinesCycle.start(pairs, last=30)

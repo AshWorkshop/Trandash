@@ -353,6 +353,8 @@ class Bitfinex(ExchangeService):
 
         def handleList(KLines):
             result = []
+            if len(KLines) < last:
+                return None
             try:
                 result = KLines[-last:]
             except Exception as err:
