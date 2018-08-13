@@ -22,10 +22,12 @@ class Slot(object):
 
 
 class Cycle(object):
-    def __init__(self, reactor, f, key, limit=0):
+    def __init__(self, reactor, f, key, limit=0, wait=1, clean=True):
         self.running = False
         self.fun = f
         self.limit = limit
+        self.wait = wait
+        self.clean = clean
         self.count = 0
         self.key = key
         self.slot = Slot(key)
@@ -51,7 +53,8 @@ class Cycle(object):
                 if self.count % self.limit == 0:
                     self.count = 0
                     # print('Wait for 1 second')
-                    time.sleep(1)
+                    time.sleep(self.wait)
+                    self.slot.setData()
                     # print('Continue')
 
             self.next(*args, **kwargs)
@@ -70,4 +73,7 @@ class Cycle(object):
         self.running = False
 
     def getData(self):
-        return self.slot.pop()
+        if self.clean:
+            return self.slot.pop()
+        else:
+            return self.slot.getData()
