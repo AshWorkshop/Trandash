@@ -325,7 +325,7 @@ class Bitfinex(ExchangeService):
         symbol = self.getSymbol(pairs)
         url = self.__url + URL + timeFrame + ':t' + symbol + '/hist'
         params = {
-            'start': start
+            'start': start,
             'sort': sort
         }
         if end:
