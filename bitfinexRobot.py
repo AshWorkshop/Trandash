@@ -15,19 +15,19 @@ else:
     print("ERROR!")
     quit()
 
-orderHistoryCycle = Cycle(reactor, bitfinex.getOrderHistory, 'orderHistory', limit=5)
+klinesCycle = Cycle(reactor, bitfinex.getKLineLastMin, 'klines')
 states = ['run']
 
 class BitfinexRobot(Robot):
 
     def run(self):
         cycleData = self.data['cycleData']
-        orderHistory = cycleData['orderHistory']
+        klines = cycleData['klines']
 
-        if orderHistory is not None:
-            print('orderHistory:', orderHistory)
+        if klines is not None:
+            print('klines:', klines)
 
 pairs = (coin, money)
-orderHistoryCycle.start(pairs, float(time.time()))
+klinesCycle.start(pairs, last=30)
 bitfinexRobot = BitfinexRobot(reactor, states, [orderHistoryCycle])
 bitfinexRobot.start('run')
