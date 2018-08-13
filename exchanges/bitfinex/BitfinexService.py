@@ -280,7 +280,7 @@ class Bitfinex(ExchangeService):
         d = post(reactor, url, headers=headers)
 
         def handleBody(body):
-            # print(body)
+            print(body)
             data = json.loads(body)
             # print(data)
             orderList = []
