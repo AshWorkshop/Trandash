@@ -15,7 +15,7 @@ else:
     print("ERROR!")
     quit()
 
-orderHistoryCycle = Cycle(reactor, bitfinex.getOrderHistory, 'orderHistory')
+orderHistoryCycle = Cycle(reactor, bitfinex.getOrderHistory, 'orderHistory', limit=5)
 states = ['run']
 
 class BitfinexRobot(Robot):
@@ -28,6 +28,6 @@ class BitfinexRobot(Robot):
             print('orderHistory:', orderHistory)
 
 pairs = (coin, money)
-orderHistoryCycle.start(pairs, float(time.time()), limits=5)
+orderHistoryCycle.start(pairs, float(time.time()))
 bitfinexRobot = BitfinexRobot(reactor, states, [orderHistoryCycle])
 bitfinexRobot.start('run')
