@@ -29,5 +29,5 @@ class BitfinexRobot(Robot):
 
 pairs = (coin, money)
 klinesCycle.start(pairs, last=30)
-bitfinexRobot = BitfinexRobot(reactor, states, [orderHistoryCycle])
+bitfinexRobot = BitfinexRobot(reactor, states, [klinesCycle])
 bitfinexRobot.start('run')
