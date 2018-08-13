@@ -91,14 +91,13 @@ def buyp(amount, price="", sellAmount=0):
         else:
             matchPrice = "0"
         orderId = yield okexFuture.trade(pairs, price=price, amount=str(round(amount)), tradeType="3", matchPrice=matchPrice)
-        print(orderId)
     except Exception as err:
         failure = Failure(err)
         print(failure.getBriefTraceback())
 
     if orderId:
         print("SUCCESSFULLY BUYP:", orderId)
-        buypId = orderId
+
         try:
             order = yield okexFuture.getOrder(pairs, orderId=orderId)
         except Exception as err:
@@ -106,6 +105,8 @@ def buyp(amount, price="", sellAmount=0):
             print(failure.getBriefTraceback())
         else:
             print(order)
+
+    buypId = orderId
     if state == 'PPP':
         state = 'PPPsell'
         if sellAmount > 0:
@@ -166,7 +167,6 @@ def sellp(amount, price=""):
 
     if orderId:
         print("SUCCESSFULLY SELLP:", orderId)
-        sellpId = orderId
         try:
             order = yield okexFuture.getOrder(pairs, orderId=orderId)
         except Exception as err:
@@ -175,6 +175,9 @@ def sellp(amount, price=""):
         else:
             print(order)
 
+
+    sellpId = orderId
+
     if state == 'PPPsell':
         state = 'STOP'
     else:
@@ -182,13 +185,18 @@ def sellp(amount, price=""):
 
 @defer.inlineCallbacks
 def cancle(orderId):
+    result = False
+    data = -1
     try:
-        result, _ = yield okexFuture.cancle(pairs, orderId=orderId)
+        result, data = yield okexFuture.cancle(pairs, orderId=orderId)
     except Exception as err:
         failure = Failure(err)
         print(failure.getBriefTraceback())
 
     if result:
+        print('SUCCESSFULLY CANCLE:', orderId)
+        state = 'GO'
+    elif data == 20015:
         print('SUCCESSFULLY CANCLE:', orderId)
         state = 'GO'
 

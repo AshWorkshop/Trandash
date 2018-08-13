@@ -245,7 +245,7 @@ class OKexFuture(ExchangeService):
                 return (True, orderId)
             else:
                 print(data)
-                return (False, orderId)
+                return (False, data.get('error_code', -1))
 
         return httpPost(self.__url, URL, params, callback=handleBody)
 
