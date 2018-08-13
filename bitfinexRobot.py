@@ -25,7 +25,7 @@ class BitfinexRobot(Robot):
         klines = cycleData['klines']
 
         if klines is not None:
-            print('klines:', klines)
+            print('klines:', len(klines))
 
 pairs = (coin, money)
 klinesCycle.start(pairs, last=30)
