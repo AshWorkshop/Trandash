@@ -29,6 +29,8 @@ sells = []
 buypId = None
 sellpId = None
 maxRight = 0.0
+maxRightEveryPeriod = 0.0
+maxDrawdown = 0.0
 klineCycle = Cycle(reactor, okexFuture.getKLineLastMin, 'getKLineLastMin')
 tickerCycle = Cycle(reactor, okexFuture.getTicker, 'getTicker')
 positionCycle = Cycle(reactor, okexFuture.getPosition, 'getPosition', limit=5)
@@ -225,6 +227,8 @@ def cbRun():
     global buypId
     global sellpId
     global maxRight
+    global maxRightEveryPeriod
+    global maxDrawdown
     count += 1
     wait += 1
     print('[', count, state, ']')
@@ -382,6 +386,24 @@ def cbRun():
                 print('PPP')
                 state = 'PPP'
                 reactor.callWhenRunning(buyp, amount=buy_amount, sellAmount=sell_amount)
+
+        if userInfoData is not None:
+            account_rights = userInfoData['account_rights']
+            if count % 60 == 0:
+                maxRightEveryPeriod = account_rights
+                dataFile = open('okex_' + coin, 'a+')
+                dataFile.write("%d,%d" % (count, maxDrawdown))
+                dataFile.close()
+            if maxRightEveryPeriod != 0.0:
+                drawdown = (maxRightEveryPeriod - account_rights) / maxRightEveryPeriod
+            else:
+                drawdown = 0.0
+
+            if drawdown > maxDrawdown:
+                maxDrawdown = drawdown
+
+
+
 
 
             # if 0.7 * (1.0 + maxProfit) <= - (buyRate + sellRate) and buy_amount != 0:
