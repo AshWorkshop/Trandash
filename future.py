@@ -203,6 +203,14 @@ def cancle(orderId):
     elif data == 20015:
         print('SUCCESSFULLY CANCLE:', orderId)
         state = 'GO'
+    else:
+        time.sleep(1)
+        if state == 'WAITFORBUYPC':
+            state = 'BUYPCHECK'
+        elif state == 'WAITFORSELLPC':
+            state = 'SELLPCHECK'
+        else:
+            state = 'GO'
 
 # def get_buy_avg_price(buys):
 #     for buy in buys:
@@ -430,6 +438,7 @@ def cbRun():
                 buypId = None
                 state = 'GO'
             else:
+                state = 'WAITFORBUYPC'
                 reactor.callWhenRunning(cancle, buypId)
 
 
@@ -444,6 +453,7 @@ def cbRun():
                 sellpId = None
                 state = 'GO'
             else:
+                state = 'WAITFORSELLPC'
                 reactor.callWhenRunning(cancle, sellpId)
 
 
