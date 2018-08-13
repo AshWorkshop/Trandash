@@ -8,7 +8,7 @@ from sys import argv
 
 from cycle.cycle import Cycle
 from robots.robot import Robot
-from utils import calcMAs, calccalcBolls
+from utils import calcMAs, calcBolls
 
 if len(argv) == 4:
     _, coin, money, dataFile = argv
