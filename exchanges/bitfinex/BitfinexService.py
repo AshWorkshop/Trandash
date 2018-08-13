@@ -8,6 +8,7 @@ from twisted.internet import reactor
 
 import json
 import time
+import urllib
 
 class Bitfinex(ExchangeService):
 
@@ -97,7 +98,7 @@ class Bitfinex(ExchangeService):
                         # print(b['currency'])
                         balance = float(b_available)  #balance that is available to trade
                         break
-            
+
             return balance
 
         d.addCallback(handleBody)
@@ -135,7 +136,7 @@ class Bitfinex(ExchangeService):
                     print(err)
                     if err == 'ERR_RATE_LIMIT':
                         time.sleep(1)
-            
+
             return int(order_id)
 
         d.addCallback(handleBody)
@@ -195,7 +196,7 @@ class Bitfinex(ExchangeService):
             # print(body)
             data = json.loads(body)
             # print(data)
-            
+
             try:
                 side = data['side']
                 price = data['price']
@@ -213,7 +214,7 @@ class Bitfinex(ExchangeService):
                     print(err)
                     if err == 'ERR_RATE_LIMIT':
                         time.sleep(1)
-            
+
             status = 'open'
             if 'error' in data:    #若有错误，status置为'error'
                 status = 'error'
@@ -251,7 +252,7 @@ class Bitfinex(ExchangeService):
             # print(body)
             data = json.loads(body)
             # print(data)
-            
+
             try:
                 is_cancelled = data['is_cancelled']
             except KeyError:
@@ -267,7 +268,7 @@ class Bitfinex(ExchangeService):
 
         d.addCallback(handleBody)
 
-        return d       
+        return d
 
     def getOrderHistory(self, pairs, givenTime=float(time.time())):
         #View your latest inactive orders. Limited to last 3 days and 1 request per minute.
@@ -285,6 +286,9 @@ class Bitfinex(ExchangeService):
             # print(data)
             orderList = []
 
+            if not isinstance(data, list):
+                return None
+
             for order in data:
                 try:
                     timestamp = order['timestamp']
@@ -293,7 +297,7 @@ class Bitfinex(ExchangeService):
                         if order['is_cancelled']:
                             status = 'cancelled'
                         elif not order['is_live']:      #若没有被取消，并且不能继续被填充（not live），
-                            status = 'done'             #则表示交易已完成（done）                        
+                            status = 'done'             #则表示交易已完成（done）
                         orderList.append({
                             'orderId': order['id'],
                             'timestamp': timestamp,     #返回的字典中添加了时间戳信息
@@ -309,10 +313,53 @@ class Bitfinex(ExchangeService):
                         print(err)
                         if err == 'ERR_RATE_LIMIT':
                             time.sleep(1)
-        
+
             return orderList
 
         d.addCallback(handleBody)
+
+        return d
+
+    def getKLine(self, pairs, timeFrame='1m', start=None, end=None, sort=-1, limit=None):
+        URL = "/v2/candles/trade:"
+        symbol = self.getSymbol(pairs)
+        url = self.__url + URL + timeFrame + ':t' + symbol + '/hist'
+        params = {
+            'start': start,
+            'sort': sort
+        }
+        if end:
+            params['end'] = end
+        if limit:
+            parmas['limit'] = limit
+        postdata = urllib.parse.urlencode(params)
+        headers = {'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36']}
+        d = get(
+            reactor,
+            url=url + '?' + postdata,
+            headers=headers
+        )
+        def handleBody(body):
+            data = json.loads(body)
+            return data
+        d.addCallback(handleBody)
+
+        return d
+
+    def getKLineLastMin(self, pairs, last=0):
+        t = int(round(time.time() * 1000))
+        sincet = t - last * 60 * 1100
+        d = self.getKLine(pairs, start=sincet)
+
+        def handleList(KLines):
+            result = []
+            try:
+                result = KLines[-last:]
+            except Exception as err:
+                print(err)
+                return None
+            return result
+        d.addCallback(handleList)
 
         return d
 

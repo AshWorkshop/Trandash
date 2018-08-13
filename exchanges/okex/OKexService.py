@@ -245,7 +245,7 @@ class OKexFuture(ExchangeService):
                 return (True, orderId)
             else:
                 print(data)
-                return (False, data.get("error", ""))
+                return (False, data.get('error_code', -1))
 
         return httpPost(self.__url, URL, params, callback=handleBody)
 
@@ -279,9 +279,9 @@ class OKexFuture(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            print(data)
+            # print(data)
             if data.get('result', False):
-                return data.get(coin)
+                return data.get('info', {}).get(coin)
             else:
                 return None
 

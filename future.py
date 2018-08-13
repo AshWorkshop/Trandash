@@ -26,7 +26,12 @@ wait = 0
 leverage = 20
 buys = []
 sells = []
+buypId = None
+sellpId = None
 maxRight = 0.0
+maxRightEveryPeriod = 0.0
+maxDrawdown = 0.0
+accountRight = 0.0
 klineCycle = Cycle(reactor, okexFuture.getKLineLastMin, 'getKLineLastMin')
 tickerCycle = Cycle(reactor, okexFuture.getTicker, 'getTicker')
 positionCycle = Cycle(reactor, okexFuture.getPosition, 'getPosition', limit=5)
@@ -81,6 +86,7 @@ def buy(amount=1.0, price=""):
 def buyp(amount, price="", sellAmount=0):
     global state
     global buys
+    global buypId
     orderId = None
     try:
         if price == "":
@@ -88,13 +94,13 @@ def buyp(amount, price="", sellAmount=0):
         else:
             matchPrice = "0"
         orderId = yield okexFuture.trade(pairs, price=price, amount=str(round(amount)), tradeType="3", matchPrice=matchPrice)
-        print(orderId)
     except Exception as err:
         failure = Failure(err)
         print(failure.getBriefTraceback())
 
     if orderId:
         print("SUCCESSFULLY BUYP:", orderId)
+
         try:
             order = yield okexFuture.getOrder(pairs, orderId=orderId)
         except Exception as err:
@@ -102,16 +108,14 @@ def buyp(amount, price="", sellAmount=0):
             print(failure.getBriefTraceback())
         else:
             print(order)
-            buys = []
-            data = shelve.open(dataFile)
-            data['buys'] = buys
-            data.close()
+
+    buypId = orderId
     if state == 'PPP':
         state = 'PPPsell'
         if sellAmount > 0:
             reactor.callWhenRunning(sellp, amount=sellAmount)
     else:
-        state = 'GO'
+        state = 'BUYPCHECK'
 
 
 @defer.inlineCallbacks
@@ -151,6 +155,7 @@ def sell(amount=1.0, price=""):
 def sellp(amount, price=""):
     global state
     global sells
+    global sellpId
     orderId = None
     try:
         if price == "":
@@ -171,16 +176,38 @@ def sellp(amount, price=""):
             failure = Failure(err)
             print(failure.getBriefTraceback())
         else:
-            print()
-            sells = []
-            data = shelve.open(dataFile)
-            data['sells'] = sells
-            data.close()
+            print(order)
+
+
+    sellpId = orderId
 
     if state == 'PPPsell':
         state = 'STOP'
     else:
+        state = 'SELLPCHECK'
+
+@defer.inlineCallbacks
+def cancle(orderId):
+    global state
+    result = False
+    data = -1
+    try:
+        result, data = yield okexFuture.cancle(pairs, orderId=orderId)
+    except Exception as err:
+        failure = Failure(err)
+        print(failure.getBriefTraceback())
+
+    if result:
+        print('SUCCESSFULLY CANCLE:', orderId)
         state = 'GO'
+    else:
+        time.sleep(1)
+        if state == 'WAITFORBUYPC':
+            state = 'BUYPCHECK'
+        elif state == 'WAITFORSELLPC':
+            state = 'SELLPCHECK'
+        else:
+            state = 'GO'
 
 # def get_buy_avg_price(buys):
 #     for buy in buys:
@@ -203,7 +230,12 @@ def cbRun():
     global total
     global buys
     global sells
-    global maxProfit
+    global buypId
+    global sellpId
+    global maxRight
+    global maxRightEveryPeriod
+    global maxDrawdown
+    global accountRight
     count += 1
     wait += 1
     print('[', count, state, ']')
@@ -226,7 +258,7 @@ def cbRun():
     if state == 'GO':
         # print(len(klines), ticker, position)
         # 是否开初始单
-        if KLinesData != None and tickerData != None and positionData != None:
+        if KLinesData is not None and tickerData is not None and positionData is not None:
             total += 1
             wait -= 1
             print('avg wait:', wait / total)
@@ -362,6 +394,28 @@ def cbRun():
                 state = 'PPP'
                 reactor.callWhenRunning(buyp, amount=buy_amount, sellAmount=sell_amount)
 
+        if userInfoData is not None:
+            account_rights = userInfoData['account_rights']
+            accountRight = account_rights
+            if maxRightEveryPeriod != 0.0:
+                drawdown = (maxRightEveryPeriod - account_rights) / maxRightEveryPeriod
+            else:
+                drawdown = 0.0
+
+            if drawdown > maxDrawdown:
+                maxDrawdown = drawdown
+            print('maxREP && maxDD:', maxRightEveryPeriod, maxDrawdown)
+
+
+        if count % 60 == 0:
+            maxRightEveryPeriod = accountRight
+            staFile = open('okex_' + coin, 'a+')
+            staFile.write("%d,%f\n" % (count, maxDrawdown))
+            staFile.close()
+
+
+
+
 
             # if 0.7 * (1.0 + maxProfit) <= - (buyRate + sellRate) and buy_amount != 0:
 
@@ -369,6 +423,36 @@ def cbRun():
     if state == 'STOP':
         print('************** STOP **************')
         reactor.stop()
+
+    if state == 'BUYPCHECK':
+        if positionData is not None:
+            buy_amount = positionData['buy_amount']
+            if buy_amount == 0:
+                buys = []
+                data = shelve.open(dataFile)
+                data['buys'] = buys
+                data.close()
+                buypId = None
+                state = 'GO'
+            else:
+                state = 'WAITFORBUYPC'
+                reactor.callWhenRunning(cancle, buypId)
+
+
+    if state == 'SELLPCHECK':
+        if positionData is not None:
+            sell_amount = positionData['sell_amount']
+            if sell_amount == 0:
+                sells = []
+                data = shelve.open(dataFile)
+                data['sells'] = sells
+                data.close()
+                sellpId = None
+                state = 'GO'
+            else:
+                state = 'WAITFORSELLPC'
+                reactor.callWhenRunning(cancle, sellpId)
+
 
 
 
