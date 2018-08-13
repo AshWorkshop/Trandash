@@ -341,7 +341,12 @@ class Bitfinex(ExchangeService):
         )
         def handleBody(body):
             data = json.loads(body)
-            return data
+            result = []
+            if isinstance(data, list):
+                for kline in data:
+                    t, o, c, h, l, v = kline
+                    result.append([t, o, h, l, c, v, 0])
+            return result
         d.addCallback(handleBody)
 
         return d
