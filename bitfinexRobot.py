@@ -15,7 +15,7 @@ else:
     print("ERROR!")
     quit()
 
-klinesCycle = Cycle(reactor, bitfinex.getKLineLastMin, 'klines')
+klinesCycle = Cycle(reactor, bitfinex.getKLineLastMin, 'klines', limit=1)
 states = ['run']
 
 class BitfinexRobot(Robot):
