@@ -28,6 +28,6 @@ class BitfinexRobot(Robot):
             print('orderHistory:', orderHistory)
 
 pairs = (coin, money)
-orderHistoryCycle.start(pairs, float(time.time()))
+orderHistoryCycle.start(pairs, float(time.time()), limits=5)
 bitfinexRobot = BitfinexRobot(reactor, states, [orderHistoryCycle])
 bitfinexRobot.start('run')
