@@ -287,7 +287,7 @@ class Huobipro(ExchangeService):
         """
         _from = None
         types = None
-        states = None
+        states = "filled"
         size = 11
         direct = "prev"
         symbol = self.getSymbol(pairs)
@@ -324,7 +324,7 @@ class Huobipro(ExchangeService):
 #1533870669146 2018:11:11
 
 
-huobi = Huobipro({'MARKET_URL':"https://api.huobi.pro",
+huobipro = Huobipro({'MARKET_URL':"https://api.huobi.pro",
                 'TRADE_URL':"https://api.huobi.pro"},
                 AccessKey,
                 SecretKey)

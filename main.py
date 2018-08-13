@@ -10,7 +10,7 @@ from utils import calcMean
 from exchange import verifyExchanges
 from exchanges.gateio.GateIOService import gateio
 from exchanges.bitfinex.BitfinexService import bitfinex
-from exchanges.huobi.HuobiproService import huobi
+#from exchanges.huobi.HuobiproService import huobi
 
 from exchange import OrderBooks
 
@@ -41,7 +41,7 @@ def cbRun():
 
         exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bids, asks], [avgBids, avgAsks]
 
-    # print(exchangeState)
+    print(exchangeState)
 
     if hasData:
         exchangePairs = verifyExchanges(exchangeState)
