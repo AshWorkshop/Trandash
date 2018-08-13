@@ -200,9 +200,6 @@ def cancle(orderId):
     if result:
         print('SUCCESSFULLY CANCLE:', orderId)
         state = 'GO'
-    elif data == 20015:
-        print('SUCCESSFULLY CANCLE:', orderId)
-        state = 'GO'
     else:
         time.sleep(1)
         if state == 'WAITFORBUYPC':
