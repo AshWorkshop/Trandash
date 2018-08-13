@@ -346,6 +346,7 @@ class Bitfinex(ExchangeService):
                 for kline in data:
                     try:
                         t, o, c, h, l, v = kline
+                        result.append([t, o, h, l, c, v, 0])
                     except Exception as err:
                         print(err)
                         print(kline)
