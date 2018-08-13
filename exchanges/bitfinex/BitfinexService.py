@@ -282,8 +282,11 @@ class Bitfinex(ExchangeService):
         def handleBody(body):
             # print(body)
             data = json.loads(body)
-            print(data)
+            # print(data)
             orderList = []
+
+            if not isinstance(data, list):
+                return None
 
             for order in data:
                 try:
@@ -309,10 +312,8 @@ class Bitfinex(ExchangeService):
                         print(err)
                         if err == 'ERR_RATE_LIMIT':
                             time.sleep(1)
-            if orderList != []:
-                return orderList
-            else:
-                return None
+
+            return orderList
 
         d.addCallback(handleBody)
 
