@@ -341,7 +341,16 @@ class Bitfinex(ExchangeService):
         )
         def handleBody(body):
             data = json.loads(body)
-            return data
+            result = []
+            if isinstance(data, list):
+                for kline in data:
+                    try:
+                        t, o, c, h, l, v = kline
+                        result.append([t, o, h, l, c, v, 0])
+                    except Exception as err:
+                        print(err)
+                        print(kline)
+            return result
         d.addCallback(handleBody)
 
         return d
@@ -353,6 +362,8 @@ class Bitfinex(ExchangeService):
 
         def handleList(KLines):
             result = []
+            if len(KLines) < last:
+                return None
             try:
                 result = KLines[-last:]
             except Exception as err:
