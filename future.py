@@ -404,7 +404,7 @@ def cbRun():
         if count % 60 == 0:
             maxRightEveryPeriod = 0.0
             staFile = open('okex_' + coin, 'a+')
-            staFile.write("%d,%d\n" % (count, maxDrawdown))
+            staFile.write("%d,%f\n" % (count, maxDrawdown))
             staFile.close()
 
 
