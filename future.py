@@ -185,6 +185,7 @@ def sellp(amount, price=""):
 
 @defer.inlineCallbacks
 def cancle(orderId):
+    global state
     result = False
     data = -1
     try:
