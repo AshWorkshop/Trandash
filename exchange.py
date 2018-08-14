@@ -6,9 +6,9 @@ from twisted.internet import defer
 from twisted.python.failure import Failure
 
 FEE = {
-    'huobipro': [1,1],
-    'gateio': [1,1],
-    'bitfinex': [1,1],
+    'huobipro': [1, 1],
+    'gateio': [1, 1],
+    'bitfinex': [1, 1],
 }
 
 EXCHANGE = {
@@ -112,30 +112,26 @@ def calcOneWayVirtualOrderBooks(A2C: ['bids/asks'], C2B: ['bids/asks']):
 
     while A2C_ and C2B_:
         # the maximum amount of coin C which purchased all coin A need
-        amountA = float(A2C_[0][PRICE]) * float(A2C_[0][AMOUNT])
+        amountA = A2C_[0][PRICE] * A2C_[0][AMOUNT]
         # the maximum amount of coin C which can be purchased with coin B
-        amountB = float(C2B_[0][AMOUNT])
+        amountB = C2B_[0][AMOUNT]
         if amountA == amountB:
-            vAmount = float(A2C_[0][AMOUNT])
-            vPrice = float(C2B_[0][AMOUNT]) * float(C2B_[0][PRICE]) / vAmount
+            vAmount = A2C_[0][AMOUNT]
+            vPrice = C2B_[0][AMOUNT] * C2B_[0][PRICE] / vAmount
             virtualOrderBook.append( [vPrice, vAmount] )
             del C2B_[0]
             del A2C_[0]
         elif amountA > amountB:
-            vAmount = float(C2B_[0][AMOUNT]) / float(A2C_[0][PRICE])
-            vPrice = float(C2B_[0][AMOUNT]) * float(C2B_[0][PRICE]) / vAmount
+            vAmount = C2B_[0][AMOUNT] / A2C_[0][PRICE]
+            vPrice = C2B_[0][AMOUNT] * C2B_[0][PRICE] / vAmount
             virtualOrderBook.append( [vPrice, vAmount] )
             del C2B_[0]
-            a2c_amount = float(A2C_[0][AMOUNT])
-            a2c_amount -= vAmount
-            A2C_[0][AMOUNT] = str(a2c_amount)
+            A2C_[0][AMOUNT] -= vAmount
         else:
-            vAmount = float(A2C_[0][AMOUNT])
-            vPrice = float(A2C_[0][AMOUNT]) * float(A2C_[0][PRICE]) * float(C2B_[0][PRICE]) / vAmount
+            vAmount = A2C_[0][AMOUNT]
+            vPrice = A2C_[0][AMOUNT] * A2C_[0][PRICE] * C2B_[0][PRICE] / vAmount
             virtualOrderBook.append( [vPrice, vAmount] )
-            c2b_amount = float(C2B_[0][AMOUNT])
-            c2b_amount -= float(A2C_[0][AMOUNT]) * float(A2C_[0][PRICE])
-            C2B_[0][AMOUNT] = str(c2b_amount)
+            C2B_[0][AMOUNT] -= A2C_[0][AMOUNT] * A2C_[0][PRICE]
             del A2C_[0]
 
     return virtualOrderBook
