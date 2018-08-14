@@ -199,9 +199,14 @@ def cancle(orderId):
 
     if result:
         print('SUCCESSFULLY CANCLE:', orderId)
-        state = 'GO'
+        print('cancle result:', data)
+        if state == 'WAITFORBUYPC':
+            state = 'BUYPCHECK'
+        elif state == 'WAITFORSELLPC':
+            state = 'SELLPCHECK'
+        else:
+            state = 'GO'
     else:
-        time.sleep(1)
         if state == 'WAITFORBUYPC':
             state = 'BUYPCHECK'
         elif state == 'WAITFORSELLPC':
