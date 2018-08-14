@@ -39,7 +39,7 @@ class BitfinexRobot(Robot):
     @defer.inlineCallbacks
     def buy(price, amount):
         try:
-            orderId = bitfinex.buy(self.pairs, price, amount)
+            orderId = yield bitfinex.buy(self.pairs, price, amount)
         except Exception as err:
             failure = Failure(err)
             print(failure.getBriefTraceback())
@@ -47,7 +47,7 @@ class BitfinexRobot(Robot):
             if orderId != 0:
                 print('SUCCESSFULLY BUY:', orderId)
                 try:
-                    order = bitfinex.getOrder(self.pairs, orderId)
+                    order = yield bitfinex.getOrder(self.pairs, orderId)
                 except Exception as err:
                     failure = Failure(err)
                     print(failure.getBriefTraceback())
@@ -59,7 +59,7 @@ class BitfinexRobot(Robot):
     @defer.inlineCallbacks
     def sell(price, amount):
         try:
-            orderId = bitfinex.sell(self.pairs, price, amount)
+            orderId = yield bitfinex.sell(self.pairs, price, amount)
         except Exception as err:
             failure = Failure(err)
             print(failure.getBriefTraceback())
@@ -67,7 +67,7 @@ class BitfinexRobot(Robot):
             if orderId != 0:
                 print('SUCCESSFULLY SELL:', orderId)
                 try:
-                    order = bitfinex.getOrder(self.pairs, orderId)
+                    order = yield bitfinex.getOrder(self.pairs, orderId)
                 except Exception as err:
                     failure = Failure(err)
                     print(failure.getBriefTraceback())
