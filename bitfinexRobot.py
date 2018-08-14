@@ -16,6 +16,9 @@ else:
     print("ERROR!")
     quit()
 
+if money == 'usdt':
+    money = 'usd'
+
 class BitfinexRobot(Robot):
 
     def init(self):
