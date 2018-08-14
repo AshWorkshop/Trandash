@@ -53,10 +53,10 @@ class Bitfinex(ExchangeService):
             asks = []
 
             for bid in rawBids:
-                bids.append([bid['price'], bid['amount']])
+                bids.append( [float(bid['price']), float(bid['amount'])] )
 
             for ask in rawAsks:
-                asks.append([ask['price'], ask['amount']])
+                asks.append( [float(ask['price']), float(ask['amount'])] )
 
             return [bids, asks]
 
