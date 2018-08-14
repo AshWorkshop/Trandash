@@ -321,7 +321,7 @@ class Bitfinex(ExchangeService):
         return d
 
     def getTicker(self, pairs):
-        URL = "/v1/ticker/"
+        URL = "/v2/ticker/"
         symbol = self.getSymbol(pairs)
         url = self.__url + URL + 't' + symbol
         print(url)
