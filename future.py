@@ -227,17 +227,20 @@ def getAvg(things):
         return (0.0, 0.0)
     return (total / totalAmount, totalAmount)
 
-def searchLastAmount(amount, initAmount=1.0, rate=1.618):
+def searchLastAmount(amount, initAmount=1.0, rate=1.618, top=6):
     total = 0.0
-    index = None
+    factor = 0
     if amount == 0.0:
         return 0.0
     for i in range(round(amount)):
-        total += round(initAmount * rate ** i)
+        if i < top:
+            factor = i
+        else:
+            factor = top - 1
+        total += round(initAmount * rate ** factor)
         if total >= amount:
-            index = i
             break
-    return initAmount * rate ** i
+    return initAmount * rate ** factor
 
 def cbRun():
     global count
