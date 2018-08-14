@@ -26,6 +26,8 @@ wait = 0
 leverage = 20
 buys = []
 sells = []
+lastBuyAmount = 0.0
+lastSellAmount = 0.0
 buypId = None
 sellpId = None
 maxRight = 0.0
@@ -111,9 +113,11 @@ def buyp(amount, price="", sellAmount=0):
 
     buypId = orderId
     if state == 'PPP':
-        state = 'PPPsell'
         if sellAmount > 0:
+            state = 'PPPsell'
             reactor.callWhenRunning(sellp, amount=sellAmount)
+        else:
+            state = 'STOP'
     else:
         state = 'BUYPCHECK'
 
@@ -199,9 +203,9 @@ def cancle(orderId):
 
     if result:
         print('SUCCESSFULLY CANCLE:', orderId)
+        print('cancle result:', data)
         state = 'GO'
     else:
-        time.sleep(1)
         if state == 'WAITFORBUYPC':
             state = 'BUYPCHECK'
         elif state == 'WAITFORSELLPC':
@@ -220,8 +224,23 @@ def getAvg(things):
         total += price * amount
         totalAmount += amount
     if totalAmount == 0:
-        return 0
-    return total / totalAmount
+        return (0.0, 0.0)
+    return (total / totalAmount, totalAmount)
+
+def searchLastAmount(amount, initAmount=1.0, rate=1.618, top=6):
+    total = 0.0
+    factor = 0
+    if amount == 0.0:
+        return 0.0
+    for i in range(round(amount)):
+        if i < top:
+            factor = i
+        else:
+            factor = top - 1
+        total += round(initAmount * rate ** factor)
+        if total >= amount:
+            break
+    return initAmount * rate ** factor
 
 def cbRun():
     global count
@@ -230,6 +249,8 @@ def cbRun():
     global total
     global buys
     global sells
+    global lastBuyAmount
+    global lastSellAmount
     global buypId
     global sellpId
     global maxRight
@@ -245,6 +266,10 @@ def cbRun():
         buys = data.get('buys', [])
         sells = data.get('sells', [])
         print('buys && sells:', buys, sells)
+        buyAvgPrice, buyAmount = getAvg(buys)
+        sellAvgPrice, sellAmount = getAvg(sells)
+        lastBuyAmount = searchLastAmount(buyAmount)
+        lastSellAmount = searchLastAmount(sellAmount)
         state = 'GO'
 
     KLinesData = klineCycle.getData()
@@ -254,6 +279,7 @@ def cbRun():
     userInfoData = userInfoCycle.getData()
 
     print(bool(KLinesData), bool(tickerData), bool(positionData), bool(orderBookData), bool(userInfoData))
+
 
     # 是否开初始单
     if state == 'GO' and KLinesData is not None and tickerData is not None and positionData is not None:
@@ -290,8 +316,8 @@ def cbRun():
         bids, asks = orderBookData
         buy2, _ = bids[1]
         sell2, _ = asks[1]
-        buy_price_avg = getAvg(buys)
-        sell_price_avg = getAvg(sells)
+        buy_price_avg, _ = getAvg(buys)
+        sell_price_avg, _ = getAvg(sells)
         buy_amount = position['buy_amount']
         sell_amount = position['sell_amount']
         # print(position)
@@ -334,6 +360,9 @@ def cbRun():
         buy_amount = position['buy_amount']
         sell_amount = position['sell_amount']
 
+        initAmount = 1.0
+        rate = 1.618
+
         Bolls = calcBolls(KLines)
         klines = KLines[-3:]
         bolls = Bolls[-3:]
@@ -347,12 +376,13 @@ def cbRun():
         if llk_close > llb_d and lk_close < lb_d:
             print('BUYBOLL')
             if buy_amount > 0:
-                buy_price_last, buy_amount_last = buys[-1]
+                buy_price_last, _ = buys[-1]
                 if (buy_price_last - ticker) / buy_price_last >= 0.005:
-                    if len(buys) < 6:
-                        buy_amount_new = buy_amount_last * 1.618
+                    if lastBuyAmount < initAmount * rate ** 6:
+                        buy_amount_new = lastBuyAmount * rate
                     else:
-                        buy_amount_new = buy_amount_last
+                        buy_amount_new = lastBuyAmount
+                    lastBuyAmount = buy_amount_new
                     print('BUY', buy_amount_new)
                     state = 'WAIT'
                     reactor.callWhenRunning(buy, amount=buy_amount_new)
@@ -360,12 +390,13 @@ def cbRun():
         if llk_close < llb_u and lk_close > lb_u:
             print('SELLBOLL')
             if sell_amount > 0:
-                sell_price_last, sell_amount_last = sells[-1]
+                sell_price_last, _ = sells[-1]
                 if (ticker - sell_price_last) / sell_price_last >= 0.005:
-                    if len(sells) < 6:
-                        sell_amount_new = sell_amount_last * 1.618
+                    if lastBuyAmount < initAmount * rate ** 6:
+                        sell_amount_new = lastSellAmount * rate
                     else:
-                        sell_amount_new = sell_amount_last
+                        sell_amount_new = lastSellAmount
+                    lastSellAmount = sell_amount_new
                     print('SELL', sell_amount_new)
                     state = 'WAIT'
                     reactor.callWhenRunning(sell, amount=sell_amount_new)
@@ -393,6 +424,39 @@ def cbRun():
             state = 'PPP'
             reactor.callWhenRunning(buyp, amount=buy_amount, sellAmount=sell_amount)
 
+
+    # 同步数据
+    if state == 'GO' and positionData is not None and count % 2 == 0:
+        buy_amount = positionData['buy_amount']
+        sell_amount = positionData['sell_amount']
+        buy_price_avg = positionData['buy_price_avg']
+        sell_price_avg = positionData['sell_price_avg']
+
+        buyAvgPrice, buyAmount = getAvg(buys)
+        sellAvgPrice, sellAmount = getAvg(sells)
+
+        if buy_price_avg != buyAvgPrice or buyAmount != buy_amount:
+            print('RESET buys')
+            lastBuyAmount = searchLastAmount(buy_amount)
+            if buy_amount != 0:
+                buys = [(buy_price_avg, buy_amount)]
+            else:
+                buys = []
+            data = shelve.open(dataFile)
+            data['buys'] = buys
+            data.close()
+
+        if sell_price_avg != sellAvgPrice or sellAmount != sell_amount:
+            print('RESET sells')
+            lastSellAmount = searchLastAmount(sell_amount)
+            if sell_amount != 0:
+                sells = [(sell_price_avg, sell_amount)]
+            else:
+                sells = []
+            data = shelve.open(dataFile)
+            data['sells'] = sells
+            data.close()
+
     if userInfoData is not None:
         account_rights = userInfoData['account_rights']
         accountRight = account_rights
@@ -416,6 +480,9 @@ def cbRun():
 
 
 
+
+
+
             # if 0.7 * (1.0 + maxProfit) <= - (buyRate + sellRate) and buy_amount != 0:
 
 
@@ -432,6 +499,7 @@ def cbRun():
                 data['buys'] = buys
                 data.close()
                 buypId = None
+                lastBuyAmount = 0.0
                 state = 'GO'
             else:
                 state = 'WAITFORBUYPC'
@@ -447,6 +515,7 @@ def cbRun():
                 data['sells'] = sells
                 data.close()
                 sellpId = None
+                lastSellAmount = 0.0
                 state = 'GO'
             else:
                 state = 'WAITFORSELLPC'

@@ -98,8 +98,53 @@ class Bitfinex(ExchangeService):
                         # print(b['currency'])
                         balance = float(b_available)  #balance that is available to trade
                         break
-
             return balance
+
+        d.addCallback(handleBody)
+
+        return d
+
+    def getBalances(self, coins):
+        URL = "/v1/balances"
+        # print(self.__url)
+        url = self.__url + URL
+        # print(url)
+        headers = getPostHeaders(url, URL)
+        d = post(reactor, url, headers=headers)
+        for i in range(len(coins)):
+            if coins[i] == 'usdt':
+                coins[i] = 'usd'
+
+        def handleBody(body):
+            # print(body)
+            data = json.loads(body)
+            # print(data)
+            balances = dict()
+            if not isinstance(data, list):
+                return None
+            for b in data:
+                try:
+                    b_type = b['type']
+                    b_currency = b['currency']
+                    b_available = b['available']
+                except KeyError:
+                    b_type = ''
+                    b_currency = ''
+                    b_available = 0.0
+                    if 'error' in data:
+                        err = data['error']
+                        print(err)
+                        if err == 'ERR_RATE_LIMIT':
+                            time.sleep(1)
+                if b_type == 'exchange':
+                    # print(b)
+                    if b_currency in coins:
+                        # print(b['currency'])
+                        balances[b_currency] = float(b_available)  #balance that is available to trade
+
+            if balances == {}:
+                return None
+            return balances
 
         d.addCallback(handleBody)
 
@@ -113,7 +158,7 @@ class Bitfinex(ExchangeService):
         symbol = self.getSymbol(pairs)
         params = {
             'symbol': symbol,
-            'amount': str(amount),
+            'amount': format(amount, '0.8f'),
             'price': str(price),
             'side': 'buy',
             'type': 'exchange limit',
@@ -130,6 +175,7 @@ class Bitfinex(ExchangeService):
             try:
                 order_id = data['order_id']
             except KeyError:
+                print(data)
                 order_id = '0'
                 if 'error' in data:
                     err = data['error']
@@ -151,7 +197,7 @@ class Bitfinex(ExchangeService):
         symbol = self.getSymbol(pairs)
         params = {
             'symbol': symbol,
-            'amount': str(amount),
+            'amount': format(amount, '0.8f'),
             'price': str(price),
             'side': 'sell',
             'type': 'exchange limit',
@@ -168,6 +214,7 @@ class Bitfinex(ExchangeService):
             try:
                 order_id = data['order_id']
             except KeyError:
+                print(data)
                 order_id = '0'
                 if 'error' in data:
                     err = data['error']
@@ -315,6 +362,28 @@ class Bitfinex(ExchangeService):
                             time.sleep(1)
 
             return orderList
+
+        d.addCallback(handleBody)
+
+        return d
+
+    def getTicker(self, pairs):
+        URL = "/v2/ticker/"
+        symbol = self.getSymbol(pairs)
+        url = self.__url + URL + 't' + symbol
+        headers = {'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36']}
+        d = get(
+            reactor,
+            url=url,
+            headers=headers
+        )
+        def handleBody(body):
+            data = json.loads(body)
+            if isinstance(data, list) and len(data) == 10:
+                return data
+            else:
+                print(data)
+                return None
 
         d.addCallback(handleBody)
 

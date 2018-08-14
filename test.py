@@ -1,6 +1,6 @@
 
-#from exchanges.okex.OKexService import okexFuture
-from exchanges.huobi.HuobiproService import huobi
+from exchanges.okex.OKexService import okexFuture
+# from exchanges.huobi.HuobiproService import huobi
 
 
 from twisted.internet import reactor
@@ -14,7 +14,7 @@ pairs = ('eth', 'usdt')
 
 def test():
 
-    d = huobi.getOrderHistory(pairs,"2018-02-13","2018-08-12")
+    d = okexFuture.cancle(('ltc', 'usdt'), orderId=1276330619587584)
 
 
     def cbPrint(result):
