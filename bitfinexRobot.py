@@ -16,21 +16,29 @@ else:
     print("ERROR!")
     quit()
 
-klinesCycle = Cycle(reactor, bitfinex.getKLineLastMin, 'klines', limit=1, wait=50, clean=False)
-states = ['run']
-
 class BitfinexRobot(Robot):
 
     def run(self):
         cycleData = self.data['cycleData']
         klines = cycleData['klines']
+        ticker = cycleData['ticker']
+        catch = False
 
-        if klines is not None:
+        if not catch and klines is not None and ticker is not None:
+            catch = True
             MAs = calcMAs(klines, ma=30)
             ma = MAs[-1]
-            print('ma:', ma)
+            last_price = ticker[-4]
+            print('last_price && ma:', last_price, ma)
 
 pairs = (coin, money)
+
+klinesCycle = Cycle(reactor, bitfinex.getKLineLastMin, 'klines', limit=1, wait=50, clean=False)
 klinesCycle.start(pairs, last=30)
-bitfinexRobot = BitfinexRobot(reactor, states, [klinesCycle])
+tickerCycle = Cycle(reactor, bitfinex.getTicker, 'ticker')
+tickerCycle.start(pairs)
+
+states = ['run']
+
+bitfinexRobot = BitfinexRobot(reactor, states, [klinesCycle, tickerCycle])
 bitfinexRobot.start('run')

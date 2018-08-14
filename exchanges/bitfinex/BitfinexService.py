@@ -320,6 +320,28 @@ class Bitfinex(ExchangeService):
 
         return d
 
+    def getTicker(self, pairs):
+        URL = "/v1/ticker/"
+        symbol = self.getSymbol(pairs)
+        url = self.__url + URL + 't' + symbol
+        headers = {'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36']}
+        d = get(
+            reactor,
+            url=url,
+            headers=headers
+        )
+        def handleBody(body):
+            data = json.loads(body)
+            if isinstance(data, list) and len(data) == 13:
+                return data
+            else:
+                print(data)
+                return None
+
+        d.addCallback(handleBody)
+
+        return d
+
     def getKLine(self, pairs, timeFrame='1m', start=None, end=None, sort=-1, limit=None):
         URL = "/v2/candles/trade:"
         symbol = self.getSymbol(pairs)
