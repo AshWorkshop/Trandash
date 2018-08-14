@@ -33,10 +33,9 @@ class BitfinexRobot(Robot):
         catch = False
 
         if not catch and KLines is not None and ticker is not None:
+            catch = False
             buys = self.data['buys'] # 已成交的买单，相当于开多单
             sells = self.data['sells'] # 已成交的卖单，相当于开空单
-
-            catch = True
             MAs = calcMAs(KLines, ma=30)
             _, ma = MAs[-1]
             last_price = ticker[-4]
@@ -47,6 +46,7 @@ class BitfinexRobot(Robot):
                 print('SELL')
 
         if not catch and KLines is not None and ticker is not None:
+            catch = False
             Bolls = calcBolls(KLines)
             klines = KLines[-3:]
             bolls = Bolls[-3:]
@@ -63,6 +63,7 @@ class BitfinexRobot(Robot):
                 print('SELLBOLL')
 
         if not catch:
+            catch = False
             buyp = self.data['buyp'] # 未成交的卖单，相当于平多单
             sellp = self.data['sellp'] # 未成交的买单，相当于平空单
             if buyp is not None:
