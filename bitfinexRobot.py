@@ -66,8 +66,7 @@ class BitfinexRobot(Robot):
             _, llb_u, _, llb_d = llb
             _, lb_u, _, lb_d = lb
             _, b_u, _, b_d = b
-            print('llk_close && lk_close:', llk_close, lk_close)
-            print('llb_u && lb_u && llb_d && lb_d:', llb_u, lb_u, llb_d, lb_d)
+
             if llk_close > llb_d and lk_close < lb_d:
                 print('BUYBOLL')
             elif llk_close < llb_u and lk_close > lb_u:
