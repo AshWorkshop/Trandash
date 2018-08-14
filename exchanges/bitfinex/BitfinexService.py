@@ -176,6 +176,7 @@ class Bitfinex(ExchangeService):
 
             try:
                 order_id = data['order_id']
+                return (True, int(order_id))
             except KeyError:
                 print(data)
                 order_id = '0'
@@ -184,8 +185,7 @@ class Bitfinex(ExchangeService):
                     print(err)
                     if err == 'ERR_RATE_LIMIT':
                         time.sleep(1)
-
-            return int(order_id)
+                    return (False, data['error'])
 
         d.addCallback(handleBody)
 
@@ -215,6 +215,7 @@ class Bitfinex(ExchangeService):
 
             try:
                 order_id = data['order_id']
+                return (True, int(order_id))
             except KeyError:
                 print(data)
                 order_id = '0'
@@ -223,8 +224,7 @@ class Bitfinex(ExchangeService):
                     print(err)
                     if err == 'ERR_RATE_LIMIT':
                         time.sleep(1)
-
-            return int(order_id)
+                    return (False, data['error'])
 
         d.addCallback(handleBody)
 
@@ -319,8 +319,10 @@ class Bitfinex(ExchangeService):
 
         return d
 
-    def getOrderHistory(self, pairs, givenTime=float(time.time())):
+    def getOrderHistory(self, pairs, givenTime=float(time.time())-259200):
         #View your latest inactive orders. Limited to last 3 days and 1 request per minute.
+        #All times are UTC timestamps expressed as seconds (eg 1477409622)
+        #default givenTime:3 days ago
         URL = "/v1/orders/hist"
         # print(self.__url)
         url = self.__url + URL

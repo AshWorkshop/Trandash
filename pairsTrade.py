@@ -22,13 +22,60 @@ orderBookA = OrderBooks( ['bitfinex'], ('eth', 'usdt'))
 orderBookA.start(reactor)
 orderBookB = OrderBooks( ['bitfinex'], ('eos', 'eth'))
 orderBookB.start(reactor)
+state = 'FIRST'
 
 FEE = {
-    'huobipro': [1.004,0.996],
-    'gateio': [1.004,0.996],
-    'bitfinex': [1.004,0.996],
-    'virtual': [1.004,0.996],
+    'huobipro': [1.004, 0.996],
+    'gateio': [1.004, 0.996],
+    'bitfinex': [1.004, 0.996],
+    'virtual': [1.004, 0.996],
 }
+SELL, BUY = range(2)
+
+@defer.inlineCallbacks
+def buy(exchange,coinPair,amount,price):
+    print(exchange,amount,price)
+    print(exchange.getBalance(coinPair(BUY)))
+    orderId = None
+    if exchange.getBalance(coinPair[BUY]) >= price*amount:
+        try:
+            orderId = yield exchange.buy(coinPair,price,amount)
+            print(orderId)
+        except Exception as err:
+            failure = Failure(err)
+            print(failure.getBriefTraceback())
+
+    if orderId[0] == True:
+        print("SUCCESSFULLY BUY:", orderId[1])
+        try:
+            order = yield exchange.getOrder(orderId,coinPair)
+        except Exception as err:
+            failure = Failure(err)
+            print(failure.getBriefTraceback())
+
+    state = "GO"
+
+@defer.inlineCallbacks
+def sell(exchange,coinPair,amount,price):
+    global state
+    orderId = None
+    if exchange.getBalance(coinPair[SELL]) >= amount:
+        try:
+            orderId = yield exchange.sell(coinPair,price,amount)
+            print(orderId)
+        except Exception as err:
+            failure = Failure(err)
+            print(failure.getBriefTraceback())
+
+    if orderId[0] == True:
+        print("SUCCESSFULLY SELL:", orderId[1])
+        try:
+            order = yield exchange.getOrder(orderId,coinPair)
+        except Exception as err:
+            failure = Failure(err)
+            print(failure.getBriefTraceback())
+
+    state = "GO"
 
 def cbRun():
     global count
@@ -39,10 +86,7 @@ def cbRun():
 
     hasData = True
     
-
-
     A = []
-    B = []
     for exchange, slot in orderBookA.slots.items():
         bids, asks = slot.getOrderBook()
         slot.setOrderBook()
@@ -53,7 +97,8 @@ def cbRun():
             hasData = False
             break
         A = [bids, asks]
-
+    
+    B = []
     for exchange, slot in orderBookB.slots.items():
         bids, asks = slot.getOrderBook()
         slot.setOrderBook()
@@ -79,9 +124,9 @@ def cbRun():
     if hasData:
         VirtualOrderBooks = calcVirtualOrderBooks(A, B)
         # print(count, VirtualOrderBooks)
-        BUY, SELL = range(2)
-        virBids = VirtualOrderBooks[BUY]
-        virAsks = VirtualOrderBooks[SELL]
+        vBUY, vSELL = range(2)
+        virBids = VirtualOrderBooks[vBUY]
+        virAsks = VirtualOrderBooks[vSELL]
         avgVirBids = calcMean(virBids)
         avgVirAsks = calcMean(virAsks)
         exchangeState['virtual'] = dict()
@@ -89,6 +134,19 @@ def cbRun():
         exchangePairs = verifyExchanges(exchangeState,FEE=FEE)
         print(count, exchangePairs)
 
+        if exchangePairs:
+            print('BUY')
+            exchange = EXCHANGE[exchangePairs[0][0][BUY]]
+            price  = exchangePairs[0][1][BUY]
+            amount = exchangePairs[0][2][1]
+            #print(exchange.getBalance('usdt'),price,amount)
+            reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=price,amount=amount)
+
+            print('SELL')
+            exchange = EXCHANGE[exchangePairs[0][0][SELL]]
+            price  = exchangePairs[0][1][SELL]
+            amount = exchangePairs[0][2][1]
+            reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=price,amount=amount)
 
     # yield cbRun()
 def ebLoopFailed(failure):
