@@ -24,6 +24,7 @@ class Bitfinex(ExchangeService):
         return ''.join((coin, money)).upper()
 
     def getOrderBook(self, pairs):
+        #ratelimit: 60 req/min
         URL = "/v1/book/"
         # print(self.__url)
         url = self.__url + URL + self.getSymbol(pairs)
@@ -64,6 +65,7 @@ class Bitfinex(ExchangeService):
         return d
 
     def getBalance(self, coin):
+        #ratelimit: 20 req/min
         URL = "/v1/balances"
         # print(self.__url)
         url = self.__url + URL

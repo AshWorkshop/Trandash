@@ -7,7 +7,7 @@ from twisted.internet import defer, task
 from twisted.internet import reactor
 from requestUtils.request import get
 from utils import calcMean
-from exchange import calcVirtualOrderBooks
+from exchange import calcVirtualOrderBooks, verifyExchanges
 from exchanges.gateio.GateIOService import gateio
 from exchanges.bitfinex.BitfinexService import bitfinex
 from exchanges.huobi.HuobiproService import huobipro
@@ -18,7 +18,10 @@ count = 0
 
 orderBooks = OrderBooks( ['bitfinex'], ('eos', 'usdt'))
 orderBooks.start(reactor)
-
+orderBookA = OrderBooks( ['bitfinex'], ('eth', 'usdt'))
+orderBookA.start(reactor)
+orderBookB = OrderBooks( ['bitfinex'], ('eos', 'eth'))
+orderBookB.start(reactor)
 
 def cbRun():
     global count
@@ -40,20 +43,37 @@ def cbRun():
         avgAsks = calcMean(asks)
 
         exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bids, asks], [avgBids, avgAsks]
+    
+    # print(exchangeState)
 
+    A = []
+    B = []
+    for exchange, slot in orderBookA.slots.items():
+        bids, asks = slot.getOrderBook()
+        slot.setOrderBook()
+        # print(bids)
+        # print(asks)
+        
+        if len(bids) == 0:
+            hasData = False
+            break
+        A= [bids, asks]
 
+    for exchange, slot in orderBookB.slots.items():
+        bids, asks = slot.getOrderBook()
+        slot.setOrderBook()
+        exchangeState[exchange] = dict()
+        if len(bids) == 0:
+            hasData = False
+            break   
+        B= [bids, asks] 
 
-    orderBookA = bitfinex.getOrderBook(('eth', 'usdt'))
-    orderBookB = bitfinex.getOrderBook(('eos', 'eth'))
-    print(orderBookA)
-    print('\n')
-    print(orderBookB)
-    print('\n')
     if hasData:
-        VirtualOrderBooks = calcVirtualOrderBooks(orderBookA, orderBookB)
+        exchangePairs = verifyExchanges(exchangeState)
+        # print(count, exchangePairs)
+        VirtualOrderBooks = calcVirtualOrderBooks(A, B)
         print(count, VirtualOrderBooks)
-        print('\n')
-        print(exchangeState)
+
 
     # yield cbRun()
 def ebLoopFailed(failure):
