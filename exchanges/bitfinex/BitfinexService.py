@@ -158,7 +158,7 @@ class Bitfinex(ExchangeService):
         symbol = self.getSymbol(pairs)
         params = {
             'symbol': symbol,
-            'amount': str(amount),
+            'amount': format(amount, '0.8f'),
             'price': str(price),
             'side': 'buy',
             'type': 'exchange limit',
@@ -197,7 +197,7 @@ class Bitfinex(ExchangeService):
         symbol = self.getSymbol(pairs)
         params = {
             'symbol': symbol,
-            'amount': str(amount),
+            'amount': format(amount, '0.8f'),
             'price': str(price),
             'side': 'sell',
             'type': 'exchange limit',
