@@ -120,6 +120,8 @@ class Bitfinex(ExchangeService):
             data = json.loads(body)
             # print(data)
             balances = dict()
+            if not isinstance(data, list):
+                return None
             for b in data:
                 try:
                     b_type = b['type']

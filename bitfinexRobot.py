@@ -19,6 +19,8 @@ else:
 if money == 'usdt':
     money = 'usd'
 
+pairs = (coin, money)
+
 class BitfinexRobot(Robot):
 
     def init(self):
@@ -30,8 +32,50 @@ class BitfinexRobot(Robot):
         self.data['money'] = money
         self.data['initBuyAmount'] = 0.0
         self.data['initSellAmount'] = 0.0
+        self.data['pairs'] = pairs
 
         self.state = 'run'
+
+    @defer.inlineCallbacks
+    def buy(price, amount):
+        try:
+            orderId = bitfinex.buy(self.pairs, price, amount)
+        except Exception as err:
+            failure = Failure(err)
+            print(failure.getBriefTraceback())
+        else:
+            if orderId != 0:
+                print('SUCCESSFULLY BUY:', orderId)
+                try:
+                    order = bitfinex.getOrder(self.pairs, orderId)
+                except Exception as err:
+                    failure = Failure(err)
+                    print(failure.getBriefTraceback())
+                else:
+                    self.data['buys'].append(order)
+
+        self.state = 'run'
+
+    @defer.inlineCallbacks
+    def sell(price, amount):
+        try:
+            orderId = bitfinex.sell(self.pairs, price, amount)
+        except Exception as err:
+            failure = Failure(err)
+            print(failure.getBriefTraceback())
+        else:
+            if orderId != 0:
+                print('SUCCESSFULLY SELL:', orderId)
+                try:
+                    order = bitfinex.getOrder(self.pairs, orderId)
+                except Exception as err:
+                    failure = Failure(err)
+                    print(failure.getBriefTraceback())
+                else:
+                    self.data['sells'].append(order)
+
+        self.state = 'run'
+
 
     def run(self):
         cycleData = self.data['cycleData']
@@ -47,16 +91,24 @@ class BitfinexRobot(Robot):
             print(balances)
             MAs = calcMAs(KLines, ma=30)
             _, ma = MAs[-1]
+            buy1 = ticker[0]
+            sell1 = ticker[1]
             last_price = ticker[-4]
             print('last_price && ma:', last_price, ma)
             if last_price > ma and len(buys) == 0:
                 print('BUY')
-                self.data['initBuyAmount'] = balances.get(self.data['money'], 0.0) / last_price * 0.001
+                initBuyAmount = self.data['initBuyAmount'] = balances.get(self.data['money'], 0.0) / last_price * 0.001
                 print('initBuyAmount', self.data['initBuyAmount'])
+                if initBuyAmount > 0:
+                    self.state = 'wait'
+                    self.reactor.callWhenRunning(buy, sell1, initBuyAmount)
             elif last_price < ma and len(sells) == 0:
                 print('SELL')
-                self.data['initSellAmount'] = balances.get(self.data['coin'], 0.0) * 0.001
+                initSellAmount = self.data['initSellAmount'] = balances.get(self.data['coin'], 0.0) * 0.001
                 print('initSellAmount', self.data['initSellAmount'])
+                if initSellAmount > 0:
+                    self.state = 'wait'
+                    self.reactor.callWhenRunning(sell, buy1, initSellAmount)
 
         if not catch and KLines is not None and ticker is not None:
             catch = False
@@ -97,8 +149,11 @@ class BitfinexRobot(Robot):
         if buyp['check'] and sellp['check']:
             self.state = 'run'
 
+    def wait(self):
+        pass
 
-pairs = (coin, money)
+
+
 
 klinesCycle = Cycle(reactor, bitfinex.getKLineLastMin, 'klines', limit=1, wait=50, clean=False)
 klinesCycle.start(pairs, last=30)
@@ -107,7 +162,7 @@ tickerCycle.start(pairs)
 balancesCycle = Cycle(reactor, bitfinex.getBalances, 'balances', limit=1, wait=2)
 balancesCycle.start(list(pairs))
 
-states = ['init', 'run', 'wait_for_check']
+states = ['init', 'run', 'wait_for_check', 'wait']
 
 bitfinexRobot = BitfinexRobot(reactor, states, [klinesCycle, tickerCycle, balancesCycle])
 bitfinexRobot.start('init')
