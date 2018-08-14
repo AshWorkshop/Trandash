@@ -175,6 +175,7 @@ class Bitfinex(ExchangeService):
             try:
                 order_id = data['order_id']
             except KeyError:
+                print(data)
                 order_id = '0'
                 if 'error' in data:
                     err = data['error']
@@ -213,6 +214,7 @@ class Bitfinex(ExchangeService):
             try:
                 order_id = data['order_id']
             except KeyError:
+                print(data)
                 order_id = '0'
                 if 'error' in data:
                     err = data['error']
