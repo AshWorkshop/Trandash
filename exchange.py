@@ -25,10 +25,10 @@ class Slot(object):
         self.orderBook = [[], []] # [bids, asks]
 
     def getOrderBook(self):
-        return self.orderBook.copy()
+        return self.orderBook.copy() # WARNING: not deep copy, need fixing
 
-    def setOrderBook(self, orderBook=[[], []]):
-        self.orderBook = orderBook.copy()
+    def setOrderBook(self, orderBook=[[], []]): # WARNING: use list as default parameter, need fixing
+        self.orderBook = orderBook.copy() # WARNING: not deep copy, need fixing
 
 class OrderBooks(object):
 
@@ -111,33 +111,33 @@ def calcOneWayVirtualOrderBooks(A2C: ['bids/asks'], C2B: ['bids/asks']):
     virtualOrderBook = []
 
     while A2C_ and C2B_:
-        # the maximum amount of coin C which can be purchased with coin A
-        amountA = A2C_[0][AMOUNT]
-        # the maximum amount of coin C which purchased all coin B need
-        amountB = C2B_[0][PRICE] * C2B_[0][AMOUNT]
+        # the maximum amount of coin C which purchased all coin A need
+        amountA = A2C_[0][PRICE] * A2C_[0][AMOUNT]
+        # the maximum amount of coin C which can be purchased with coin B
+        amountB = C2B_[0][AMOUNT]
         if amountA == amountB:
-            vAmount = C2B_[0][AMOUNT]
-            vPrice = A2C_[0][AMOUNT] * A2C_[0][PRICE] / vAmount
+            vAmount = A2C_[0][AMOUNT]
+            vPrice = C2B_[0][AMOUNT] * C2B_[0][PRICE] / vAmount
             virtualOrderBook.append( [vPrice, vAmount] )
-            del A2C_[0]
             del C2B_[0]
-        elif amountA < amountB:
-            vAmount = A2C_[0][AMOUNT] / C2B_[0][PRICE]
-            vPrice = A2C_[0][AMOUNT] * A2C_[0][PRICE] / vAmount
-            virtualOrderBook.append( [vPrice, vAmount] )
             del A2C_[0]
-            C2B_[0][AMOUNT] -= vAmount
+        elif amountA > amountB:
+            vAmount = C2B_[0][AMOUNT] / A2C_[0][PRICE]
+            vPrice = C2B_[0][AMOUNT] * C2B_[0][PRICE] / vAmount
+            virtualOrderBook.append( [vPrice, vAmount] )
+            del C2B_[0]
+            A2C_[0][AMOUNT] -= vAmount
         else:
-            vAmount = C2B_[0][AMOUNT]
-            vPrice = C2B_[0][AMOUNT] * C2B_[0][PRICE] * A2C_[0][PRICE] / vAmount
+            vAmount = A2C_[0][AMOUNT]
+            vPrice = A2C_[0][AMOUNT] * A2C_[0][PRICE] * C2B_[0][PRICE] / vAmount
             virtualOrderBook.append( [vPrice, vAmount] )
-            A2C_[0][AMOUNT] -= C2B_[0][AMOUNT] * C2B_[0][PRICE]
-            del C2B_[0]
+            C2B_[0][AMOUNT] -= A2C_[0][AMOUNT] * A2C_[0][PRICE]
+            del A2C_[0]
 
     return virtualOrderBook
 
 def calcVirtualOrderBooks(orderBookA: [['bids'], ['asks']], 
-                         orderBookB: [['bids'], ['asks']]):
+                          orderBookB: [['bids'], ['asks']]):
     """calculate virtual order book between coin A and coin B through coin C"""
 
     # index enumeration for taking buy/sell data from order book list
@@ -148,18 +148,3 @@ def calcVirtualOrderBooks(orderBookA: [['bids'], ['asks']],
         calcOneWayVirtualOrderBooks(orderBookA[SELL], orderBookB[SELL])
     ]
 
-if __name__ == '__main__':
-    USDT2ETH = [
-        [100, 5],
-        [110, 5],
-        [120, 10],
-        [130, 10],
-    ]
-    ETH2EOS = [
-        [0.01, 300],
-        [0.02, 500],
-        [0.03, 500],
-        [0.05, 500],
-    ]
-    print(f'USDT2ETH: {USDT2ETH}\nETH2EOS: {ETH2EOS}\nUSDT2EOS: {calcOneWayVirtualOrderBooks(USDT2ETH, ETH2EOS)}')
-    print(f'USDT2ETH: {USDT2ETH}\nETH2EOS: {ETH2EOS}\n')
