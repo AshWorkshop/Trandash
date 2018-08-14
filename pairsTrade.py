@@ -7,7 +7,7 @@ from twisted.internet import defer, task
 from twisted.internet import reactor
 from requestUtils.request import get
 from utils import calcMean
-from exchange import verifyExchanges
+from exchange import calcVirtualOrderBooks
 from exchanges.gateio.GateIOService import gateio
 from exchanges.bitfinex.BitfinexService import bitfinex
 from exchanges.huobi.HuobiproService import huobipro
@@ -16,7 +16,7 @@ from exchange import OrderBooks
 
 count = 0
 
-orderBooks = OrderBooks(['gateio', 'bitfinex'], ('eth', 'usdt'))
+orderBooks = OrderBooks( ['bitfinex'], ('eos', 'usdt'))
 orderBooks.start(reactor)
 
 
@@ -41,11 +41,19 @@ def cbRun():
 
         exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bids, asks], [avgBids, avgAsks]
 
-    print(exchangeState)
 
+
+    orderBookA = bitfinex.getOrderBook(('eth', 'usdt'))
+    orderBookB = bitfinex.getOrderBook(('eos', 'eth'))
+    print(orderBookA)
+    print('\n')
+    print(orderBookB)
+    print('\n')
     if hasData:
-        exchangePairs = verifyExchanges(exchangeState)
-        print(count, exchangePairs)
+        VirtualOrderBooks = calcVirtualOrderBooks(orderBookA, orderBookB)
+        print(count, VirtualOrderBooks)
+        print('\n')
+        print(exchangeState)
 
     # yield cbRun()
 def ebLoopFailed(failure):
