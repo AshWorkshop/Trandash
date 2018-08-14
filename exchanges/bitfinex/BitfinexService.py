@@ -118,7 +118,7 @@ class Bitfinex(ExchangeService):
         def handleBody(body):
             # print(body)
             data = json.loads(body)
-            print(data)
+            # print(data)
             balances = dict()
             for b in data:
                 try:
