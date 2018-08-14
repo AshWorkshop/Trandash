@@ -33,6 +33,7 @@ class BitfinexRobot(Robot):
         self.data['initBuyAmount'] = 0.0
         self.data['initSellAmount'] = 0.0
         self.data['pairs'] = pairs
+        self.data['minAmount'] = 0.04
 
         self.state = 'run'
 
@@ -98,15 +99,20 @@ class BitfinexRobot(Robot):
             if last_price > ma and len(buys) == 0:
                 print('BUY')
                 initBuyAmount = self.data['initBuyAmount'] = balances.get(self.data['money'], 0.0) / last_price * 0.001
+                if initBuyAmount > 0 and initBuyAmount < self.data['minAmount'] and balance.get(self.data['money'], 0.0) / sell1 >= self.data['minAmount']:
+                    initBuyAmount = self.data['initBuyAmount'] = self.data['minAmount']
+
                 print('initBuyAmount', self.data['initBuyAmount'])
-                if initBuyAmount > 0:
+                if initBuyAmount >= 0.04:
                     self.state = 'wait'
                     self.reactor.callWhenRunning(self.buy, sell1, initBuyAmount)
             elif last_price < ma and len(sells) == 0:
                 print('SELL')
                 initSellAmount = self.data['initSellAmount'] = balances.get(self.data['coin'], 0.0) * 0.001
+                if initSellAmount > 0 and initSellAmount < self.data['minAmount'] and balances.get(self.data['coin'], 0.0) >= self.data['minAmount']:
+                    initSellAmount = self.data['initSellAmount'] = self.data['minAmount']
                 print('initSellAmount', self.data['initSellAmount'])
-                if initSellAmount > 0:
+                if initSellAmount >= 0.04:
                     self.state = 'wait'
                     self.reactor.callWhenRunning(self.sell, buy1, initSellAmount)
 
