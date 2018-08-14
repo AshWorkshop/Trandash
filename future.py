@@ -280,38 +280,6 @@ def cbRun():
 
     print(bool(KLinesData), bool(tickerData), bool(positionData), bool(orderBookData), bool(userInfoData))
 
-    # 同步数据
-    if state == 'GO' and positionData is not None:
-        buy_amount = positionData['buy_amount']
-        sell_amount = positionData['sell_amount']
-        buy_price_avg = positionData['buy_price_avg']
-        sell_price_avg = positionData['sell_price_avg']
-
-        buyAvgPrice, buyAmount = getAvg(buys)
-        sellAvgPrice, sellAmount = getAvg(sells)
-
-        if buy_price_avg != buyAvgPrice or buyAmount != buy_amount:
-            lastBuyAmount = searchLastAmount(buy_amount)
-            if buy_amount != 0:
-                buys = [(buy_price_avg, buy_amount)]
-            else:
-                buys = []
-            data = shelve.open(dataFile)
-            data['buys'] = buys
-            data.close()
-
-        if sell_price_avg != sellAvgPrice or sellAmount != sell_amount:
-            lastSellAmount = searchLastAmount(sell_amount)
-            if sell_amount != 0:
-                sells = [(sell_price_avg, sell_amount)]
-            else:
-                sells = []
-            data = shelve.open(dataFile)
-            data['sells'] = sells
-            data.close()
-
-
-
 
     # 是否开初始单
     if state == 'GO' and KLinesData is not None and tickerData is not None and positionData is not None:
@@ -456,6 +424,39 @@ def cbRun():
             state = 'PPP'
             reactor.callWhenRunning(buyp, amount=buy_amount, sellAmount=sell_amount)
 
+
+    # 同步数据
+    if state == 'GO' and positionData is not None and count % 2 == 0:
+        buy_amount = positionData['buy_amount']
+        sell_amount = positionData['sell_amount']
+        buy_price_avg = positionData['buy_price_avg']
+        sell_price_avg = positionData['sell_price_avg']
+
+        buyAvgPrice, buyAmount = getAvg(buys)
+        sellAvgPrice, sellAmount = getAvg(sells)
+
+        if buy_price_avg != buyAvgPrice or buyAmount != buy_amount:
+            print('RESET buys')
+            lastBuyAmount = searchLastAmount(buy_amount)
+            if buy_amount != 0:
+                buys = [(buy_price_avg, buy_amount)]
+            else:
+                buys = []
+            data = shelve.open(dataFile)
+            data['buys'] = buys
+            data.close()
+
+        if sell_price_avg != sellAvgPrice or sellAmount != sell_amount:
+            print('RESET sells')
+            lastSellAmount = searchLastAmount(sell_amount)
+            if sell_amount != 0:
+                sells = [(sell_price_avg, sell_amount)]
+            else:
+                sells = []
+            data = shelve.open(dataFile)
+            data['sells'] = sells
+            data.close()
+
     if userInfoData is not None:
         account_rights = userInfoData['account_rights']
         accountRight = account_rights
@@ -479,6 +480,9 @@ def cbRun():
 
 
 
+
+
+
             # if 0.7 * (1.0 + maxProfit) <= - (buyRate + sellRate) and buy_amount != 0:
 
 
@@ -495,6 +499,7 @@ def cbRun():
                 data['buys'] = buys
                 data.close()
                 buypId = None
+                lastBuyAmount = 0.0
                 state = 'GO'
             else:
                 state = 'WAITFORBUYPC'
@@ -510,6 +515,7 @@ def cbRun():
                 data['sells'] = sells
                 data.close()
                 sellpId = None
+                lastSellAmount = 0.0
                 state = 'GO'
             else:
                 state = 'WAITFORSELLPC'
