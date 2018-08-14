@@ -15,7 +15,7 @@ from exchanges.huobi.HuobiproService import huobipro
 from exchange import OrderBooks
 
 count = 0
-
+'''initial OrderBooks'''
 orderBooks = OrderBooks( ['bitfinex'], ('eos', 'usdt'))
 orderBooks.start(reactor)
 orderBookA = OrderBooks( ['bitfinex'], ('eth', 'usdt'))
@@ -32,6 +32,7 @@ FEE = {
 }
 SELL, BUY = range(2)
 
+'''api'''
 @defer.inlineCallbacks
 def buy(exchange,coinPair,amount,price):
     print(exchange,amount,price)
@@ -86,6 +87,7 @@ def cbRun():
 
     hasData = True
     
+    '''get orderBookA'''
     A = []
     for exchange, slot in orderBookA.slots.items():
         bids, asks = slot.getOrderBook()
@@ -97,7 +99,8 @@ def cbRun():
             hasData = False
             break
         A = [bids, asks]
-    
+
+    '''get orderBookB'''
     B = []
     for exchange, slot in orderBookB.slots.items():
         bids, asks = slot.getOrderBook()
@@ -107,6 +110,7 @@ def cbRun():
             break   
         B = [bids, asks] 
 
+    '''get origin orderBook'''
     for exchange, slot in orderBooks.slots.items():
         bids, asks = slot.getOrderBook()
         slot.setOrderBook()
@@ -122,31 +126,43 @@ def cbRun():
     # print(exchangeState)
 
     if hasData:
-        VirtualOrderBooks = calcVirtualOrderBooks(A, B)
+        '''add virtualOrderBook into exchangeSate '''
+        virtualOrderBooks = calcVirtualOrderBooks(A, B)       
         # print(count, VirtualOrderBooks)
         vBUY, vSELL = range(2)
-        virBids = VirtualOrderBooks[vBUY]
-        virAsks = VirtualOrderBooks[vSELL]
+        virBids = virtualOrderBooks[vBUY]
+        virAsks = virtualOrderBooks[vSELL]
         avgVirBids = calcMean(virBids)
         avgVirAsks = calcMean(virAsks)
         exchangeState['virtual'] = dict()
         exchangeState['virtual']['actual'], exchangeState['virtual']['avg'] = [virBids, virAsks], [avgVirBids, avgVirAsks]
+        
+        '''get validExPairs '''
         exchangePairs = verifyExchanges(exchangeState,FEE=FEE)
         print(count, exchangePairs)
 
+        '''buy and sell '''
         if exchangePairs:
             print('BUY')
-            exchange = EXCHANGE[exchangePairs[0][0][BUY]]
-            price  = exchangePairs[0][1][BUY]
-            amount = exchangePairs[0][2][1]
-            #print(exchange.getBalance('usdt'),price,amount)
-            reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=price,amount=amount)
+            strExchange = exchangePairs[0][0][BUY]
+            if strExchange == 'virtual':
+                exchange = EXCHANGE[exchangePairs[0][0][SELL]]
+                #TO DO 
+            # exchange = EXCHANGE[strExchange]
+            # price  = exchangePairs[0][1][BUY]
+            # amount = exchangePairs[0][2][1]
+            # #print(exchange.getBalance('usdt'),price,amount)
+            # reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=price,amount=amount)
 
             print('SELL')
-            exchange = EXCHANGE[exchangePairs[0][0][SELL]]
-            price  = exchangePairs[0][1][SELL]
-            amount = exchangePairs[0][2][1]
-            reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=price,amount=amount)
+            strExchange = exchangePairs[0][0][SELL]
+            if strExchange == 'virtual':
+                exchange = EXCHANGE[exchangePairs[0][0][BUY]]
+                #TO DO
+            
+            # price  = exchangePairs[0][1][SELL]
+            # amount = exchangePairs[0][2][1]
+            # reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooks.pairs,price=price,amount=amount)
 
     # yield cbRun()
 def ebLoopFailed(failure):
