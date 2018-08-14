@@ -35,7 +35,7 @@ pairs = (coin, money)
 
 klinesCycle = Cycle(reactor, bitfinex.getKLineLastMin, 'klines', limit=1, wait=50, clean=False)
 klinesCycle.start(pairs, last=30)
-tickerCycle = Cycle(reactor, bitfinex.getTicker, 'ticker')
+tickerCycle = Cycle(reactor, bitfinex.getTicker, 'ticker', limit=5)
 tickerCycle.start(pairs)
 
 states = ['run']

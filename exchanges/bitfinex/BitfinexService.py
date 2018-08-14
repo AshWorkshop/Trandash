@@ -332,7 +332,7 @@ class Bitfinex(ExchangeService):
         )
         def handleBody(body):
             data = json.loads(body)
-            if isinstance(data, list) and len(data) == 13:
+            if isinstance(data, list) and len(data) == 10:
                 return data
             else:
                 print(data)
