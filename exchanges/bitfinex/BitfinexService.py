@@ -24,6 +24,7 @@ class Bitfinex(ExchangeService):
         return ''.join((coin, money)).upper()
 
     def getOrderBook(self, pairs):
+        #ratelimit: 60 req/min
         URL = "/v1/book/"
         # print(self.__url)
         url = self.__url + URL + self.getSymbol(pairs)
@@ -52,10 +53,10 @@ class Bitfinex(ExchangeService):
             asks = []
 
             for bid in rawBids:
-                bids.append([bid['price'], bid['amount']])
+                bids.append( [float(bid['price']), float(bid['amount'])] )
 
             for ask in rawAsks:
-                asks.append([ask['price'], ask['amount']])
+                asks.append( [float(ask['price']), float(ask['amount'])] )
 
             return [bids, asks]
 
@@ -64,6 +65,7 @@ class Bitfinex(ExchangeService):
         return d
 
     def getBalance(self, coin):
+        #ratelimit: 20 req/min
         URL = "/v1/balances"
         # print(self.__url)
         url = self.__url + URL
@@ -174,6 +176,7 @@ class Bitfinex(ExchangeService):
 
             try:
                 order_id = data['order_id']
+                return (True, int(order_id))
             except KeyError:
                 print(data)
                 order_id = '0'
@@ -182,8 +185,7 @@ class Bitfinex(ExchangeService):
                     print(err)
                     if err == 'ERR_RATE_LIMIT':
                         time.sleep(1)
-
-            return int(order_id)
+                    return (False, data['error'])
 
         d.addCallback(handleBody)
 
@@ -213,6 +215,7 @@ class Bitfinex(ExchangeService):
 
             try:
                 order_id = data['order_id']
+                return (True, int(order_id))
             except KeyError:
                 print(data)
                 order_id = '0'
@@ -221,8 +224,7 @@ class Bitfinex(ExchangeService):
                     print(err)
                     if err == 'ERR_RATE_LIMIT':
                         time.sleep(1)
-
-            return int(order_id)
+                    return (False, data['error'])
 
         d.addCallback(handleBody)
 
@@ -317,8 +319,10 @@ class Bitfinex(ExchangeService):
 
         return d
 
-    def getOrderHistory(self, pairs, givenTime=float(time.time())):
+    def getOrderHistory(self, pairs, givenTime=float(time.time())-259200):
         #View your latest inactive orders. Limited to last 3 days and 1 request per minute.
+        #All times are UTC timestamps expressed as seconds (eg 1477409622)
+        #default givenTime:3 days ago
         URL = "/v1/orders/hist"
         # print(self.__url)
         url = self.__url + URL
