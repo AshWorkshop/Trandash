@@ -101,14 +101,14 @@ class BitfinexRobot(Robot):
                 print('initBuyAmount', self.data['initBuyAmount'])
                 if initBuyAmount > 0:
                     self.state = 'wait'
-                    self.reactor.callWhenRunning(buy, sell1, initBuyAmount)
+                    self.reactor.callWhenRunning(self.buy, sell1, initBuyAmount)
             elif last_price < ma and len(sells) == 0:
                 print('SELL')
                 initSellAmount = self.data['initSellAmount'] = balances.get(self.data['coin'], 0.0) * 0.001
                 print('initSellAmount', self.data['initSellAmount'])
                 if initSellAmount > 0:
                     self.state = 'wait'
-                    self.reactor.callWhenRunning(sell, buy1, initSellAmount)
+                    self.reactor.callWhenRunning(self.sell, buy1, initSellAmount)
 
         if not catch and KLines is not None and ticker is not None:
             catch = False
