@@ -23,6 +23,10 @@ class BitfinexRobot(Robot):
         self.data['sells'] = []
         self.data['buyp'] = None
         self.data['sellp'] = None
+        self.data['coin'] = coin
+        self.data['money'] = money
+        self.data['initBuyAmount'] = 0.0
+        self.data['initSellAmount'] = 0.0
 
         self.state = 'run'
 
@@ -30,9 +34,10 @@ class BitfinexRobot(Robot):
         cycleData = self.data['cycleData']
         KLines = cycleData['klines']
         ticker = cycleData['ticker']
+        balances = cycleData['balances']
         catch = False
 
-        if not catch and KLines is not None and ticker is not None:
+        if not catch and KLines is not None and ticker is not None and balances is not None:
             catch = False
             buys = self.data['buys'] # 已成交的买单，相当于开多单
             sells = self.data['sells'] # 已成交的卖单，相当于开空单
@@ -42,8 +47,12 @@ class BitfinexRobot(Robot):
             print('last_price && ma:', last_price, ma)
             if last_price > ma and len(buys) == 0:
                 print('BUY')
+                self.data['initBuyAmount'] = balances.get(self.data['money'], 0.0) / last_price * 0.001
+                print('initBuyAmount', self.data['initBuyAmount'])
             elif last_price < ma and len(sells) == 0:
                 print('SELL')
+                self.data['initSellAmount'] = balances.get(self.data['coin'], 0.0) * 0.001
+                print('initSellAmount', self.data['initSellAmount'])
 
         if not catch and KLines is not None and ticker is not None:
             catch = False
@@ -92,6 +101,8 @@ klinesCycle = Cycle(reactor, bitfinex.getKLineLastMin, 'klines', limit=1, wait=5
 klinesCycle.start(pairs, last=30)
 tickerCycle = Cycle(reactor, bitfinex.getTicker, 'ticker', limit=1, wait=3, clean=False)
 tickerCycle.start(pairs)
+balancesCycle = Cycle(reactor, bitfinex.getBalances, 'balances', limit=1, wait=2)
+balancesCycle.start(pairs)
 
 states = ['init', 'run', 'wait_for_check']
 

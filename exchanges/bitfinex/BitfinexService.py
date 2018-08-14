@@ -98,8 +98,51 @@ class Bitfinex(ExchangeService):
                         # print(b['currency'])
                         balance = float(b_available)  #balance that is available to trade
                         break
-
             return balance
+
+        d.addCallback(handleBody)
+
+        return d
+
+    def getBalances(self, coins):
+        URL = "/v1/balances"
+        # print(self.__url)
+        url = self.__url + URL
+        # print(url)
+        headers = getPostHeaders(url, URL)
+        d = post(reactor, url, headers=headers)
+        for coin in coins:
+            if coin == 'usdt':
+                coin = 'usd'
+
+        def handleBody(body):
+            # print(body)
+            data = json.loads(body)
+            # print(data)
+            balances = dict()
+            for b in data:
+                try:
+                    b_type = b['type']
+                    b_currency = b['currency']
+                    b_available = b['available']
+                except KeyError:
+                    b_type = ''
+                    b_currency = ''
+                    b_available = 0.0
+                    if 'error' in data:
+                        err = data['error']
+                        print(err)
+                        if err == 'ERR_RATE_LIMIT':
+                            time.sleep(1)
+                if b_type == 'exchange':
+                    # print(b)
+                    if b_currency in coins:
+                        # print(b['currency'])
+                        balances[coin] = float(b_available)  #balance that is available to trade
+
+            if balances == {}:
+                return None
+            return balances
 
         d.addCallback(handleBody)
 
