@@ -23,6 +23,13 @@ orderBookA.start(reactor)
 orderBookB = OrderBooks( ['bitfinex'], ('eos', 'eth'))
 orderBookB.start(reactor)
 
+FEE = {
+    'huobipro': [1.004,0.996],
+    'gateio': [1.004,0.996],
+    'bitfinex': [1.004,0.996],
+    'virtual': [1.004,0.996],
+}
+
 def cbRun():
     global count
     count += 1
@@ -31,20 +38,8 @@ def cbRun():
     exchangeState = dict()
 
     hasData = True
-
-    for exchange, slot in orderBooks.slots.items():
-        bids, asks = slot.getOrderBook()
-        slot.setOrderBook()
-        exchangeState[exchange] = dict()
-        if len(bids) == 0:
-            hasData = False
-            break
-        avgBids = calcMean(bids)
-        avgAsks = calcMean(asks)
-
-        exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bids, asks], [avgBids, avgAsks]
     
-    # print(exchangeState)
+
 
     A = []
     B = []
@@ -57,22 +52,42 @@ def cbRun():
         if len(bids) == 0:
             hasData = False
             break
-        A= [bids, asks]
+        A = [bids, asks]
 
     for exchange, slot in orderBookB.slots.items():
+        bids, asks = slot.getOrderBook()
+        slot.setOrderBook()
+        if len(bids) == 0:
+            hasData = False
+            break   
+        B = [bids, asks] 
+
+    for exchange, slot in orderBooks.slots.items():
         bids, asks = slot.getOrderBook()
         slot.setOrderBook()
         exchangeState[exchange] = dict()
         if len(bids) == 0:
             hasData = False
-            break   
-        B= [bids, asks] 
+            break
+        avgBids = calcMean(bids)
+        avgAsks = calcMean(asks)
+
+        exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bids, asks], [avgBids, avgAsks]
+
+    # print(exchangeState)
 
     if hasData:
-        exchangePairs = verifyExchanges(exchangeState)
-        # print(count, exchangePairs)
         VirtualOrderBooks = calcVirtualOrderBooks(A, B)
-        print(count, VirtualOrderBooks)
+        # print(count, VirtualOrderBooks)
+        BUY, SELL = range(2)
+        virBids = VirtualOrderBooks[BUY]
+        virAsks = VirtualOrderBooks[SELL]
+        avgVirBids = calcMean(virBids)
+        avgVirAsks = calcMean(virAsks)
+        exchangeState['virtual'] = dict()
+        exchangeState['virtual']['actual'], exchangeState['virtual']['avg'] = [virBids, virAsks], [avgVirBids, avgVirAsks]
+        exchangePairs = verifyExchanges(exchangeState,FEE=FEE)
+        print(count, exchangePairs)
 
 
     # yield cbRun()

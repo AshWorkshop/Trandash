@@ -67,8 +67,7 @@ class OrderBooks(object):
         result = self.slots.copy()
         return result
 
-def verifyExchanges(exchangesData):
-
+def verifyExchanges(exchangesData, FEE=FEE):
     # index enumeration for taking buy/sell data from exchange tuple
     BUY, SELL = range(2)
 
