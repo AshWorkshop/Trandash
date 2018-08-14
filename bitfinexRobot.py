@@ -27,16 +27,15 @@ class BitfinexRobot(Robot):
         if not catch and klines is not None and ticker is not None:
             catch = True
             MAs = calcMAs(klines, ma=30)
-            ma = MAs[-1]
+            _, ma = MAs[-1]
             last_price = ticker[-4]
-            print(ticker)
             print('last_price && ma:', last_price, ma)
 
 pairs = (coin, money)
 
 klinesCycle = Cycle(reactor, bitfinex.getKLineLastMin, 'klines', limit=1, wait=50, clean=False)
 klinesCycle.start(pairs, last=30)
-tickerCycle = Cycle(reactor, bitfinex.getTicker, 'ticker', limit=5)
+tickerCycle = Cycle(reactor, bitfinex.getTicker, 'ticker', limit=1)
 tickerCycle.start(pairs)
 
 states = ['run']
