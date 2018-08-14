@@ -1,4 +1,4 @@
-from twisted.internet import task
+from twisted.internet import defer, task
 from twisted.internet import reactor
 from twisted.python.failure import Failure
 from exchanges.bitfinex.BitfinexService import bitfinex
@@ -88,7 +88,7 @@ class BitfinexRobot(Robot):
             catch = False
             buys = self.data['buys'] # 已成交的买单，相当于开多单
             sells = self.data['sells'] # 已成交的卖单，相当于开空单
-            print(balances)
+            print('balances:', balances)
             MAs = calcMAs(KLines, ma=30)
             _, ma = MAs[-1]
             buy1 = ticker[0]
