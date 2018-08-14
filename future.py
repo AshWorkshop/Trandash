@@ -206,12 +206,7 @@ def cancle(orderId):
         print('cancle result:', data)
         state = 'GO'
     else:
-        if state == 'WAITFORBUYPC':
-            state = 'BUYPCHECK'
-        elif state == 'WAITFORSELLPC':
-            state = 'SELLPCHECK'
-        else:
-            state = 'GO'
+        state = 'GO'
 
 # def get_buy_avg_price(buys):
 #     for buy in buys:
