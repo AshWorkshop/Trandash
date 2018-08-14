@@ -37,7 +37,7 @@ class BitfinexRobot(Robot):
         self.state = 'run'
 
     @defer.inlineCallbacks
-    def buy(price, amount):
+    def buy(self, price, amount):
         try:
             orderId = yield bitfinex.buy(self.pairs, price, amount)
         except Exception as err:
@@ -57,7 +57,7 @@ class BitfinexRobot(Robot):
         self.state = 'run'
 
     @defer.inlineCallbacks
-    def sell(price, amount):
+    def sell(self, price, amount):
         try:
             orderId = yield bitfinex.sell(self.pairs, price, amount)
         except Exception as err:
