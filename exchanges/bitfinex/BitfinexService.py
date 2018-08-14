@@ -111,9 +111,9 @@ class Bitfinex(ExchangeService):
         # print(url)
         headers = getPostHeaders(url, URL)
         d = post(reactor, url, headers=headers)
-        for coin in coins:
-            if coin == 'usdt':
-                coin = 'usd'
+        for i in range(len(coins)):
+            if coins[i] == 'usdt':
+                coins[i] = 'usd'
 
         def handleBody(body):
             # print(body)
@@ -138,7 +138,7 @@ class Bitfinex(ExchangeService):
                     # print(b)
                     if b_currency in coins:
                         # print(b['currency'])
-                        balances[coin] = float(b_available)  #balance that is available to trade
+                        balances[b_currency] = float(b_available)  #balance that is available to trade
 
             if balances == {}:
                 return None
