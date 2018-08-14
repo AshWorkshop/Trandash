@@ -29,6 +29,7 @@ class BitfinexRobot(Robot):
             MAs = calcMAs(klines, ma=30)
             ma = MAs[-1]
             last_price = ticker[-4]
+            print(ticker)
             print('last_price && ma:', last_price, ma)
 
 pairs = (coin, money)
