@@ -106,5 +106,5 @@ balancesCycle.start(pairs)
 
 states = ['init', 'run', 'wait_for_check']
 
-bitfinexRobot = BitfinexRobot(reactor, states, [klinesCycle, tickerCycle])
+bitfinexRobot = BitfinexRobot(reactor, states, [klinesCycle, tickerCycle, balancesCycle])
 bitfinexRobot.start('init')
