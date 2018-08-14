@@ -282,10 +282,10 @@ def cbRun():
 
     # 同步数据
     if state == 'GO' and positionData is not None:
-        buy_amount = position['buy_amount']
-        sell_amount = position['sell_amount']
-        buy_price_avg = position['buy_price_avg']
-        sell_price_avg = position['sell_price_avg']
+        buy_amount = positionData['buy_amount']
+        sell_amount = positionData['sell_amount']
+        buy_price_avg = positionData['buy_price_avg']
+        sell_price_avg = positionData['sell_price_avg']
 
         buyAvgPrice, buyAmount = getAvg(buys)
         sellAvgPrice, sellAmount = getAvg(sells)
