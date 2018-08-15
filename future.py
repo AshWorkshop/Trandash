@@ -373,7 +373,7 @@ def cbRun():
             if buy_amount > 0:
                 buy_price_last, _ = buys[-1]
                 if (buy_price_last - ticker) / buy_price_last >= 0.005:
-                    if lastBuyAmount < initAmount * rate ** 6:
+                    if lastBuyAmount < initAmount * rate ** 5:
                         buy_amount_new = lastBuyAmount * rate
                     else:
                         buy_amount_new = lastBuyAmount
@@ -387,7 +387,7 @@ def cbRun():
             if sell_amount > 0:
                 sell_price_last, _ = sells[-1]
                 if (ticker - sell_price_last) / sell_price_last >= 0.005:
-                    if lastBuyAmount < initAmount * rate ** 6:
+                    if lastBuyAmount < initAmount * rate ** 5S:
                         sell_amount_new = lastSellAmount * rate
                     else:
                         sell_amount_new = lastSellAmount
@@ -421,7 +421,7 @@ def cbRun():
 
 
     # 同步数据
-    if state == 'GO' and positionData is not None and count % 2 == 0:
+    if state == 'GO' and positionData is not None and count % 30 == 0:
         buy_amount = positionData['buy_amount']
         sell_amount = positionData['sell_amount']
         buy_price_avg = positionData['buy_price_avg']
