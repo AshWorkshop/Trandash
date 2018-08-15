@@ -27,7 +27,7 @@ EXCHANGE = {
 balanceBuy = 0.0
 balanceSell = 0.0
 orderBooks.start(reactor)
-state = 'FIRST'
+state = 'GO'
 
 
 @defer.inlineCallbacks
@@ -126,12 +126,13 @@ def cbRun():
             exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bids, asks], [avgBids, avgAsks]
         print(HuobiBalancesCycle.getData())
         #print(exchangeState)
+        print(GateioBalancesCycle.getData())
 
         if hasData:
             exchangePairs = verifyExchanges(exchangeState)
             print(count, exchangePairs)
             if exchangePairs:
-                state = "WAIT"
+                #state = "WAIT"
                 amount = 0.01#exchangePairs[0][2][1]
                 exBuy = EXCHANGE[exchangePairs[0][0][BUY]]
                 priceBuy  = exchangePairs[0][1][BUY]
@@ -158,8 +159,8 @@ def ebLoopFailed(failure):
 # reactor.callWhenRunning(cbRun)
 HuobiBalancesCycle = Cycle(reactor,huobipro.getBalances,'balances')
 HuobiBalancesCycle.start(list(coinPair))
-#GateioBalancesCycle = Cycle(reactor,gateio.getBalance,'gateio')
-#GateioBalancesCycle.start(list(coinPair))
+GateioBalancesCycle = Cycle(reactor,gateio.getBalances,'gateio')
+GateioBalancesCycle.start()
 loop = task.LoopingCall(cbRun)
 
 loopDeferred = loop.start(1.0)
