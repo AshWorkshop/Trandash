@@ -111,6 +111,7 @@ def calcOneWayVirtualOrderBooks(A2C: ['bids/asks'], C2B: ['bids/asks']):
     A2C_, C2B_ = copy.deepcopy(A2C), copy.deepcopy(C2B)
 
     virtualOrderBook = []
+    medium = []
 
     while A2C_ and C2B_:
         # the maximum amount of coin C which purchased all coin A need
@@ -121,22 +122,25 @@ def calcOneWayVirtualOrderBooks(A2C: ['bids/asks'], C2B: ['bids/asks']):
             vAmount = A2C_[0][AMOUNT]
             vPrice = C2B_[0][AMOUNT] * C2B_[0][PRICE] / vAmount
             virtualOrderBook.append( [vPrice, vAmount] )
+            medium.append(amountA)
             del C2B_[0]
             del A2C_[0]
         elif amountA > amountB:
             vAmount = C2B_[0][AMOUNT] / A2C_[0][PRICE]
             vPrice = C2B_[0][AMOUNT] * C2B_[0][PRICE] / vAmount
             virtualOrderBook.append( [vPrice, vAmount] )
+            medium.append(amountB)
             del C2B_[0]
             A2C_[0][AMOUNT] -= vAmount
         else:
             vAmount = A2C_[0][AMOUNT]
             vPrice = A2C_[0][AMOUNT] * A2C_[0][PRICE] * C2B_[0][PRICE] / vAmount
             virtualOrderBook.append( [vPrice, vAmount] )
+            medium.append(amountA)
             C2B_[0][AMOUNT] -= A2C_[0][AMOUNT] * A2C_[0][PRICE]
             del A2C_[0]
 
-    return virtualOrderBook
+    return (virtualOrderBook, medium)
 
 def calcVirtualOrderBooks(orderBookA: [['bids'], ['asks']], 
                           orderBookB: [['bids'], ['asks']]):
@@ -144,9 +148,9 @@ def calcVirtualOrderBooks(orderBookA: [['bids'], ['asks']],
 
     # index enumeration for taking buy/sell data from order book list
     BUY, SELL = range(2)
+    
+    orderBookBuy, mediumBuy = calcOneWayVirtualOrderBooks(orderBookA[BUY], orderBookB[BUY])
+    orderBookSell, mediumSell = calcOneWayVirtualOrderBooks(orderBookA[SELL], orderBookB[SELL])
+    return ([orderBookBuy, orderBookSell], [mediumBuy, mediumSell])
 
-    return [
-        calcOneWayVirtualOrderBooks(orderBookA[BUY], orderBookB[BUY]),
-        calcOneWayVirtualOrderBooks(orderBookA[SELL], orderBookB[SELL])
-    ]
 
