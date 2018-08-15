@@ -108,7 +108,7 @@ def calcOneWayVirtualOrderBooks(A2C: ['bids/asks'], C2B: ['bids/asks']):
     # index enumeration for taking price/amount data from price/amount tuple
     PRICE, AMOUNT = range(2)
 
-    A2C_, C2B_ = [order.copy() for order in A2C], [order.copy() for order in C2B]
+    A2C_, C2B_ = copy.deepcopy(A2C), copy.deepcopy(C2B)
 
     virtualOrderBook = []
 

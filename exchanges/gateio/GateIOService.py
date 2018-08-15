@@ -113,6 +113,21 @@ class GateIO(ExchangeService):
         return d
 
     def getBalance(self, coin):
+        d = self.getBalances()
+
+        def handleBody(data):
+            if isinstance(data, tuple) and not data[0]:
+                return data
+            elif coin.upper() in data:
+                return data[coin.upper()]
+            else:
+                return 0
+
+        d.addCallback(handleBody)
+
+        return d
+
+    def getBalances(self):
         URL = "/api2/1/private/balances/"
 
         url = self.__url['balance'] + URL
@@ -137,11 +152,9 @@ class GateIO(ExchangeService):
             if not flag:
                 return (False, data['code'], data['message'])
 
-            if data['available'] and coin.upper() in data['available']:
-                balance = float(data['available'][coin.upper()])
-            else:
-                balance = 0.0
-            return balance
+            if not data['available']:
+                return None
+            return {key: float(value) for key, value in data['available'].items()}
 
         d.addCallback(handleBody)
 
@@ -264,11 +277,11 @@ class GateIO(ExchangeService):
                 status
             )
             # print(str(order))
-            
+
             return (True, order)
 
         d.addCallback(handleBody)
-        
+
         return d
 
     def getOpenOrders(self, coinPair = None):
