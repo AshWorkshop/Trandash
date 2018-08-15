@@ -34,6 +34,7 @@ maxRight = 0.0
 maxRightEveryPeriod = 0.0
 maxDrawdown = 0.0
 accountRight = 0.0
+startTime = int(time.time())
 klineCycle = Cycle(reactor, okexFuture.getKLineLastMin, 'getKLineLastMin')
 tickerCycle = Cycle(reactor, okexFuture.getTicker, 'getTicker')
 positionCycle = Cycle(reactor, okexFuture.getPosition, 'getPosition', limit=5)
@@ -412,9 +413,10 @@ def cbRun():
 
         if account_rights > maxRight:
             maxRight = account_rights
-        print('maxLossRate:', 1 - account_rights / maxRight)
 
-        if account_rights / maxRight <= 0.5 and buy_amount > 0:
+        lossRate = 1 - account_rights / maxRight
+
+        if lossRate >= 0.5 and buy_amount > 0:
             print('PPP')
             state = 'PPP'
             reactor.callWhenRunning(buyp, amount=buy_amount, sellAmount=sell_amount)
@@ -453,28 +455,28 @@ def cbRun():
             data.close()
 
     if userInfoData is not None:
+        # 止损
         account_rights = userInfoData['account_rights']
+        keep_deposit = userInfoData['keep_deposit']
+        profit_real = userInfoData['profit_real']
+        profit_unreal = userInfoData['profit_unreal']
+
         accountRight = account_rights
-        if maxRightEveryPeriod != 0.0:
-            drawdown = (maxRightEveryPeriod - account_rights) / maxRightEveryPeriod
-        else:
-            drawdown = 0.0
 
-        if drawdown > maxDrawdown:
-            maxDrawdown = drawdown
-        print('maxREP && maxDD:', maxRightEveryPeriod, maxDrawdown)
+        if account_rights > maxRight:
+            maxRight = account_rights
 
+        lossRate = 1 - account_rights / maxRight
+        print('lossRate:', lossRate)
 
-    if count % 60 == 0:
-        maxRightEveryPeriod = accountRight
-        staFile = open('okex_' + coin, 'a+')
-        staFile.write("%d,%f\n" % (count, maxDrawdown))
+        staFile = open('okex_' + coin + '_lossRate_' + str(startTime), 'a+')
+        staFile.write("%d,%f\n" % (count, lossRate))
         staFile.close()
 
-
-
-
-
+    if count % 24 * 60 * 60 == 5:
+        staFile = open('okex_' + coin + '_accountRight_' + str(startTime), 'a+')
+        staFile.write("%d,%f\n" % (count, accountRight))
+        staFile.close()
 
 
 
