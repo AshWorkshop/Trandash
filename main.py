@@ -13,32 +13,37 @@ from exchanges.bitfinex.BitfinexService import bitfinex
 from exchanges.huobi.HuobiproService import huobipro
 
 from exchange import OrderBooks
+from cycle.cycle import Cycle
 
 count = 0
-
-orderBooks = OrderBooks(['gateio', 'huobipro'], ('eth', 'usdt'))
+coinPair = ('eth', 'usdt')
+orderBooks = OrderBooks(['gateio', 'huobipro'], coinPair)
 SELL,BUY = range(2)
 EXCHANGE = {
     'huobipro': huobipro,
     'gateio': gateio,
     'bitfinex': bitfinex
 }
+balanceBuy = 0.0
+balanceSell = 0.0
 orderBooks.start(reactor)
 state = 'FIRST'
 
 
 @defer.inlineCallbacks
 def buy(exchange,coinPair,amount,price):
-    print(exchange,amount,price)
-    print(exchange.getBalance(coinPair(BUY)))
+    global state
     orderId = None
-    if exchange.getBalance(coinPair[BUY]) >= price*amount:
+
+    if True:#balance >= price*amount:
         try:
             orderId = yield exchange.buy(coinPair,price,amount)
             print(orderId)
         except Exception as err:
             failure = Failure(err)
             print(failure.getBriefTraceback())
+    else:
+        print("Not enough coin")
 
     if orderId[0] == True:
         print("SUCCESSFULLY BUY:", orderId[1])
@@ -52,15 +57,19 @@ def buy(exchange,coinPair,amount,price):
 
 @defer.inlineCallbacks
 def sell(exchange,coinPair,amount,price):
+
     global state
     orderId = None
-    if exchange.getBalance(coinPair[SELL]) >= amount:
+
+    if True:#balance >= amount:
         try:
             orderId = yield exchange.sell(coinPair,price,amount)
             print(orderId)
         except Exception as err:
             failure = Failure(err)
             print(failure.getBriefTraceback())
+    else:
+        print("Not enough coin")
 
     if orderId[0] == True:
         print("SUCCESSFULLY SELL:", orderId[1])
@@ -71,6 +80,27 @@ def sell(exchange,coinPair,amount,price):
             print(failure.getBriefTraceback())
 
     state = "GO"
+
+@defer.inlineCallbacks
+def getBalanceBuy(exchange,coin):
+
+    global balanceBuy
+    try:
+        balanceBuy = yield exchange.getBalance(coin)
+    except Exception as err:
+        failure = Failure(err)
+        print(failure.getBriefTraceback())
+    #print(balance)
+
+@defer.inlineCallbacks
+def getBalanceSell(exchange,coin):
+
+    global balanceSell
+    try:
+        balanceSell = yield exchange.getBalance(coin)
+    except Exception as err:
+        failure = Failure(err)
+        print(failure.getBriefTraceback())
 
 def cbRun():
     global count
@@ -100,18 +130,20 @@ def cbRun():
         exchangePairs = verifyExchanges(exchangeState)
         print(count, exchangePairs)
         if exchangePairs:
-            print('BUY')
-            exchange = EXCHANGE[exchangePairs[0][0][BUY]]
-            price  = exchangePairs[0][1][BUY]
-            amount = exchangePairs[0][2][1]
+            state = "WAIT"
+            amount = 0.01#exchangePairs[0][2][1]
+            exBuy = EXCHANGE[exchangePairs[0][0][BUY]]
+            priceBuy  = exchangePairs[0][1][BUY]
             #print(exchange.getBalance('usdt'),price,amount)
-            reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=price,amount=amount)
+            exSell = EXCHANGE[exchangePairs[0][0][SELL]]
+            priceSell  = exchangePairs[0][1][SELL]
+            reactor.callWhenRunning(getBalanceBuy,exchange=exBuy,coin=coinPair[BUY])
+            reactor.callWhenRunning(getBalanceSell,exchange=exSell,coin=coinPair[SELL])
+            print("exBuy",balanceBuy,"exSell",balanceSell)
 
-            print('SELL')
-            exchange = EXCHANGE[exchangePairs[0][0][SELL]]
-            price  = exchangePairs[0][1][SELL]
-            amount = exchangePairs[0][2][1]
-            reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=price,amount=amount)
+            #reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=priceBuy,amount=amount)
+
+            #reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=priceSell,amount=amount)
 
 def ebLoopFailed(failure):
     """

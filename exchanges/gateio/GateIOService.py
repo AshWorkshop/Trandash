@@ -214,7 +214,7 @@ class GateIO(ExchangeService):
                 return (False, data['code'], data['message'])
 
             orederId = int(data['orderNumber'])
-            return orederId
+            return (True,orederId)
 
         d.addCallback(handleBody)
 
@@ -264,11 +264,11 @@ class GateIO(ExchangeService):
                 status
             )
             # print(str(order))
-            
+
             return (True, order)
 
         d.addCallback(handleBody)
-        
+
         return d
 
     def getOpenOrders(self, coinPair = None):

@@ -159,7 +159,7 @@ class Huobipro(ExchangeService):
                     break
                 else:
                     balance = 0.0
-            print(balance)
+
             return balance
 
         d.addCallback(handleBody)
@@ -187,7 +187,7 @@ class Huobipro(ExchangeService):
             if data['status'] == 'ok':
                 return (True,data['data'])
             else:
-                return False
+                return (False)
 
         d.addCallback(handleBody)
 
@@ -213,7 +213,7 @@ class Huobipro(ExchangeService):
             if data['status'] == 'ok':
                 return (True,data['data'])
             else:
-                return False
+                return (False)
 
         d.addCallback(handleBody)
 
