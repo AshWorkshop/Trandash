@@ -473,7 +473,7 @@ def cbRun():
         staFile.write("%d,%f\n" % (count, lossRate))
         staFile.close()
 
-    if count % 24 * 60 * 60 == 5:
+    if count % (24 * 60 * 60) == 5:
         staFile = open('okex_' + coin + '_accountRight_' + str(startTime), 'a+')
         staFile.write("%d,%f\n" % (count, accountRight))
         staFile.close()
