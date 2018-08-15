@@ -127,7 +127,7 @@ class GateIO(ExchangeService):
 
         return d
 
-    def getBalances(self):
+    def getBalances(self, coins=None):
         URL = "/api2/1/private/balances/"
 
         url = self.__url['balance'] + URL
@@ -154,7 +154,12 @@ class GateIO(ExchangeService):
 
             if not data['available']:
                 return None
-            return {key: float(value) for key, value in data['available'].items()}
+            balances = {key: float(value) for key, value in data['available'].items()}
+            
+            if not coins:
+                return balances
+            else:
+                return {coin: balances.get(coin.upper(), 0) for coin in coins}
 
         d.addCallback(handleBody)
 
