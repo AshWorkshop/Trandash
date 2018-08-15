@@ -412,9 +412,9 @@ def cbRun():
 
         if account_rights > maxRight:
             maxRight = account_rights
-        print('maxRight:', maxRight)
+        print('maxLossRate:', 1 - account_rights / maxRight)
 
-        if -(profit_real + profit_unreal) > 0.5 * maxRight and buy_amount > 0:
+        if account_rights / maxRight <= 0.5 and buy_amount > 0:
             print('PPP')
             state = 'PPP'
             reactor.callWhenRunning(buyp, amount=buy_amount, sellAmount=sell_amount)
