@@ -387,7 +387,7 @@ def cbRun():
             if sell_amount > 0:
                 sell_price_last, _ = sells[-1]
                 if (ticker - sell_price_last) / sell_price_last >= 0.005:
-                    if lastBuyAmount < initAmount * rate ** 5S:
+                    if lastBuyAmount < initAmount * rate ** 5:
                         sell_amount_new = lastSellAmount * rate
                     else:
                         sell_amount_new = lastSellAmount
