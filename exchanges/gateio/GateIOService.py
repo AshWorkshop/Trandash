@@ -128,8 +128,8 @@ class GateIO(ExchangeService):
         return d
 
     def getBalances(self, coins=None):
+        assert coins is None or isinstance(coins, (list, tuple) ), "type of 'coins' must be 'list' or 'tuple'"
         URL = "/api2/1/private/balances/"
-
         url = self.__url['balance'] + URL
         # print(url)
 
