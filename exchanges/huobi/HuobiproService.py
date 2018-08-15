@@ -154,13 +154,47 @@ class Huobipro(ExchangeService):
         def handleBody(body):
             data = json.loads(body)
             for b in data['data']['list']:
-                if b['currency'] == 'eth':
+                if b['currency'] == coin and b['type'] == 'trade':
                     balance = b['balance']
                     break
                 else:
                     balance = 0.0
 
             return balance
+
+        d.addCallback(handleBody)
+
+        return d
+
+    def getBalances(self, coins=[]):
+
+        #accounts = self.get_accounts()
+        #print(accounts)
+        acct_id = self.getAcctId()
+
+        url = "/v1/account/accounts/{0}/balance".format(acct_id)
+        params = {"account-id": acct_id}
+        url,params = self.api_key_get(params, url)
+        headers = self.postHeaders()
+        postdata = urllib.parse.urlencode(params)
+        url = url +'?'+ postdata
+
+        d = get(reactor,url,headers = headers)
+
+        def handleBody(body):
+            data = json.loads(body)
+            balances = dict()
+            if not isinstance(data, dict):
+                return None
+            for coin in coins:
+                for b in data['data']['list']:
+                    if b['currency'] == coin and b['type'] == 'trade':
+                        balances[coin] = b['balance']
+                        break
+                    else:
+                        balances[coin] = 0.0
+
+            return balances
 
         d.addCallback(handleBody)
 
