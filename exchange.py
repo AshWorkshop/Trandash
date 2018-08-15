@@ -4,6 +4,7 @@ from exchanges.bitfinex.BitfinexService import bitfinex
 
 from twisted.internet import defer
 from twisted.python.failure import Failure
+import copy
 
 FEE = {
     'huobipro': [1, 1],
@@ -25,10 +26,12 @@ class Slot(object):
         self.orderBook = [[], []] # [bids, asks]
 
     def getOrderBook(self):
-        return self.orderBook.copy() # WARNING: not deep copy, need fixing
+        return copy.deepcopy(self.orderBook)
 
-    def setOrderBook(self, orderBook=[[], []]): # WARNING: use list as default parameter, need fixing
-        self.orderBook = orderBook.copy() # WARNING: not deep copy, need fixing
+    def setOrderBook(self, orderBook=None):
+        if orderBook is None:
+            orderBook = [[], []]
+        self.orderBook = copy.deepcopy(orderBook)
 
 class OrderBooks(object):
 
