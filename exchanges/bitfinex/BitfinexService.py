@@ -185,7 +185,7 @@ class Bitfinex(ExchangeService):
                     print(err)
                     if err == 'ERR_RATE_LIMIT':
                         time.sleep(1)
-                    return (False, data['error'])
+                return (False, data)
 
         d.addCallback(handleBody)
 
@@ -224,7 +224,7 @@ class Bitfinex(ExchangeService):
                     print(err)
                     if err == 'ERR_RATE_LIMIT':
                         time.sleep(1)
-                    return (False, data['error'])
+                return (False, data)
 
         d.addCallback(handleBody)
 
