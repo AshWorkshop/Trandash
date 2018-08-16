@@ -42,14 +42,23 @@ def calcMean(dataList, reverse=False):
         result.append((total / totalAmount, totalAmount))
     return result
 
-#用于将json列表转化为二维列表[[price, amount],...]的形式
-def jsonToList(dataList):
-    result_list = []
-    for dic in dataList:
-        price = float(dic['price'])
-        amount = float(dic['amount'])
-        result_list.append([price, amount])
-    return result_list
+
+def getLevel(amount, dataList):
+    """
+    用于根据给定市场深度信息（买/卖单方面的[price,amount]列表），
+    计算出为了吃掉给定数量，所需的深度level
+    """
+    remainAmount = amount
+    AMOUNT = 1
+    level = 0
+    for bData in dataList:
+        if remainAmount <= dataList[level][AMOUNT]:
+            break
+        else:
+            remainAmount -= dataList[level][AMOUNT]
+            level += 1
+    return level
+
 
 def to_bytes(text, encoding=None, errors='strict'):
     """Return the binary representation of `text`. If `text`

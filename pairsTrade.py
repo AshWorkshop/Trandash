@@ -6,7 +6,7 @@ import time
 from twisted.internet import defer, task
 from twisted.internet import reactor
 from requestUtils.request import get
-from utils import calcMean
+from utils import calcMean, getLevel
 from exchange import calcVirtualOrderBooks, verifyExchanges
 from exchanges.gateio.GateIOService import gateio
 from exchanges.bitfinex.BitfinexService import bitfinex
@@ -24,6 +24,11 @@ orderBookB = OrderBooks( ['bitfinex'], ('eos', 'eth'))
 orderBookB.start(reactor)
 state = 'FIRST'
 
+EXCHANGE = {
+    'huobipro': huobipro,
+    'gateio': gateio,
+    'bitfinex': bitfinex
+}
 FEE = {
     'huobipro': [1.004, 0.996],
     'gateio': [1.004, 0.996],
@@ -31,6 +36,7 @@ FEE = {
     'virtual': [1.004, 0.996],
 }
 SELL, BUY = range(2)
+PRICE, AMOUNT = range(2)
 
 '''api'''
 @defer.inlineCallbacks
@@ -92,9 +98,6 @@ def cbRun():
     for exchange, slot in orderBookA.slots.items():
         bids, asks = slot.getOrderBook()
         slot.setOrderBook()
-        # print(bids)
-        # print(asks)
-        
         if len(bids) == 0:
             hasData = False
             break
@@ -109,6 +112,7 @@ def cbRun():
             hasData = False
             break   
         B = [bids, asks] 
+        # print(B)
 
     '''get origin orderBook'''
     for exchange, slot in orderBooks.slots.items():
@@ -140,6 +144,18 @@ def cbRun():
         '''get validExPairs '''
         exchangePairs = verifyExchanges(exchangeState,FEE=FEE)
         print(count, exchangePairs)
+
+        '''possible approaches to get price and amount:
+        
+        midAmount = virtualOrderBooks['midAmount']
+        amountA = midAmount
+        levelA = getLevel(amountA, A[0or1])
+        priceA = A[0or1][levelA][PRICE]
+        
+        amountB = exchangePairs[0][2][1]
+        levelB = getLevel(amountB, B[0or1])
+        priceB = B[0or1][levelB][PRICE]
+        '''
 
         '''buy and sell '''
         if exchangePairs:

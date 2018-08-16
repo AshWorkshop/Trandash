@@ -10,6 +10,18 @@ from cycle.cycle import Cycle
 from robots.robot import Robot
 from utils import calcMAs, calcBolls
 
+def getAvg(things):
+    total = 0
+    totalAmount = 0
+    for _, done, price, amount in things:
+        if done:
+            amount = round(amount)
+            total += price * amount
+            totalAmount += amount
+    if totalAmount == 0:
+        return (0.0, 0.0)
+    return (total / totalAmount, totalAmount)
+
 if len(argv) == 4:
     _, coin, money, dataFile = argv
 else:
@@ -34,11 +46,15 @@ class BitfinexRobot(Robot):
         self.data['initSellAmount'] = 0.0
         self.data['pairs'] = pairs
         self.data['minAmount'] = 0.04
+        self.data['rate'] = 0.006
 
         self.state = 'run'
 
     @defer.inlineCallbacks
     def buy(self, price, amount):
+        orderId = 0
+        done = False
+        pOrderId = 0
         try:
             orderId = yield bitfinex.buy(self.data['pairs'], price, amount)
         except Exception as err:
@@ -47,13 +63,36 @@ class BitfinexRobot(Robot):
         else:
             if orderId != 0:
                 print('SUCCESSFULLY BUY:', orderId)
-                try:
-                    order = yield bitfinex.getOrder(self.data['pairs'], orderId)
-                except Exception as err:
-                    failure = Failure(err)
-                    print(failure.getBriefTraceback())
-                else:
-                    self.data['buys'].append(order)
+                done = True
+
+        self.data['buys'].append([True, done, orderId, price, amount])
+        avgPrice, totalAmount = getAvg(self.data['buys'])
+
+        canP = False
+
+        if self.data['buyp'] is not None:
+            _, _, buypOrderId, _, _ = self.data['buyp']
+            try:
+                result, data = yield bitfinex.cancle(self.data['pairs'], buypOrderId)
+            except Exception as err:
+                failure = Failure(err)
+                print(failure.getBriefTraceback())
+            else:
+                if result:
+                    canP = True
+        else:
+            canP = True
+
+        try:
+            pOrderId = yield bitfinex.sell(self.data['pairs'], avgPrice * (1 + self.data['rate']), totalAmount)
+        except Exception as err:
+            failure = Failure(err)
+            print(failure.getBriefTraceback())
+        else:
+            if pOrderId != 0:
+                print('SUCCESSFULLY SEND BUYP:', pOrderId)
+
+        self.data['buyp'] = [True, False, pOrderId, avgPrice * (1 + self.data['rate']), totalAmount]
 
         self.state = 'run'
 
@@ -67,14 +106,8 @@ class BitfinexRobot(Robot):
         else:
             if orderId != 0:
                 print('SUCCESSFULLY SELL:', orderId)
-                try:
-                    order = yield bitfinex.getOrder(self.data['pairs'], orderId)
-                except Exception as err:
-                    failure = Failure(err)
-                    print(failure.getBriefTraceback())
-                else:
-                    self.data['sells'].append(order)
 
+        self.data['sells'].append((orderId, price, amount))
         self.state = 'run'
 
 
@@ -139,11 +172,11 @@ class BitfinexRobot(Robot):
             buyp = self.data['buyp'] # 未成交的卖单，相当于平多单
             sellp = self.data['sellp'] # 未成交的买单，相当于平空单
             if buyp is not None:
-                buyp['check'] = False
+                buyp[0] = False
                 print('CHECK BUYP')
                 self.state = 'wait_for_check'
             if sellp is not None:
-                sellp['check'] = False
+                sellp[0] = False
                 print('CHECK SELLP')
                 self.state = 'wait_for_check'
 
@@ -152,7 +185,7 @@ class BitfinexRobot(Robot):
     def wait_for_check(self):
         buyp = self.data['buyp']
         sellp = self.data['sellp']
-        if buyp['check'] and sellp['check']:
+        if buyp[0] and sellp[0]:
             self.state = 'run'
 
     def wait(self):
