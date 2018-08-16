@@ -5,6 +5,7 @@ import time
 
 from twisted.internet import defer, task
 from twisted.internet import reactor
+from twisted.python.failure import Failure
 from requestUtils.request import get
 from utils import calcMean, getLevel
 from exchange import calcVirtualOrderBooks, verifyExchanges
@@ -131,18 +132,22 @@ def cbRun():
 
     if hasData:
         '''add virtualOrderBook into exchangeSate '''
-        virtualOrderBooks = calcVirtualOrderBooks(A, B)       
-        # print(count, VirtualOrderBooks)
+        virtualOrderBooks = calcVirtualOrderBooks(A, B)  
+        # print(count, virtualOrderBooks)
+
         vBUY, vSELL = range(2)
-        virBids = virtualOrderBooks[vBUY]
-        virAsks = virtualOrderBooks[vSELL]
+        virBids = virtualOrderBooks[0][vBUY]
+        virAsks = virtualOrderBooks[0][vSELL]
+        # print(len(virBids))
+        # print(len(virAsks))
+        # print(len(B[0]))
         avgVirBids = calcMean(virBids)
         avgVirAsks = calcMean(virAsks)
         exchangeState['virtual'] = dict()
         exchangeState['virtual']['actual'], exchangeState['virtual']['avg'] = [virBids, virAsks], [avgVirBids, avgVirAsks]
         
         '''get validExPairs '''
-        exchangePairs = verifyExchanges(exchangeState,FEE=FEE)
+        exchangePairs = verifyExchanges(exchangeState)
         print(count, exchangePairs)
 
         '''possible approaches to get price and amount:
@@ -158,7 +163,7 @@ def cbRun():
         '''
 
         '''buy and sell '''
-        if exchangePairs:
+        if exchangePairs:  #skip when exchangePairs is [] or None.
             print('BUY')
             strExchange = exchangePairs[0][0][BUY]
             if strExchange == 'virtual':

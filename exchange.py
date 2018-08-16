@@ -10,6 +10,7 @@ FEE = {
     'huobipro': [1, 1],
     'gateio': [1, 1],
     'bitfinex': [1, 1],
+    'virtual': [1, 1],
 }
 
 EXCHANGE = {
@@ -81,11 +82,14 @@ def verifyExchanges(exchangesData, FEE=FEE):
     for buyExName, buyEx in exchangesData.items():
         # print(buyEx)
         for sellExName, sellEx in exchangesData.items():
+
             if buyExName == sellExName: continue
             if buyEx['avg'][BUY][0][PRICE] * FEE[buyExName][BUY] <= sellEx['avg'][SELL][0][PRICE] * FEE[sellExName][SELL]: continue
 
             level = 0
             amount = 0
+            maxLevel = min(len(buyEx['actual'][BUY]), len(sellEx['actual'][SELL]))-1
+            print(maxLevel)
 
             for i, (buy, sell) in enumerate(zip(buyEx['avg'][BUY], sellEx['avg'][SELL])):
                 # print(buy, sell)
@@ -93,6 +97,9 @@ def verifyExchanges(exchangesData, FEE=FEE):
                 if buy[PRICE] * FEE[buyExName][BUY] <= sell[PRICE] * FEE[sellExName][SELL]:
                     level = i - 1
                     break
+                elif level >= maxLevel:
+                    print('error: reach max level when getting validExPairs.')
+                    return None
 
             amount = min(buyEx['avg'][BUY][level][AMOUNT], sellEx['avg'][SELL][level][AMOUNT])
             buyPrice = float(buyEx['actual'][BUY][level][PRICE])
