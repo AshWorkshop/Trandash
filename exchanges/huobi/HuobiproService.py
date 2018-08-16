@@ -154,13 +154,55 @@ class Huobipro(ExchangeService):
         def handleBody(body):
             data = json.loads(body)
             for b in data['data']['list']:
-                if b['currency'] == 'eth':
+                if b['currency'] == coin and b['type'] == 'trade':
                     balance = b['balance']
                     break
                 else:
                     balance = 0.0
-            print(balance)
+
             return balance
+
+        d.addCallback(handleBody)
+
+        return d
+
+    def getBalances(self, coins=[]):
+
+        #accounts = self.get_accounts()
+        #print(accounts)
+        acct_id = self.getAcctId()
+
+        url = "/v1/account/accounts/{0}/balance".format(acct_id)
+        params = {"account-id": acct_id}
+        url,params = self.api_key_get(params, url)
+        headers = self.postHeaders()
+        postdata = urllib.parse.urlencode(params)
+        url = url +'?'+ postdata
+
+        d = get(reactor,url,headers = headers)
+
+        def handleBody(body):
+            data = json.loads(body)
+            balances = dict()
+            if not isinstance(data, dict):
+                return None
+            for b in data['data']['list']:
+                try:
+                    b_type = b['type']
+                    b_currency = b['currency']
+                    b_available = b['balance']
+                except KeyError:
+                    b_type = ''
+                    b_currency = ''
+                    b_available = 0.0
+                    if 'error' in data:
+                        err = data['error']
+                        print(err)
+                if b_type == 'trade':
+                    if b_currency in coins:
+                        balances[b_currency] = float(b_available)
+
+            return balances
 
         d.addCallback(handleBody)
 
@@ -184,10 +226,17 @@ class Huobipro(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            if data['status'] == 'ok':
-                return (True,data['data'])
-            else:
-                return False
+            print(data)
+            try:
+                order_id = data['data']
+                return (True,order_id)
+            except KeyError:
+                print(data)
+                order_id = '0'
+                if 'err-msg' in data:
+                    err = data['err-msg']
+                    print(err)
+                    return (False, data['err-msg'])
 
         d.addCallback(handleBody)
 
@@ -210,10 +259,18 @@ class Huobipro(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            if data['status'] == 'ok':
-                return (True,data['data'])
-            else:
-                return False
+            print(data)
+            try:
+                order_id = data['data']
+                return (True,order_id)
+            except KeyError:
+                print(data)
+                order_id = '0'
+                if 'err-msg' in data:
+                    err = data['err-msg']
+                    print(err)
+                    return (False, data['err-msg'])
+
 
         d.addCallback(handleBody)
 

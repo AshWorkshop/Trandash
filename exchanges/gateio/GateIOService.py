@@ -155,7 +155,7 @@ class GateIO(ExchangeService):
             if not data['available']:
                 return None
             balances = {key: float(value) for key, value in data['available'].items()}
-            
+
             if not coins:
                 return balances
             else:
@@ -189,7 +189,7 @@ class GateIO(ExchangeService):
             data = json.loads(body)
             # print(data)
 
-            flag = data['result']
+            flag = data.get('result',False)
             if type(flag) is str:
                 flag = flag.upper() == 'TRUE'
             if not flag:
@@ -199,6 +199,7 @@ class GateIO(ExchangeService):
             return (True, orederId)
 
         d.addCallback(handleBody)
+        d.addErrback(handleBody)
 
         return d
 
@@ -225,16 +226,17 @@ class GateIO(ExchangeService):
             data = json.loads(body)
             # print(data)
 
-            flag = data['result']
+            flag = data.get('result',False)
             if type(flag) is str:
                 flag = flag.upper() == 'TRUE'
             if not flag:
                 return (False, data['code'], data['message'])
 
             orederId = int(data['orderNumber'])
-            return orederId
+            return (True,orederId)
 
         d.addCallback(handleBody)
+        d.addErrback(handleBody)
 
         return d
 
