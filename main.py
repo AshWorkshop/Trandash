@@ -13,26 +13,28 @@ from exchanges.bitfinex.BitfinexService import bitfinex
 from exchanges.huobi.HuobiproService import huobipro
 
 from exchange import OrderBooks
+from cycle.cycle import Cycle
 
 count = 0
-
-orderBooks = OrderBooks(['gateio', 'huobipro'], ('eth', 'usdt'))
+coinPair = ('eth', 'usdt')
+orderBooks = OrderBooks(['gateio', 'huobipro'], coinPair)
 SELL,BUY = range(2)
 EXCHANGE = {
     'huobipro': huobipro,
     'gateio': gateio,
     'bitfinex': bitfinex
 }
+
 orderBooks.start(reactor)
-state = 'FIRST'
+state = 'GO'
 
 
 @defer.inlineCallbacks
 def buy(exchange,coinPair,amount,price):
-    print(exchange,amount,price)
-    print(exchange.getBalance(coinPair(BUY)))
+    global state
     orderId = None
-    if exchange.getBalance(coinPair[BUY]) >= price*amount:
+
+    if True:#balance >= price*amount:
         try:
             orderId = yield exchange.buy(coinPair,price,amount)
             print(orderId)
@@ -40,7 +42,7 @@ def buy(exchange,coinPair,amount,price):
             failure = Failure(err)
             print(failure.getBriefTraceback())
 
-    if orderId[0] == True:
+    if orderId[1] is not None and orderId[0] == True:
         print("SUCCESSFULLY BUY:", orderId[1])
         try:
             order = yield exchange.getOrder(orderId,coinPair)
@@ -48,13 +50,14 @@ def buy(exchange,coinPair,amount,price):
             failure = Failure(err)
             print(failure.getBriefTraceback())
 
-    state = "GO"
+#    state = "GO"
 
 @defer.inlineCallbacks
 def sell(exchange,coinPair,amount,price):
     global state
     orderId = None
-    if exchange.getBalance(coinPair[SELL]) >= amount:
+
+    if True:#balance >= amount:
         try:
             orderId = yield exchange.sell(coinPair,price,amount)
             print(orderId)
@@ -62,7 +65,7 @@ def sell(exchange,coinPair,amount,price):
             failure = Failure(err)
             print(failure.getBriefTraceback())
 
-    if orderId[0] == True:
+    if orderId[1] is not None and orderId[0] == True:
         print("SUCCESSFULLY SELL:", orderId[1])
         try:
             order = yield exchange.getOrder(orderId,coinPair)
@@ -71,6 +74,7 @@ def sell(exchange,coinPair,amount,price):
             print(failure.getBriefTraceback())
 
     state = "GO"
+
 
 def cbRun():
     global count
@@ -82,36 +86,57 @@ def cbRun():
 
     hasData = True
 
-    for exchange, slot in orderBooks.slots.items():
-        bids, asks = slot.getOrderBook()
-        slot.setOrderBook()
-        exchangeState[exchange] = dict()
-        if len(bids) == 0:
-            hasData = False
-            break
-        avgBids = calcMean(bids) #买单
-        avgAsks = calcMean(asks) #卖单
+    if state == "GO":
+        for exchange, slot in orderBooks.slots.items():
+            bids, asks = slot.getOrderBook()
+            slot.setOrderBook()
+            exchangeState[exchange] = dict()
+            if len(bids) == 0:
+                hasData = False
+                break
+            avgBids = calcMean(bids) #买单
+            avgAsks = calcMean(asks) #卖单
 
-        exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bids, asks], [avgBids, avgAsks]
+            exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bids, asks], [avgBids, avgAsks]
+        #print(HuobiBalancesCycle.getData())
+        #print(exchangeState)
+        #print(GateioBalancesCycle.getData())
 
-    #print(exchangeState)
+        if hasData:
+            exchangePairs = verifyExchanges(exchangeState)
+            print(count, exchangePairs)
+            if exchangePairs:
+                state = "WAIT"
+                amount = 0.005#exchangePairs[0][2][1]
+                exBuy = EXCHANGE[exchangePairs[0][0][BUY]]
+                priceBuy  = exchangePairs[0][1][BUY]
+                #print(exchange.getBalance('usdt'),price,amount)
+                exSell = EXCHANGE[exchangePairs[0][0][SELL]]
+                priceSell  = exchangePairs[0][1][SELL]
+                exBalanceSell = 0.0
+                exBalanceBuy = 0.0
 
-    if hasData:
-        exchangePairs = verifyExchanges(exchangeState)
-        print(count, exchangePairs)
-        if exchangePairs:
-            print('BUY')
-            exchange = EXCHANGE[exchangePairs[0][0][BUY]]
-            price  = exchangePairs[0][1][BUY]
-            amount = exchangePairs[0][2][1]
-            #print(exchange.getBalance('usdt'),price,amount)
-            reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=price,amount=amount)
+                balanceSell = BALANCES[exchangePairs[0][0][SELL]].getData()
+                balanceBuy = BALANCES[exchangePairs[0][0][BUY]].getData()
 
-            print('SELL')
-            exchange = EXCHANGE[exchangePairs[0][0][SELL]]
-            price  = exchangePairs[0][1][SELL]
-            amount = exchangePairs[0][2][1]
-            reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=price,amount=amount)
+                #print(balanceSell,balanceBuy)
+                if isinstance(balanceSell,dict) and isinstance(balanceBuy,dict):
+                    exBalanceSell = balanceSell[coinPair[SELL]]
+                    exBalanceBuy = balanceBuy[coinPair[BUY]]
+                #print(isinstance(exBalanceSell,float),isinstance(exBalanceBuy,float))
+                #print("SELL",exBalanceSell,"BUY",exBalanceBuy)
+                #print(amount,amount*priceBuy)
+
+                if isinstance(exBalanceSell,float) and isinstance(exBalanceBuy,float):
+                    if amount <= exBalanceSell and amount*priceBuy <= exBalanceBuy:
+                        reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=priceBuy,amount=amount)
+                        reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooks.pairs,price=priceSell,amount=amount)
+                    else:
+                        state = "GO"
+                        print("Not enough coin/money")
+                else:
+                    state = "GO"
+                    print("No exchange")
 
 def ebLoopFailed(failure):
     """
@@ -121,6 +146,15 @@ def ebLoopFailed(failure):
     reactor.stop()
 
 # reactor.callWhenRunning(cbRun)
+HuobiBalancesCycle = Cycle(reactor,huobipro.getBalances,'balances')
+HuobiBalancesCycle.start(list(coinPair))
+GateioBalancesCycle = Cycle(reactor,gateio.getBalances,'gateio')
+GateioBalancesCycle.start(list(coinPair))
+BALANCES = {
+    'huobipro': HuobiBalancesCycle,
+    'gateio': GateioBalancesCycle,
+    'bitfinex': None
+}
 loop = task.LoopingCall(cbRun)
 
 loopDeferred = loop.start(1.0)
