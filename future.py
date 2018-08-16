@@ -3,6 +3,7 @@
 import json
 import time
 import shelve
+import sys
 from sys import argv
 
 from twisted.internet import defer, task
@@ -255,6 +256,13 @@ def cbRun():
     global accountRight
     count += 1
     wait += 1
+    # print to file
+
+    output = sys.stdout
+    outputFile = open('okex_' + coin + '_log_' + str(startTime) + '.log', 'a+')
+    sys.stdout = outputFile
+
+
     print('[', count, state, ']')
     # time.sleep(1)
     if state == 'FIRST':
@@ -473,10 +481,10 @@ def cbRun():
         staFile.write("%d,%f\n" % (count, lossRate))
         staFile.close()
 
-    if count % (24 * 60 * 60) == 5:
-        staFile = open('okex_' + coin + '_accountRight_' + str(startTime), 'a+')
-        staFile.write("%d,%f\n" % (count, accountRight))
-        staFile.close()
+
+    staFile = open('okex_' + coin + '_accountRight_' + str(startTime), 'a+')
+    staFile.write("%d,%f\n" % (count, accountRight))
+    staFile.close()
 
 
 
@@ -517,6 +525,9 @@ def cbRun():
             else:
                 state = 'WAITFORSELLPC'
                 reactor.callWhenRunning(cancle, sellpId)
+
+    outputFile.close()
+    sys.stdout = output
 
 
 
