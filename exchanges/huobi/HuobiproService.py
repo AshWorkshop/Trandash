@@ -186,13 +186,21 @@ class Huobipro(ExchangeService):
             balances = dict()
             if not isinstance(data, dict):
                 return None
-            for coin in coins:
-                for b in data['data']['list']:
-                    if b['currency'] == coin and b['type'] == 'trade':
-                        balances[coin] = b['balance']
-                        break
-                    else:
-                        balances[coin] = 0.0
+            for b in data['data']['list']:
+                try:
+                    b_type = b['type']
+                    b_currency = b['currency']
+                    b_available = b['balance']
+                except KeyError:
+                    b_type = ''
+                    b_currency = ''
+                    b_available = 0.0
+                    if 'error' in data:
+                        err = data['error']
+                        print(err)
+                if b_type == 'trade':
+                    if b_currency in coins:
+                        balances[b_currency] = float(b_available)
 
             return balances
 
@@ -218,10 +226,17 @@ class Huobipro(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            if data['status'] == 'ok':
-                return (True,data['data'])
-            else:
-                return (False)
+            print(data)
+            try:
+                order_id = data['data']
+                return (True,order_id)
+            except KeyError:
+                print(data)
+                order_id = '0'
+                if 'err-msg' in data:
+                    err = data['err-msg']
+                    print(err)
+                    return (False, data['err-msg'])
 
         d.addCallback(handleBody)
 
@@ -244,10 +259,18 @@ class Huobipro(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            if data['status'] == 'ok':
-                return (True,data['data'])
-            else:
-                return (False)
+            print(data)
+            try:
+                order_id = data['data']
+                return (True,order_id)
+            except KeyError:
+                print(data)
+                order_id = '0'
+                if 'err-msg' in data:
+                    err = data['err-msg']
+                    print(err)
+                    return (False, data['err-msg'])
+
 
         d.addCallback(handleBody)
 

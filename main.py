@@ -24,8 +24,7 @@ EXCHANGE = {
     'gateio': gateio,
     'bitfinex': bitfinex
 }
-balanceBuy = 0.0
-balanceSell = 0.0
+
 orderBooks.start(reactor)
 state = 'GO'
 
@@ -42,10 +41,8 @@ def buy(exchange,coinPair,amount,price):
         except Exception as err:
             failure = Failure(err)
             print(failure.getBriefTraceback())
-    else:
-        print("Not enough coin")
 
-    if orderId[0] == True:
+    if orderId[1] is not None and orderId[0] == True:
         print("SUCCESSFULLY BUY:", orderId[1])
         try:
             order = yield exchange.getOrder(orderId,coinPair)
@@ -57,7 +54,6 @@ def buy(exchange,coinPair,amount,price):
 
 @defer.inlineCallbacks
 def sell(exchange,coinPair,amount,price):
-
     global state
     orderId = None
 
@@ -68,10 +64,8 @@ def sell(exchange,coinPair,amount,price):
         except Exception as err:
             failure = Failure(err)
             print(failure.getBriefTraceback())
-    else:
-        print("Not enough coin")
 
-    if orderId[0] == True:
+    if orderId[1] is not None and orderId[0] == True:
         print("SUCCESSFULLY SELL:", orderId[1])
         try:
             order = yield exchange.getOrder(orderId,coinPair)
@@ -81,26 +75,6 @@ def sell(exchange,coinPair,amount,price):
 
     state = "GO"
 
-@defer.inlineCallbacks
-def getBalanceBuy(exchange,coin):
-
-    global balanceBuy
-    try:
-        balanceBuy = yield exchange.getBalance(coin)
-    except Exception as err:
-        failure = Failure(err)
-        print(failure.getBriefTraceback())
-    #print(balance)
-
-@defer.inlineCallbacks
-def getBalanceSell(exchange,coin):
-
-    global balanceSell
-    try:
-        balanceSell = yield exchange.getBalance(coin)
-    except Exception as err:
-        failure = Failure(err)
-        print(failure.getBriefTraceback())
 
 def cbRun():
     global count
@@ -124,30 +98,45 @@ def cbRun():
             avgAsks = calcMean(asks) #卖单
 
             exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bids, asks], [avgBids, avgAsks]
-        print(HuobiBalancesCycle.getData())
+        #print(HuobiBalancesCycle.getData())
         #print(exchangeState)
-        print(GateioBalancesCycle.getData())
+        #print(GateioBalancesCycle.getData())
 
         if hasData:
             exchangePairs = verifyExchanges(exchangeState)
             print(count, exchangePairs)
             if exchangePairs:
-                #state = "WAIT"
-                amount = 0.01#exchangePairs[0][2][1]
+                state = "WAIT"
+                amount = 0.005#exchangePairs[0][2][1]
                 exBuy = EXCHANGE[exchangePairs[0][0][BUY]]
                 priceBuy  = exchangePairs[0][1][BUY]
                 #print(exchange.getBalance('usdt'),price,amount)
                 exSell = EXCHANGE[exchangePairs[0][0][SELL]]
                 priceSell  = exchangePairs[0][1][SELL]
-                reactor.callWhenRunning(getBalanceBuy,exchange=exBuy,coin=coinPair[BUY])
-                reactor.callWhenRunning(getBalanceSell,exchange=exSell,coin=coinPair[SELL])
-                print("exBuy",balanceBuy,"exSell",balanceSell)
+                exBalanceSell = 0.0
+                exBalanceBuy = 0.0
 
-                #print(GateioBalancesCycle.getData())
+                balanceSell = BALANCES[exchangePairs[0][0][SELL]].getData()
+                balanceBuy = BALANCES[exchangePairs[0][0][BUY]].getData()
 
-                #reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=priceBuy,amount=amount)
+                #print(balanceSell,balanceBuy)
+                if isinstance(balanceSell,dict) and isinstance(balanceBuy,dict):
+                    exBalanceSell = balanceSell[coinPair[SELL]]
+                    exBalanceBuy = balanceBuy[coinPair[BUY]]
+                #print(isinstance(exBalanceSell,float),isinstance(exBalanceBuy,float))
+                #print("SELL",exBalanceSell,"BUY",exBalanceBuy)
+                #print(amount,amount*priceBuy)
 
-                #reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=priceSell,amount=amount)
+                if isinstance(exBalanceSell,float) and isinstance(exBalanceBuy,float):
+                    if amount <= exBalanceSell and amount*priceBuy <= exBalanceBuy:
+                        reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=priceBuy,amount=amount)
+                        reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooks.pairs,price=priceSell,amount=amount)
+                    else:
+                        state = "GO"
+                        print("Not enough coin/money")
+                else:
+                    state = "GO"
+                    print("No exchange")
 
 def ebLoopFailed(failure):
     """
@@ -160,7 +149,12 @@ def ebLoopFailed(failure):
 HuobiBalancesCycle = Cycle(reactor,huobipro.getBalances,'balances')
 HuobiBalancesCycle.start(list(coinPair))
 GateioBalancesCycle = Cycle(reactor,gateio.getBalances,'gateio')
-GateioBalancesCycle.start()
+GateioBalancesCycle.start(list(coinPair))
+BALANCES = {
+    'huobipro': HuobiBalancesCycle,
+    'gateio': GateioBalancesCycle,
+    'bitfinex': None
+}
 loop = task.LoopingCall(cbRun)
 
 loopDeferred = loop.start(1.0)
