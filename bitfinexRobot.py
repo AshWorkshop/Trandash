@@ -14,10 +14,9 @@ def getAvg(things):
     total = 0
     totalAmount = 0
     for price, amount in things:
-        if done:
-            amount = round(amount)
-            total += price * amount
-            totalAmount += amount
+        amount = round(amount)
+        total += price * amount
+        totalAmount += amount
     if totalAmount == 0:
         return (0.0, 0.0)
     return (total / totalAmount, totalAmount)
@@ -57,7 +56,7 @@ class BitfinexRobot(Robot):
     def buy(self, price, amount):
         orderId = 0
         try:
-            orderId = yield bitfinex.buy(self.data['pairs'], price, amount)
+            orderId, _ = yield bitfinex.buy(self.data['pairs'], price, amount)
         except Exception as err:
             failure = Failure(err)
             print(failure.getBriefTraceback())
@@ -73,7 +72,7 @@ class BitfinexRobot(Robot):
     def sell(self, price, amount):
         orderId = 0
         try:
-            orderId = yield bitfinex.sell(self.data['pairs'], price, amount)
+            orderId, _ = yield bitfinex.sell(self.data['pairs'], price, amount)
         except Exception as err:
             failure = Failure(err)
             print(failure.getBriefTraceback())
@@ -89,7 +88,7 @@ class BitfinexRobot(Robot):
         orderId = None
         cancel = False
         try:
-            orderId = yield bitfinex.sell(self.data['pairs'], price, amount)
+            orderId, _ = yield bitfinex.sell(self.data['pairs'], price, amount)
         except Exception as err:
             failure = Failure(err)
             print(failure.getBriefTraceback())
@@ -119,7 +118,7 @@ class BitfinexRobot(Robot):
         orderId = None
         cancel = False
         try:
-            orderId = yield bitfinex.buy(self.data['pairs'], price, amount)
+            orderId, _ = yield bitfinex.buy(self.data['pairs'], price, amount)
         except Exception as err:
             failure = Failure(err)
             print(failure.getBriefTraceback())
