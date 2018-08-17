@@ -147,7 +147,7 @@ class BitfinexRobot(Robot):
             sell1 = ticker[1]
             last_price = ticker[-4]
             print('last_price && ma:', last_price, ma)
-            if last_price > ma and len(buys) == 0 and self.data['mode'] == 'buy':
+            if last_price > ma and len(self.data['buys']) == 0 and self.data['mode'] == 'buy':
                 print('BUY')
                 initBuyAmount = self.data['initBuyAmount'] = balances.get(self.data['money'], 0.0) / last_price * 0.001
                 if initBuyAmount > 0 and initBuyAmount < self.data['minAmount'] and balance.get(self.data['money'], 0.0) / sell1 >= self.data['minAmount']:
@@ -159,7 +159,7 @@ class BitfinexRobot(Robot):
                     self.state = 'wait'
                     catch = True
                     self.reactor.callWhenRunning(self.buy, sell1, initBuyAmount)
-            elif last_price < ma and len(sells) == 0 and self.data['mode'] == 'sell':
+            elif last_price < ma and len(self.data['sells']) == 0 and self.data['mode'] == 'sell':
                 print('SELL')
                 initSellAmount = self.data['initSellAmount'] = balances.get(self.data['coin'], 0.0) * 0.001
                 if initSellAmount > 0 and initSellAmount < self.data['minAmount'] and balances.get(self.data['coin'], 0.0) >= self.data['minAmount']:
