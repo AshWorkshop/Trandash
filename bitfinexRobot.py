@@ -166,6 +166,8 @@ class BitfinexRobot(Robot):
         balances = cycleData['balances']
         catch = False
 
+        print('1')
+
         if not catch and KLines is not None and ticker is not None and balances is not None:
             buys = self.data['buys'] # 已成交的买单，相当于开多单
             sells = self.data['sells'] # 已成交的卖单，相当于开空单
@@ -199,6 +201,8 @@ class BitfinexRobot(Robot):
                     self.state = 'wait'
                     catch = True
                     self.reactor.callWhenRunning(self.sell, buy1, initSellAmount)
+
+        print('2')
 
         if not catch and KLines is not None and ticker is not None and balances is not None:
             Bolls = calcBolls(KLines)
@@ -249,6 +253,8 @@ class BitfinexRobot(Robot):
                             self.reactor.callWhenRunning(self.sell, buy1, newAmount)
 
 
+
+        print('3')
         # 平仓
         if not catch and ticker is not None:
             buy1 = ticker[0]
