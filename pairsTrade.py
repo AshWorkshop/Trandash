@@ -2,6 +2,9 @@
 
 import json
 import time
+import shelve
+import sys
+from sys import argv
 
 from twisted.internet import defer, task
 from twisted.internet import reactor
@@ -17,7 +20,15 @@ from exchanges.huobi.HuobiproService import huobipro
 from exchange import OrderBooks
 from cycle.cycle import Cycle
 
+# if len(argv) == 4:
+#     _, coin, money, dataFile = argv
+# else:
+#     print("ERROR!")
+#     quit()
+
 count = 0
+wait = 0
+startTime = int(time.time())
 '''initial OrderBooks'''
 coinA = 'usdt'  #A2C, C2B -> A2B
 coinC = 'eth'
@@ -46,7 +57,7 @@ FEE = {
     'bitfinex': [1.004, 0.996],
     'virtual': [1.004, 0.996],
 }
-state = 'GO'
+state = 'FIRST'
 
 
 '''api'''
@@ -71,7 +82,7 @@ def buy(exchange,coinPair,amount,price):
             failure = Failure(err)
             print(failure.getBriefTraceback())
 
-   state = "GO"
+    state = "GO"
 
 @defer.inlineCallbacks
 def sell(exchange,coinPair,amount,price):
@@ -99,9 +110,23 @@ def sell(exchange,coinPair,amount,price):
 def cbRun():
     global count
     global state
+    global wait
     count += 1
-    # print(count)
+    wait += 1
+    # print to file
+
+    print('[', count, state, ']')
     # time.sleep(1)
+    if state == 'FIRST':
+        # data = shelve.open(dataFile)
+        # buys = data.get('buys', [])
+        # sells = data.get('sells', [])
+        # print('buys && sells:', buys, sells)
+        # buyAvgPrice, buyAmount = getAvg(buys)
+        # sellAvgPrice, sellAmount = getAvg(sells)
+        # lastBuyAmount = searchLastAmount(buyAmount)
+        # lastSellAmount = searchLastAmount(sellAmount)
+        state = 'GO'
     exchangeState = dict()
 
     hasData = True
@@ -161,6 +186,7 @@ def cbRun():
             exchangePairs = verifyExchanges(exchangeState)
             print('validExPairs:')
             print(count, exchangePairs)
+            
 
             '''
             buy and sell:
@@ -176,9 +202,9 @@ def cbRun():
                 '''get each balance'''
                 balanceA = 0.0  #balance of 'usdt'
                 balanceC = 0.0  #balance of 'eth'
-                balanceB = 0.0  #balance of 'eos'                
-                balances = BALANCES[exchangeName].getData()
-                if isinstance(balancec,dict):
+                balanceB = 0.0  #balance of 'eos'   
+                balances = BALANCES[exchangeName].getData()                            
+                if isinstance(balances,dict):
                     balanceA = balances[coinA]  #balance of 'usdt'
                     balanceC = balances[coinC]  #balance of 'eth'
                     balanceB = balances[coinB]  #balance of 'eos'
@@ -211,8 +237,9 @@ def cbRun():
                         state = "GO"
                         print("No exchange")  
                     
-                '''do buy in real district:orderBooks: eos-usdt'''
+                
                 else:
+                    '''do buy in real district:orderBooks: eos-usdt'''
                     priceBuy = exchangePairs[0][1][BUY]
                     amountBuy = exchangePairs[0][2][1]
                     print(type(priceBuy))
@@ -256,8 +283,9 @@ def cbRun():
                         state = "GO"
                         print("No exchange")                   
 
-                '''do sell in real district:orderBooks: eos-usdt'''
+                
                 else:
+                    '''do sell in real district:orderBooks: eos-usdt'''
                     priceSell = exchangePairs[0][1][SELL]
                     amountSell = exchangePairs[0][2][1]
                     print(type(priceSell))
@@ -272,7 +300,11 @@ def cbRun():
                     else:
                         state = "GO"
                         print("No exchange")
-
+            balances = BALANCES[exchangeName].getData() 
+            balancesWr = str(json.dumps(balances))
+            staFile = open('bitfinex_' + '_balances_' + str(startTime), 'a+')
+            staFile.write("%d,%s\n" % (count, balancesWr))
+            staFile.close()
 
     # yield cbRun()
 def ebLoopFailed(failure):
