@@ -17,7 +17,7 @@ pairs = ('eth', 'usdt')
 def test():
 
     #d = okexFuture.cancle(('ltc', 'usdt'), orderId=1276330619587584)
-    d = okexFuture.getKLineLastMin(('ltc', 'usdt'), last=30)
+    d = okexFuture.getKLineLastMin(('ltc', 'usdt'), last=100)
     #d = huobipro.getBalances(['eth','usdt'])
     # d = bitfinex.getOrderBook(('eos', 'eth'))
 
