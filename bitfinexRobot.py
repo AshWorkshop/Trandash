@@ -255,10 +255,8 @@ class BitfinexRobot(Robot):
 
 
         print('3')
-        print(ticker)
         # 平仓
         if not catch and ticker is not None:
-            print(ticker)
             buy1 = ticker[0]
             sell1 = ticker[1]
             last_price = ticker[-4]
@@ -272,8 +270,9 @@ class BitfinexRobot(Robot):
                     self.reactor.callWhenRunning(self.buyp, sell1, totalAmount)
 
             if self.data['mode'] == 'sell' and len(self.data['sells']) > 0:
+                print('4')
                 avgPrice, totalAmount = getAvg(self.data['sells'])
-
+                print('5')
                 if (avgPrice - buy1) / avgPrice > self.data['rate']:
                     self.state = 'wait'
                     catch = True
