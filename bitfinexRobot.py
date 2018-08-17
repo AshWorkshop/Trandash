@@ -115,6 +115,36 @@ class BitfinexRobot(Robot):
             self.state = 'run'
 
     @defer.inlineCallbacks
+    def sellp(self, price, amount):
+        orderId = None
+        cancel = False
+        try:
+            orderId = yield bitfinex.buy(self.data['pairs'], price, amount)
+        except Exception as err:
+            failure = Failure(err)
+            print(failure.getBriefTraceback())
+        else:
+            if orderId is not None:
+                print('SUCCESSFULLY SELLP:', orderId)
+                try:
+                    order = yield bitfinex.getOrder(self.data['pairs'], orderId)
+                except Exception as err:
+                    failure = Failure(err)
+                    print(failure.getBriefTraceback())
+                    cancel = True
+                else:
+                    if order.status != 'done':
+                        cancel = True
+
+        if cancel:
+            self.state = 'wait'
+            self.reactor.callWhenRunning(self.cancel, orderId)
+        else:
+            self.data['sellp'] = orderId
+            self.data['sells'] = []
+            self.state = 'run'
+
+    @defer.inlineCallbacks
     def cancel(self, orderId):
         try:
             result, data = yield bitfinex.cancel(self.data['pairs'], orderId)
@@ -189,7 +219,7 @@ class BitfinexRobot(Robot):
             if self.data['mode'] == 'buy' and llk_close > llb_d and lk_close < lb_d:
                 print('BUYBOLL')
                 if len(buys) > 0:
-                    done, _, price, amount, _ = buys[-1]
+                    price, amount = buys[-1]
                     if done and (price - last_price) / price > self.data['delta']:
                         if amount * self.data['amountRate'] < self.data['initBuyAmount'] * self.data['amountRate'] ** 6:
                             newAmount = amount * self.data['amountRate']
@@ -205,10 +235,25 @@ class BitfinexRobot(Robot):
 
             elif self.data['mode'] == 'sell'and llk_close < llb_u and lk_close > lb_u:
                 print('SELLBOLL')
+                if len(sells) > 0:
+                    price, amount = sells[-1]
+                    if done and (last_price - price) / price > self.data['delta']:
+                        if amount * self.data['amountRate'] < self.data['initSellAmount'] * self.data['amountRate'] ** 6:
+                            newAmount = amount * self.data['amountRate']
+                        else:
+                            newAmount = amount
+                        if newAmount <= balances.get(self.data['coin'], 0.0):
+                            print('SELL', newAmount)
+                            self.data['delta'] = (last_price - price) / price
+                            self.state = 'wait'
+                            catch = True
+                            self.reactor.callWhenRunning(self.sell, buy1, newAmount)
 
 
         # 平仓
         if not catch and ticker is not None:
+            buy1 = ticker[0]
+            sell1 = ticker[1]
             last_price = ticker[-4]
             if self.data['mode'] == 'buy' and len(self.data['buys']) > 0:
                 avgPrice, totalAmount = getAvg(self.data['buys'])
@@ -218,6 +263,15 @@ class BitfinexRobot(Robot):
                     catch = True
                     print('BUYP')
                     self.reactor.callWhenRunning(self.buyp, sell1, totalAmount)
+
+            if self.data['mode'] == 'sell' and len(self.data['sells']) > 0:
+                avgPrice, totalAmount = getAvg(self.data['sells'])
+
+                if (avgPrice - buy1) / avgPrice > self.data['rate']:
+                    self.state = 'wait'
+                    catch = True
+                    print('SELLP')
+                    self.reactor.callWhenRunning(self.sellp, sell1, totalAmount)
 
 
 
