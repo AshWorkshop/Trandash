@@ -142,7 +142,7 @@ def cbRun():
         if hasData:
             '''add virtualOrderBook into exchangeSate '''
             virtualOrderBooks = calcVirtualOrderBooks(A, B)  
-            print(count, virtualOrderBooks)
+            # print(count, virtualOrderBooks)
             vBUY, vSELL = range(2)
             virBids = virtualOrderBooks[0][vBUY]
             virAsks = virtualOrderBooks[0][vSELL]
@@ -180,39 +180,43 @@ def cbRun():
                 virtualLevel = exchangePairs[0][2][0]
                 midAmountBuy = virtualOrderBooks[1][BUY][virtualLevel]   #get midAmount according to virtual Level
                 midAmountSell = virtualOrderBooks[1][SELL][virtualLevel] #get midAmount according to virtual Level
+                '''get each balance'''
                 balanceA = 0.0  #balance of 'usdt'
                 balanceC = 0.0  #balance of 'eth'
-                balanceB = 0.0  #balance of 'eos'
-                exchange = EXCHANGE[exchangeName]  #origin exchanges, eg bitfinex
+                balanceB = 0.0  #balance of 'eos'                
                 balances = BALANCES[exchangeName].getData()
                 if isinstance(balancec,dict):
                     balanceA = balances[coinA]  #balance of 'usdt'
                     balanceC = balances[coinC]  #balance of 'eth'
                     balanceB = balances[coinB]  #balance of 'eos'
+                exchange = EXCHANGE[exchangeName]  #original exchange instance, eg bitfinex
                 '''do buy and sell '''
                 print('do: BUY')
                 strExchange = exchangePairs[0][0][BUY]
                 if strExchange == 'virtual':
-                    exchange = EXCHANGE[exchangePairs[0][0][SELL]] #origin exchanges, eg bitfinex
+                    exchange = EXCHANGE[exchangePairs[0][0][BUY]]
                     #TO DO 
-                # exchange = EXCHANGE[strExchange]
-                # price  = exchangePairs[0][1][BUY]
-                # amount = exchangePairs[0][2][1]
-                # #print(exchange.getBalance('usdt'),price,amount)
-                # reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=price,amount=amount)
                 else:
-                 
-
+                    priceBuy = exchangePairs[0][1][BUY]
+                    amountBuy = exchangePairs[0][2][1]
+                    print(type(priceBuy))
+                    print(type(amountBuy))
+                    if isinstance(balanceA,float):
+                        if amountBuy*priceBuy <= balanceA:
+                            reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=priceBuy,amount=amountBuy)
+                        else:
+                            state = "GO"
+                            print("Not enough coin/money")
+                    else:
+                        state = "GO"
+                        print("No exchange")
 
                 print('do: SELL')
                 strExchange = exchangePairs[0][0][SELL]
                 if strExchange == 'virtual':
                     exchange = EXCHANGE[exchangePairs[0][0][BUY]]
                     #TO DO
-                
-                # price  = exchangePairs[0][1][SELL]
-                # amount = exchangePairs[0][2][1]
-                # reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooks.pairs,price=price,amount=amount)
+
 
     # yield cbRun()
 def ebLoopFailed(failure):
