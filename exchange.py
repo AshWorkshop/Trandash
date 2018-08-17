@@ -79,11 +79,13 @@ def verifyExchanges(exchangesData, FEE=FEE):
     PRICE, AMOUNT = range(2)
 
     validExPairs = []
+    flag = 0
+    exchangesAmount = len(exchangesData)
     for buyExName, buyEx in exchangesData.items():
         # print(buyEx)
         for sellExName, sellEx in exchangesData.items():
-
-            if buyExName == sellExName: continue
+            flag += 1
+            if buyExName == sellExName: continue            
             if buyEx['avg'][BUY][0][PRICE] * FEE[buyExName][BUY] <= sellEx['avg'][SELL][0][PRICE] * FEE[sellExName][SELL]: continue
 
             level = 0
@@ -98,9 +100,13 @@ def verifyExchanges(exchangesData, FEE=FEE):
                     level = i - 1
                     break
                 elif level >= maxLevel:
-                    print('error: reach max level when getting validExPairs.')
-                    return None
+                    print('error: one of possibility reaches max level when getting validExPairs.')
+                    possibilities = exchangesAmount*exchangesAmount
+                    if flag == possibilities:
+                        print('error: All possibilities reach max level when getting validExPairs.')
+                        return None
 
+            # print(level)
             amount = min(buyEx['avg'][BUY][level][AMOUNT], sellEx['avg'][SELL][level][AMOUNT])
             buyPrice = float(buyEx['actual'][BUY][level][PRICE])
             sellPrice = float(sellEx['actual'][SELL][level][PRICE])

@@ -211,6 +211,7 @@ def ebLoopFailed(failure):
 
 # reactor.callWhenRunning(cbRun)
 coinList = ['usdt', 'eth', 'eos']  #A,C,B
+coinPair = ('usdt', 'eth')
 HuobiBalancesCycle = Cycle(reactor,huobipro.getBalances,'balances')
 HuobiBalancesCycle.start(list(coinPair))
 GateioBalancesCycle = Cycle(reactor,gateio.getBalances,'gateio')
