@@ -112,3 +112,4 @@ venv.bak/
 .vscode/
 genCertifi.bat
 *.db
+bitfinex_*
