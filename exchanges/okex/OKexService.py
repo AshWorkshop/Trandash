@@ -152,6 +152,8 @@ class OKexFuture(ExchangeService):
             bids = data.get('bids', [])
             asks = data.get('asks', [])
             asks.reverse()
+            if bids == [] or asks == []:
+                return None
             return [bids, asks]
 
         return httpGet(self.__url, URL, params, callback=handleBody)
