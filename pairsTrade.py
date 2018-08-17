@@ -34,10 +34,15 @@ startTime = int(time.time())
 coinA = 'usdt'  #A2C, C2B -> A2B
 coinC = 'eth'
 coinB = 'eos'
+coinList = [coinA, coinC, coinB]  #A,C,B | A2C,C2B -> A2B
 coinPair1 = ('eth', 'usdt')  #1 2 ->3
 coinPair2 = ('eos', 'eth')
 coinPair3 = ('eos', 'usdt')
 exchangeName = 'bitfinex'
+if exchangeName == 'bitfinex':
+    if coinA =='usdt':
+        coinA = 'usd'
+
 orderBooks = OrderBooks( [exchangeName], coinPair3)
 orderBooks.start(reactor)
 orderBookA = OrderBooks( [exchangeName], coinPair1)
@@ -184,7 +189,7 @@ def cbRun():
             exchangeState['virtual']['actual'], exchangeState['virtual']['avg'] = [virBids, virAsks], [avgVirBids, avgVirAsks]
             
             '''get validExPairs '''
-            exchangePairs = verifyExchanges(exchangeState)
+            exchangePairs = verifyExchanges(exchangeState,FEE=FEE)
             print('validExPairs:')
             print(count, exchangePairs)
             
@@ -204,7 +209,8 @@ def cbRun():
                 balanceA = 0.0  #balance of 'usdt'
                 balanceC = 0.0  #balance of 'eth'
                 balanceB = 0.0  #balance of 'eos'   
-                balances = BALANCES[exchangeName].getData()                            
+                balances = BALANCES[exchangeName].getData() 
+
                 if isinstance(balances,dict):
                     balanceA = balances[coinA]  #balance of 'usdt'
                     balanceC = balances[coinC]  #balance of 'eth'
@@ -318,7 +324,7 @@ def ebLoopFailed(failure):
 
 # reactor.callWhenRunning(cbRun)
 
-coinList = [coinA, coinC, coinB]  #A,C,B | A2C,C2B -> A2B
+
 coinPair = ('usdt', 'eth')
 HuobiBalancesCycle = Cycle(reactor,huobipro.getBalances,'balances')
 HuobiBalancesCycle.start(list(coinPair))

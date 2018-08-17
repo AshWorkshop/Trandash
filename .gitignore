@@ -113,3 +113,4 @@ venv.bak/
 genCertifi.bat
 *.db
 bitfinex_*
+balances_logs/
