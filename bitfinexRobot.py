@@ -175,7 +175,7 @@ class BitfinexRobot(Robot):
             MAs = calcMAs(KLines, ma=30)
             _, ma = MAs[-1]
             buy1 = ticker[0]
-            sell1 = ticker[1]
+            sell1 = ticker[2]
             last_price = ticker[-4]
             print('buy1 && sell1:', buy1, sell1)
             print('last_price && ma:', last_price, ma)
@@ -217,7 +217,7 @@ class BitfinexRobot(Robot):
             _, lb_u, _, lb_d = lb
             _, b_u, _, b_d = b
             buy1 = ticker[0]
-            sell1 = ticker[1]
+            sell1 = ticker[2]
             last_price = ticker[-4]
 
             if self.data['mode'] == 'buy' and llk_close > llb_d and lk_close < lb_d:
@@ -259,7 +259,7 @@ class BitfinexRobot(Robot):
         # 平仓
         if not catch and ticker is not None:
             buy1 = ticker[0]
-            sell1 = ticker[1]
+            sell1 = ticker[2]
             last_price = ticker[-4]
             if self.data['mode'] == 'buy' and len(self.data['buys']) > 0:
                 avgPrice, totalAmount = getAvg(self.data['buys'])
