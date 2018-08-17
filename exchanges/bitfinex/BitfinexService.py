@@ -5,6 +5,7 @@ from .HttpUtil import getPostHeaders
 from utils import Order
 
 from twisted.internet import reactor
+from twisted.python.failure import Failure
 
 import json
 import time
