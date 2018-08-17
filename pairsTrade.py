@@ -21,11 +21,12 @@ count = 0
 coinPair1 = ('eth', 'usdt') #1 2 →3
 coinPair2 = ('eos', 'eth')
 coinPair3 = ('eos', 'usdt')
-orderBooks = OrderBooks( ['bitfinex'], coinPair3)
+exchangeName = 'bitfinex'
+orderBooks = OrderBooks( [exchangeName], coinPair3)
 orderBooks.start(reactor)
-orderBookA = OrderBooks( ['bitfinex'], coinPair1)
+orderBookA = OrderBooks( [exchangeName], coinPair1)
 orderBookA.start(reactor)
-orderBookB = OrderBooks( ['bitfinex'], coinPair2)
+orderBookB = OrderBooks( [exchangeName], coinPair2)
 orderBookB.start(reactor)
 
 SELL, BUY = range(2)
@@ -141,7 +142,7 @@ def cbRun():
         if hasData:
             '''add virtualOrderBook into exchangeSate '''
             virtualOrderBooks = calcVirtualOrderBooks(A, B)  
-            # print(count, virtualOrderBooks)
+            print(count, virtualOrderBooks)
             vBUY, vSELL = range(2)
             virBids = virtualOrderBooks[0][vBUY]
             virAsks = virtualOrderBooks[0][vSELL]
@@ -179,6 +180,15 @@ def cbRun():
                 virtualLevel = exchangePairs[0][2][0]
                 midAmountBuy = virtualOrderBooks[1][BUY][virtualLevel]   #get midAmount according to virtual Level
                 midAmountSell = virtualOrderBooks[1][SELL][virtualLevel] #get midAmount according to virtual Level
+                balanceA = 0.0  #balance of 'usdt'
+                balanceC = 0.0  #balance of 'eth'
+                balanceB = 0.0  #balance of 'eos'
+                exchange = EXCHANGE[exchangeName]  #origin exchanges, eg bitfinex
+                balances = BALANCES[exchangeName].getData()
+                if isinstance(balancec,dict):
+                    balanceA = balances[coinA]  #balance of 'usdt'
+                    balanceC = balances[coinC]  #balance of 'eth'
+                    balanceB = balances[coinB]  #balance of 'eos'
                 '''do buy and sell '''
                 print('do: BUY')
                 strExchange = exchangePairs[0][0][BUY]
@@ -190,6 +200,9 @@ def cbRun():
                 # amount = exchangePairs[0][2][1]
                 # #print(exchange.getBalance('usdt'),price,amount)
                 # reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=price,amount=amount)
+                else:
+                 
+
 
                 print('do: SELL')
                 strExchange = exchangePairs[0][0][SELL]
@@ -210,7 +223,10 @@ def ebLoopFailed(failure):
     reactor.stop()
 
 # reactor.callWhenRunning(cbRun)
-coinList = ['usdt', 'eth', 'eos']  #A,C,B
+coinA = 'usdt'
+coinC = 'eth'
+coinB = 'eos'
+coinList = [coinA, coinC, coinB]  #A,C,B .A2C,C2B -- A2B
 coinPair = ('usdt', 'eth')
 HuobiBalancesCycle = Cycle(reactor,huobipro.getBalances,'balances')
 HuobiBalancesCycle.start(list(coinPair))

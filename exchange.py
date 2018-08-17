@@ -91,7 +91,7 @@ def verifyExchanges(exchangesData, FEE=FEE):
             level = 0
             amount = 0
             maxLevel = min(len(buyEx['actual'][BUY]), len(sellEx['actual'][SELL]))-1
-            print(maxLevel)
+            # print(maxLevel)
 
             for i, (buy, sell) in enumerate(zip(buyEx['avg'][BUY], sellEx['avg'][SELL])):
                 # print(buy, sell)
