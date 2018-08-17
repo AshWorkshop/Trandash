@@ -224,7 +224,7 @@ class BitfinexRobot(Robot):
                 print('BUYBOLL')
                 if len(self.data['buys']) > 0:
                     price, amount = self.data['buys'][-1]
-                    if done and (price - last_price) / price > self.data['delta']:
+                    if (price - last_price) / price > self.data['delta']:
                         if amount * self.data['amountRate'] < self.data['initBuyAmount'] * self.data['amountRate'] ** 6:
                             newAmount = amount * self.data['amountRate']
                         else:
@@ -241,7 +241,7 @@ class BitfinexRobot(Robot):
                 print('SELLBOLL')
                 if len(self.data['sells']) > 0:
                     price, amount = self.data['sells'][-1]
-                    if done and (last_price - price) / price > self.data['delta']:
+                    if (last_price - price) / price > self.data['delta']:
                         if amount * self.data['amountRate'] < self.data['initSellAmount'] * self.data['amountRate'] ** 6:
                             newAmount = amount * self.data['amountRate']
                         else:
