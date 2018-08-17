@@ -220,8 +220,11 @@ class BitfinexRobot(Robot):
             sell1 = ticker[2]
             last_price = ticker[-4]
 
+
             if self.data['mode'] == 'buy' and llk_close > llb_d and lk_close < lb_d:
                 print('BUYBOLL')
+                print(llb_d, lb_d)
+                print(llk_close, lk_close)
                 if len(self.data['buys']) > 0:
                     price, amount = self.data['buys'][-1]
                     if (price - last_price) / price > self.data['delta']:
@@ -264,17 +267,17 @@ class BitfinexRobot(Robot):
             if self.data['mode'] == 'buy' and len(self.data['buys']) > 0:
                 avgPrice, totalAmount = getAvg(self.data['buys'])
 
-                if (sell1 - avgPrice) / avgPrice > self.data['rate']:
+                if (buy1 - avgPrice) / avgPrice > self.data['rate']:
                     self.state = 'wait'
                     catch = True
                     print('BUYP')
-                    self.reactor.callWhenRunning(self.buyp, sell1, totalAmount)
+                    self.reactor.callWhenRunning(self.buyp, buy1, totalAmount)
 
             if self.data['mode'] == 'sell' and len(self.data['sells']) > 0:
 
                 avgPrice, totalAmount = getAvg(self.data['sells'])
 
-                if (avgPrice - buy1) / avgPrice > self.data['rate']:
+                if (avgPrice - sell1) / avgPrice > self.data['rate']:
                     self.state = 'wait'
                     catch = True
                     print('SELLP')
