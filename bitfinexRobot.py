@@ -13,7 +13,7 @@ from utils import calcMAs, calcBolls
 def getAvg(things):
     total = 0
     totalAmount = 0
-    for done, price, amount in things:
+    for price, amount in things:
         if done:
             amount = round(amount)
             total += price * amount
@@ -56,7 +56,6 @@ class BitfinexRobot(Robot):
     @defer.inlineCallbacks
     def buy(self, price, amount):
         orderId = 0
-        done = False
         try:
             orderId = yield bitfinex.buy(self.data['pairs'], price, amount)
         except Exception as err:
@@ -65,14 +64,14 @@ class BitfinexRobot(Robot):
         else:
             if orderId != 0:
                 print('SUCCESSFULLY BUY:', orderId)
-                done = True
 
-        self.data['buys'].append([done, orderId, price, amount])
+        self.data['buys'].append((price, amount))
 
         self.state = 'run'
 
     @defer.inlineCallbacks
     def sell(self, price, amount):
+        orderId = 0
         try:
             orderId = yield bitfinex.sell(self.data['pairs'], price, amount)
         except Exception as err:
@@ -82,28 +81,53 @@ class BitfinexRobot(Robot):
             if orderId != 0:
                 print('SUCCESSFULLY SELL:', orderId)
 
-        self.data['sells'].append((orderId, price, amount))
+        self.data['sells'].append((price, amount))
         self.state = 'run'
 
     @defer.inlineCallbacks
-    def buyp(self):
-        avgPrice, totalAmount = getAvg(self.data['buys'])
-        buyp = self.data['buyp'] # 未成交的卖单，相当于平多单
-        if buyp is None:
-            price = avgPrice * self.data['rate']
-            amount = totalAmount
+    def buyp(self, price, amount):
+        orderId = None
+        cancel = False
+        try:
+            orderId = yield bitfinex.sell(self.data['pairs'], price, amount)
+        except Exception as err:
+            failure = Failure(err)
+            print(failure.getBriefTraceback())
         else:
-            done, orderId, price, amount = buyp
-            order = None
-            try:
-                order = yield bitfinex.getOrder(self.data['pairs'], orderId)
-            except Exception as err:
-                failure = Failure(err)
-                print(failure.getBriefTraceback())
+            if orderId is not None:
+                print('SUCCESSFULLY BUYP:', orderId)
+                try:
+                    order = yield bitfinex.getOrder(self.data['pairs'], orderId)
+                except Exception as err:
+                    failure = Failure(err)
+                    print(failure.getBriefTraceback())
+                    cancel = True
+                else:
+                    if order.status != 'done':
+                        cancel = True
 
-            if order:
-                if order.status == 'done':
-                    
+        if cancel:
+            self.state = 'wait'
+            self.reactor.callWhenRunning(self.cancel, orderId)
+        else:
+            self.data['buyp'] = orderId
+            self.data['buys'] = []
+            self.state = 'run'
+
+    @defer.inlineCallbacks
+    def cancel(self, orderId):
+        try:
+            result, data = yield bitfinex.cancel(self.data['pairs'], orderId)
+        except Exception as err:
+            failure = Failure(err)
+            print(failure.getBriefTraceback())
+        else:
+            if result:
+                print('SUCCESSFULLY CANCEL:', orderId)
+
+        self.state = 'run'
+
+
 
 
     def run(self):
@@ -114,7 +138,6 @@ class BitfinexRobot(Robot):
         catch = False
 
         if not catch and KLines is not None and ticker is not None and balances is not None:
-            catch = True
             buys = self.data['buys'] # 已成交的买单，相当于开多单
             sells = self.data['sells'] # 已成交的卖单，相当于开空单
             print('balances:', balances)
@@ -134,6 +157,7 @@ class BitfinexRobot(Robot):
                 if initBuyAmount >= 0.04:
                     self.data['delta'] = 0.005
                     self.state = 'wait'
+                    catch = True
                     self.reactor.callWhenRunning(self.buy, sell1, initBuyAmount)
             elif last_price < ma and len(sells) == 0 and self.data['mode'] == 'sell':
                 print('SELL')
@@ -144,10 +168,10 @@ class BitfinexRobot(Robot):
                 if initSellAmount >= 0.04:
                     self.data['delta'] = 0.005
                     self.state = 'wait'
+                    catch = True
                     self.reactor.callWhenRunning(self.sell, buy1, initSellAmount)
 
         if not catch and KLines is not None and ticker is not None and balances is not None:
-            catch = True
             Bolls = calcBolls(KLines)
             klines = KLines[-3:]
             bolls = Bolls[-3:]
@@ -165,7 +189,7 @@ class BitfinexRobot(Robot):
             if self.data['mode'] == 'buy' and llk_close > llb_d and lk_close < lb_d:
                 print('BUYBOLL')
                 if len(buys) > 0:
-                    done, _, price, amount = buys[-1]
+                    done, _, price, amount, _ = buys[-1]
                     if done and (price - last_price) / price > self.data['delta']:
                         if amount * self.data['amountRate'] < self.data['initBuyAmount'] * self.data['amountRate'] ** 6:
                             newAmount = amount * self.data['amountRate']
@@ -175,6 +199,7 @@ class BitfinexRobot(Robot):
                             print('BUY', newAmount)
                             self.data['delta'] = (price - last_price) / price
                             self.state = 'wait'
+                            catch = True
                             self.reactor.callWhenRunning(self.buy, sell1, newAmount)
 
 
@@ -183,35 +208,17 @@ class BitfinexRobot(Robot):
 
 
         # 平仓
-        if not catch:
-            catch = True
+        if not catch and ticker is not None:
+            last_price = ticker[-4]
             if self.data['mode'] == 'buy' and len(self.data['buys']) > 0:
                 avgPrice, totalAmount = getAvg(self.data['buys'])
-                buyp = self.data['buyp'] # 未成交的卖单，相当于平多单
 
-                needToSend = False
-
-                if buyp is not None:
-                    done, orderId, price, amount = buyp
-                    if price  < avgPrice * self.data['rate'] or amount < totalAmount:
-                        needToSend = True
-                    else:
-                        print('CHECK BUYP')
-                        self.state = 'wait'
-                        self.reactor.callWhenRunning(self.checkBuyp, orderId=orderId)
-                else:
-                    needToSend = True
-
-                if needToSend:
-                    print('SEND BUYP')
+                if (sell1 - avgPrice) / avgPrice > self.data['rate']:
                     self.state = 'wait'
-                    self.reactor.callWhenRunning(self.buyp)
-            else:
-                sellp = self.data['sellp'] # 未成交的买单，相当于平空单
-                if sellp is not None:
-                    sellp[0] = False
-                    print('CHECK SELLP')
-                    self.state = 'wait_for_check'
+                    catch = True
+                    print('BUYP')
+                    self.reactor.callWhenRunning(self.buyp, sell1, totalAmount)
+
 
 
     def wait(self):
