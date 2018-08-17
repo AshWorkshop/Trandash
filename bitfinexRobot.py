@@ -275,7 +275,7 @@ class BitfinexRobot(Robot):
 
 
     def wait(self):
-        pass
+        print('wait...')
 
 
 
