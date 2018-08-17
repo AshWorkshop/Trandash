@@ -2,6 +2,7 @@
 
 import json
 import time
+import datetime
 import shelve
 import sys
 from sys import argv
@@ -302,8 +303,9 @@ def cbRun():
                         print("No exchange")
             balances = BALANCES[exchangeName].getData() 
             balancesWr = str(json.dumps(balances))
+            currentTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')#现在
             staFile = open('bitfinex_' + '_balances_' + str(startTime), 'a+')
-            staFile.write("%d,%s\n" % (count, balancesWr))
+            staFile.write("%d,%s,%s\n" % (count, balancesWr , currentTime))
             staFile.close()
 
     # yield cbRun()
