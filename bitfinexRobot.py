@@ -14,7 +14,7 @@ def getAvg(things):
     total = 0
     totalAmount = 0
     for price, amount in things:
-        amount = round(amount)
+        amount = amount
         total += price * amount
         totalAmount += amount
     if totalAmount == 0:
@@ -166,7 +166,7 @@ class BitfinexRobot(Robot):
         balances = cycleData['balances']
         catch = False
 
-        print('1')
+
 
         if not catch and KLines is not None and ticker is not None and balances is not None:
             buys = self.data['buys'] # 已成交的买单，相当于开多单
@@ -202,7 +202,7 @@ class BitfinexRobot(Robot):
                     catch = True
                     self.reactor.callWhenRunning(self.sell, buy1, initSellAmount)
 
-        print('2')
+
 
         if not catch and KLines is not None and ticker is not None and balances is not None:
             Bolls = calcBolls(KLines)
@@ -254,7 +254,7 @@ class BitfinexRobot(Robot):
 
 
 
-        print('3')
+
         # 平仓
         if not catch and ticker is not None:
             buy1 = ticker[0]
@@ -270,9 +270,9 @@ class BitfinexRobot(Robot):
                     self.reactor.callWhenRunning(self.buyp, sell1, totalAmount)
 
             if self.data['mode'] == 'sell' and len(self.data['sells']) > 0:
-                print('4')
+
                 avgPrice, totalAmount = getAvg(self.data['sells'])
-                print('5')
+
                 if (avgPrice - buy1) / avgPrice > self.data['rate']:
                     self.state = 'wait'
                     catch = True
