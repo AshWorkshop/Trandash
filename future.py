@@ -35,6 +35,7 @@ maxRight = 0.0
 maxRightEveryPeriod = 0.0
 maxDrawdown = 0.0
 accountRight = 0.0
+balance = 0.0
 delta = 0.005
 startTime = int(time.time())
 klineCycle = Cycle(reactor, okexFuture.getKLineLastMin, 'getKLineLastMin')
@@ -257,6 +258,7 @@ def cbRun():
     global maxRightEveryPeriod
     global maxDrawdown
     global accountRight
+    global balance
     count += 1
     wait += 1
     # print to file
@@ -477,12 +479,13 @@ def cbRun():
         profit_unreal = userInfoData['profit_unreal']
 
         accountRight = account_rights
+        balance = account_rights - profit_unreal
 
         if account_rights > maxRight:
             maxRight = account_rights
 
         lossRate = 1 - account_rights / maxRight
-        print('lossRate:', lossRate)
+        print('accountRight && lossRate && balance:', accountRight, lossRate, balance)
 
         staFile = open('okex_' + coin + '_lossRate_' + str(startTime), 'a+')
         staFile.write("%d,%f\n" % (count, lossRate))
@@ -491,6 +494,10 @@ def cbRun():
 
     staFile = open('okex_' + coin + '_accountRight_' + str(startTime), 'a+')
     staFile.write("%d,%f\n" % (count, accountRight))
+    staFile.close()
+
+    staFile = open('okex_' + coin + '_balance_' + str(startTime), 'a+')
+    staFile.write("%d,%f\n" % (count, balance))
     staFile.close()
 
 
