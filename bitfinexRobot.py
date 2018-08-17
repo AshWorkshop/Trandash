@@ -181,7 +181,7 @@ class BitfinexRobot(Robot):
             if last_price > ma and len(self.data['buys']) == 0 and self.data['mode'] == 'buy':
                 print('BUY')
                 initBuyAmount = self.data['initBuyAmount'] = balances.get(self.data['money'], 0.0) / last_price * 0.001
-                if initBuyAmount > 0 and initBuyAmount < self.data['minAmount'] and balance.get(self.data['money'], 0.0) / sell1 >= self.data['minAmount']:
+                if initBuyAmount > 0 and initBuyAmount < self.data['minAmount'] and (balances.get(self.data['money'], 0.0) / sell1) >= self.data['minAmount']:
                     initBuyAmount = self.data['initBuyAmount'] = self.data['minAmount']
 
                 print('initBuyAmount', self.data['initBuyAmount'])
