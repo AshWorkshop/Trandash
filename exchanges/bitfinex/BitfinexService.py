@@ -46,7 +46,7 @@ class Bitfinex(ExchangeService):
                 rawAsks = []
                 if 'error' in data:
                     err = data['error']
-                    print(err)
+                    print(err, ' from getOrderBook()')
                     if err == 'ERR_RATE_LIMIT':
                         time.sleep(1)
 
@@ -92,7 +92,7 @@ class Bitfinex(ExchangeService):
                     b_available = 0.0
                     if 'error' in data:
                         err = data['error']
-                        print(err)
+                        print(err, ' from getBalance()')
                         if err == 'ERR_RATE_LIMIT':
                             time.sleep(1)
                 if b_type == 'exchange':
@@ -108,6 +108,7 @@ class Bitfinex(ExchangeService):
         return d
 
     def getBalances(self, coins):
+        #ratelimit: 20 req/min
         URL = "/v1/balances"
         # print(self.__url)
         url = self.__url + URL
@@ -136,7 +137,7 @@ class Bitfinex(ExchangeService):
                     b_available = 0.0
                     if 'error' in data:
                         err = data['error']
-                        print(err)
+                        print(err, ' from getBalances()')
                         if err == 'ERR_RATE_LIMIT':
                             time.sleep(1)
                 if b_type == 'exchange':
