@@ -231,7 +231,7 @@ klinesCycle = Cycle(reactor, bitfinex.getKLineLastMin, 'klines', limit=1, wait=5
 klinesCycle.start(pairs, last=30)
 tickerCycle = Cycle(reactor, bitfinex.getTicker, 'ticker', limit=1, wait=3, clean=False)
 tickerCycle.start(pairs)
-balancesCycle = Cycle(reactor, bitfinex.getBalances, 'balances', limit=1, wait=2)
+balancesCycle = Cycle(reactor, bitfinex.getBalances, 'balances', limit=1, wait=3)
 balancesCycle.start(list(pairs))
 
 states = ['init', 'run', 'wait']
