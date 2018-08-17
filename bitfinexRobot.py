@@ -177,6 +177,7 @@ class BitfinexRobot(Robot):
             buy1 = ticker[0]
             sell1 = ticker[1]
             last_price = ticker[-4]
+            print('buy1 && sell1:', buy1, sell1)
             print('last_price && ma:', last_price, ma)
             if last_price > ma and len(self.data['buys']) == 0 and self.data['mode'] == 'buy':
                 print('BUY')
