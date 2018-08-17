@@ -255,8 +255,10 @@ class BitfinexRobot(Robot):
 
 
         print('3')
+        print(ticker)
         # 平仓
         if not catch and ticker is not None:
+            print(ticker)
             buy1 = ticker[0]
             sell1 = ticker[1]
             last_price = ticker[-4]
