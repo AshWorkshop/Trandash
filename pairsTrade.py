@@ -197,7 +197,7 @@ def cbRun():
             exchangeState['virtual']['actual'], exchangeState['virtual']['avg'] = [virBids, virAsks], [avgVirBids, avgVirAsks]
             
             '''get validExPairs '''
-            exchangePairs = verifyExchanges(exchangeState,FEE=FEE)
+            exchangePairs = verifyExchanges(exchangeState)
             print('validExPairs:')
             print(count, exchangePairs)
             
@@ -218,7 +218,8 @@ def cbRun():
                 balanceA = 0.0  #balance of 'usdt'
                 balanceC = 0.0  #balance of 'eth'
                 balanceB = 0.0  #balance of 'eos'   
-                balances = BALANCES[exchangeName].getData() 
+                balances = BALANCES[exchangeName].getData()
+                balancesWr = str(json.dumps(balances)) 
                 print(balances)
 
                 if isinstance(balances,dict):
@@ -239,18 +240,16 @@ def cbRun():
                     levelA = getLevel(amountBuyA,A[BUY])
                     # print(len(A[BUY]))
                     if levelA >= len(A[BUY]):
-                        stateStr = 'levelA out of range'
+                        stateStr = 'levelA_Buy out of range'
                         print(stateStr)
-                        state = "GO"
                     else:
                         priceBuyA = A[BUY][levelA][PRICE]                    
                         #second, in orderBookB: eos-eth
                         amountBuyB = exchangePairs[0][2][1]  
                         levelB = getLevel(amountBuyB,B[BUY])
                         if levelB >= len(B[BUY]):
-                            stateStr = 'levelB out of range' 
+                            stateStr = 'levelB_Buy out of range' 
                             print(stateStr)
-                            state = "GO"
                         else:                   
                             priceBuyB = B[BUY][levelB][PRICE]
                             print(amountBuyA*priceBuyA)
@@ -265,7 +264,7 @@ def cbRun():
                                 else:
                                     state = "GO"
                                     print("Not enough coin/money")
-                                    stateStr = 'Not enough coin/money'
+                                    stateStr = 'Not enough coin/money to buy'
                             else:
                                 state = "GO"
                                 print("No exchange")  
@@ -285,7 +284,7 @@ def cbRun():
                         else:
                             state = "GO"
                             print("Not enough coin/money")
-                            stateStr = 'Not enough coin/money'
+                            stateStr = 'Not enough coin/money to buy'
                     else:
                         state = "GO"
                         print("No exchange")
@@ -302,18 +301,16 @@ def cbRun():
                     amountSellB = exchangePairs[0][2][1]  
                     levelB = getLevel(amountSellB,B[SELL])
                     if levelB >= len(B[SELL]):
-                        stateStr = 'levelB out of range'
-                        print(stateStr)
-                        state = "GO"                        
+                        stateStr = 'levelB_Sell out of range'
+                        print(stateStr)                        
                     else:
                         priceSellB = B[SELL][levelB][PRICE]
                         #second, in orderBookA: eth-usdt
                         amountSellA = midAmountSell
                         levelA = getLevel(amountSellA,A[SELL])
                         if levelA >= len(A[SELL]):
-                            stateStr = 'levelA out of range'
+                            stateStr = 'levelA_Sell out of range'
                             print(stateStr)
-                            state = "GO"
                         else:
                             priceSellA = A[SELL][levelA][PRICE]
                             if isinstance(balanceB,float) and isinstance(balanceC,float):
@@ -324,7 +321,7 @@ def cbRun():
                                 else:
                                     state = "GO"
                                     print("Not enough coin/money")
-                                    stateStr = 'Not enough coin/money'
+                                    stateStr = 'Not enough coin/money to sell'
                             else:
                                 state = "GO"
                                 print("No exchange")
@@ -342,7 +339,7 @@ def cbRun():
                         else:
                             state = "GO"
                             print("Not enough coin/money")
-                            stateStr = 'Not enough coin/money'
+                            stateStr = 'Not enough coin/money to sell'
                     else:
                         state = "GO"
                         print("No exchange")
