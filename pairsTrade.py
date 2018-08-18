@@ -97,6 +97,7 @@ def buy(exchange,coinPair,amount,price):
 @defer.inlineCallbacks
 def sell(exchange,coinPair,amount,price):
     global state
+    global stateStr
     orderId = None
 
     if True:#balance >= amount:
@@ -180,6 +181,8 @@ def cbRun():
             exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bids, asks], [avgBids, avgAsks]
 
         if hasData:
+            state = "WAIT"
+            time.sleep(1)
             '''add virtualOrderBook into exchangeSate '''
             virtualOrderBooks = calcVirtualOrderBooks(A, B)
             print('midAmount in virtualOrderBooks:')  
@@ -240,6 +243,8 @@ def cbRun():
                     # print(len(A[BUY]))
                     if levelA >= len(A[BUY]):
                         stateStr = 'levelA out of range'
+                        print(stateStr)
+                        state = "GO"
                     else:
                         priceBuyA = A[BUY][levelA][PRICE]                    
                         #second, in orderBookB: eos-eth
@@ -247,6 +252,8 @@ def cbRun():
                         levelB = getLevel(amountBuyB,B[BUY])
                         if levelB >= len(B[BUY]):
                             stateStr = 'levelB out of range' 
+                            print(stateStr)
+                            state = "GO"
                         else:                   
                             priceBuyB = B[BUY][levelB][PRICE]
                             print(amountBuyA*priceBuyA)
@@ -299,6 +306,8 @@ def cbRun():
                     levelB = getLevel(amountSellB,B[SELL])
                     if levelB >= len(B[SELL]):
                         stateStr = 'levelB out of range'
+                        print(stateStr)
+                        state = "GO"                        
                     else:
                         priceSellB = B[SELL][levelB][PRICE]
                         #second, in orderBookA: eth-usdt
@@ -306,6 +315,8 @@ def cbRun():
                         levelA = getLevel(amountSellA,A[SELL])
                         if levelA >= len(A[SELL]):
                             stateStr = 'levelA out of range'
+                            print(stateStr)
+                            state = "GO"
                         else:
                             priceSellA = A[SELL][levelA][PRICE]
                             if isinstance(balanceB,float) and isinstance(balanceC,float):
