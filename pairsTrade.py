@@ -367,16 +367,16 @@ def ebLoopFailed(failure):
 # reactor.callWhenRunning(cbRun)
 
 
-coinPair = ('usdt', 'eth')
-HuobiBalancesCycle = Cycle(reactor,huobipro.getBalances,'balances',clean=False)
-HuobiBalancesCycle.start(list(coinPair))
-GateioBalancesCycle = Cycle(reactor,gateio.getBalances,'gateio',clean=False)
-GateioBalancesCycle.start(list(coinPair))
+# coinPair = ('usdt', 'eth')
+# HuobiBalancesCycle = Cycle(reactor,huobipro.getBalances,'balances',clean=False)
+# HuobiBalancesCycle.start(list(coinPair))
+# GateioBalancesCycle = Cycle(reactor,gateio.getBalances,'gateio',clean=False)
+# GateioBalancesCycle.start(list(coinPair))
 BitfinexBalancesCycle = Cycle(reactor,bitfinex.getBalances,'balances',clean=False)
 BitfinexBalancesCycle.start(coinList)
 BALANCES = {
-    'huobipro': HuobiBalancesCycle,
-    'gateio': GateioBalancesCycle,
+    'huobipro': None,
+    'gateio': None,
     'bitfinex': BitfinexBalancesCycle
 }
 loop = task.LoopingCall(cbRun)
