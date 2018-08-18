@@ -30,6 +30,7 @@ from cycle.cycle import Cycle
 count = 0
 wait = 0
 usdtAmount = 0.0
+traded_count = 0
 startTime = int(time.time())
 '''initial OrderBooks'''
 coinA = 'usdt'  #A2C, C2B -> A2B
@@ -73,6 +74,7 @@ stateStr = 'Normal'
 def buy(exchange,coinPair,amount,price):
     global state
     global stateStr
+    global traded_count
     orderId = None
 
     if True:#balance >= price*amount:
@@ -88,6 +90,7 @@ def buy(exchange,coinPair,amount,price):
     if orderId[1] is not None and orderId[0] == True:
         print("SUCCESSFULLY BUY:", orderId[1])
         stateStr = 'SUCCESSFULLY BUY:' + str(orderId[1])
+        traded_count += 1
         try:
             order = yield exchange.getOrder(orderId,coinPair)
         except Exception as err:
@@ -101,6 +104,7 @@ def buy(exchange,coinPair,amount,price):
 def sell(exchange,coinPair,amount,price):
     global state
     global stateStr
+    global traded_count
     orderId = None
 
     if True:#balance >= amount:
@@ -116,6 +120,7 @@ def sell(exchange,coinPair,amount,price):
     if orderId[1] is not None and orderId[0] == True:
         print("SUCCESSFULLY SELL:", orderId[1])
         stateStr = 'SUCCESSFULLY SELL:' + str(orderId[1])
+        traded_count += 1
         try:
             order = yield exchange.getOrder(orderId,coinPair)
         except Exception as err:
@@ -356,7 +361,7 @@ def cbRun():
                 balancesWr = str(json.dumps(balances))
                 currentTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')#现在
                 staFile = open('bitfinex_' + '_balances_' + str(startTime), 'a+')
-                staFile.write("%d,%s,%s,%s,%f\n" % (count, balancesWr, currentTime, stateStr, usdtAmount))
+                staFile.write("%d,%s,%s,%s,%f,%d\n" % (count, balancesWr, currentTime, stateStr, usdtAmount, traded_count))
                 staFile.close()
 
     # yield cbRun()

@@ -1,8 +1,8 @@
 
 #from exchanges.okex.OKexService import okexFuture
-from exchanges.huobi.HuobiproService import huobipro
+# from exchanges.huobi.HuobiproService import huobipro
 from exchanges.gateio.GateIOService import gateio
-# from exchanges.bitfinex.BitfinexService import bitfinex
+from exchanges.bitfinex.BitfinexService import bitfinex
 
 
 from twisted.internet import reactor
@@ -17,9 +17,12 @@ pairs = ('eth', 'usdt')
 def test():
 
     #d = okexFuture.cancle(('ltc', 'usdt'), orderId=1276330619587584)
-    d = huobipro.buy(('eth','usdt'),290,500)
+    # d = huobipro.buy(('eth','usdt'),290,500)
     #d = huobipro.getBalances(['eth','usdt'])
-    # d = bitfinex.getOrderBook(('eos', 'eth'))
+    #d = bitfinex.getOrderBook(pairs)
+    # d = bitfinex.getBalances(['eth','usdt'])
+    # d = bitfinex.sell(('eth','usdt'),284.24,0.1)
+    # d = bitfinex.getOrder(pairs,15622582761)
 
 
     def cbPrint(result):
