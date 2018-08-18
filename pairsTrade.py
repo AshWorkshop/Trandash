@@ -79,17 +79,20 @@ def buy(exchange,coinPair,amount,price):
         try:
             orderId = yield exchange.buy(coinPair,price,amount)
             print(orderId)
+            stateStr = str(orderId)
         except Exception as err:
             failure = Failure(err)
+            stateStr = str(failure.getBriefTraceback())
             print(failure.getBriefTraceback())
 
     if orderId[1] is not None and orderId[0] == True:
         print("SUCCESSFULLY BUY:", orderId[1])
-        stateStr = 'SUCCESSFULLY BUY:' + orderId[1]
+        stateStr = 'SUCCESSFULLY BUY:' + str(orderId[1])
         try:
             order = yield exchange.getOrder(orderId,coinPair)
         except Exception as err:
             failure = Failure(err)
+            stateStr = str(failure.getBriefTraceback())
             print(failure.getBriefTraceback())
 
     state = "GO"
@@ -104,17 +107,20 @@ def sell(exchange,coinPair,amount,price):
         try:
             orderId = yield exchange.sell(coinPair,price,amount)
             print(orderId)
+            stateStr = str(orderId)
         except Exception as err:
             failure = Failure(err)
+            stateStr = str(failure.getBriefTraceback())
             print(failure.getBriefTraceback())
 
     if orderId[1] is not None and orderId[0] == True:
         print("SUCCESSFULLY SELL:", orderId[1])
-        stateStr = 'SUCCESSFULLY SELL:' + orderId[1]
+        stateStr = 'SUCCESSFULLY SELL:' + str(orderId[1])
         try:
             order = yield exchange.getOrder(orderId,coinPair)
         except Exception as err:
             failure = Failure(err)
+            stateStr = str(failure.getBriefTraceback())
             print(failure.getBriefTraceback())
 
     state = "GO"
