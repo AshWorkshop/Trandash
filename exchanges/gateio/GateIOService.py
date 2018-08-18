@@ -71,8 +71,8 @@ class GateIO(ExchangeService):
             if not flag:
                 return (False, data['code'], data['message'])
 
-            bids = data['bids']
-            asks = data['asks']
+            bids = [list(map(float, bid)) for bid in data['bids']]
+            asks = [list(map(float, ask)) for ask in data['asks']]
             asks.reverse()
             return [bids, asks] # (True, [bids, asks]) #TODO: handle error
 
