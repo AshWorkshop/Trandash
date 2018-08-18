@@ -29,6 +29,7 @@ from cycle.cycle import Cycle
 
 count = 0
 wait = 0
+usdtAmount = 0.0
 startTime = int(time.time())
 '''initial OrderBooks'''
 coinA = 'usdt'  #A2C, C2B -> A2B
@@ -58,10 +59,10 @@ EXCHANGE = {
     'bitfinex': bitfinex
 }
 FEE = {
-    'huobipro': [1.004, 0.996],
-    'gateio': [1.004, 0.996],
-    'bitfinex': [1.004, 0.996],
-    'virtual': [1.004, 0.996],
+    'huobipro': [0.996, 1.004],
+    'gateio': [0.996, 1.004],
+    'bitfinex': [0.996, 1.004],
+    'virtual': [0.996, 1.004],
 }
 state = 'FIRST'
 stateStr = 'Normal'
@@ -122,6 +123,7 @@ def cbRun():
     global state
     global wait
     global stateStr
+    global usdtAmount
     count += 1
     wait += 1
     # print to file
@@ -207,9 +209,11 @@ def cbRun():
             if exchangePairs:  #skip when exchangePairs is [] or None.
                 state = "WAIT"
                 '''get midAmount'''
-                virtualLevel = exchangePairs[0][2][0]
-                midAmountBuy = virtualOrderBooks[1][BUY][virtualLevel]   #get midAmount according to virtual Level
-                midAmountSell = virtualOrderBooks[1][SELL][virtualLevel] #get midAmount according to virtual Level
+                virtualLevel = exchangePairs[0][2][0]  #可交易对里返回的level值
+                virtualBuyList = virtualOrderBooks[1][BUY]
+                virtualSellList = virtualOrderBooks[1][SELL]
+                midAmountBuy = sum(virtualBuyList[:virtualLevel+1])   #get midAmount according to virtual Level
+                midAmountSell = sum(virtualSellList[:virtualLevel+1]) #get midAmount according to virtual Level
                 '''get each balance'''
                 balanceA = 0.0  #balance of 'usdt'
                 balanceC = 0.0  #balance of 'eth'
@@ -245,9 +249,12 @@ def cbRun():
                             stateStr = 'levelB out of range' 
                         else:                   
                             priceBuyB = B[BUY][levelB][PRICE]
-
+                            print(amountBuyA*priceBuyA)
+                            usdtAmount = amountBuyA*priceBuyA
                             if isinstance(balanceA,float) and isinstance(balanceC,float):
+
                                 if amountBuyA*priceBuyA <= balanceA and amountBuyB*priceBuyB <= balanceC:
+                                    
                                     print(balances)
                                     reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooksA.pairs,price=priceBuyA,amount=amountBuyA)
                                     reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooksB.pairs,price=priceBuyB,amount=amountBuyB)
@@ -264,7 +271,10 @@ def cbRun():
                     '''do buy in real district:orderBooks: eos-usdt'''
                     priceBuy = exchangePairs[0][1][BUY]
                     amountBuy = exchangePairs[0][2][1]
+                    print(amountBuy*priceBuy)
+                    usdtAmount = amountBuy*priceBuy                    
                     if isinstance(balanceA,float):
+
                         if amountBuy*priceBuy <= balanceA:
                             print(balances)
                             reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=priceBuy,amount=amountBuy)
@@ -335,7 +345,7 @@ def cbRun():
                 balancesWr = str(json.dumps(balances))
                 currentTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')#现在
                 staFile = open('bitfinex_' + '_balances_' + str(startTime), 'a+')
-                staFile.write("%d,%s,%s,%s\n" % (count, balancesWr, currentTime, stateStr))
+                staFile.write("%d,%s,%s,%s,%f\n" % (count, balancesWr, currentTime, stateStr, usdtAmount))
                 staFile.close()
 
     # yield cbRun()
