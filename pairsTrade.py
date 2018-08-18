@@ -181,8 +181,6 @@ def cbRun():
             exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bids, asks], [avgBids, avgAsks]
 
         if hasData:
-            state = "WAIT"
-            time.sleep(1)
             '''add virtualOrderBook into exchangeSate '''
             virtualOrderBooks = calcVirtualOrderBooks(A, B)
             print('midAmount in virtualOrderBooks:')  
@@ -210,7 +208,6 @@ def cbRun():
             PRICE=0, AMOUNT=1
             '''
             if exchangePairs:  #skip when exchangePairs is [] or None.
-                state = "WAIT"
                 '''get midAmount'''
                 virtualLevel = exchangePairs[0][2][0]  #可交易对里返回的level值
                 virtualBuyList = virtualOrderBooks[1][BUY]
