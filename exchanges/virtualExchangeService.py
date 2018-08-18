@@ -192,9 +192,9 @@ class VirtualExchange(ExchangeService):
             d = defer.DeferredList( [dA, dB] , consumeErrors=True)
             
             def handleBody(res):
-                for state, res in res
+                for state, err in res:
                     if not state:
-                        raise res
+                        raise err
 
                 (_, resA), (_, resB) = res
                 
@@ -245,9 +245,9 @@ class VirtualExchange(ExchangeService):
             
             d = defer.DeferredList( [dA, dB] , consumeErrors=True)
             def handleBody(res):
-                for state, res in res
+                for state, err in res:
                     if not state:
-                        raise res
+                        raise err
                 (_, (stateA, dataA)), (_, (stateB, dataB)) = res
                 if stateA and stateB:
                     return (True, dataA, dataB)
