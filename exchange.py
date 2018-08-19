@@ -7,8 +7,8 @@ from twisted.python.failure import Failure
 import copy
 
 FEE = {
-    'huobipro': [1, 1],
-    'gateio': [1, 1],
+    'huobipro': [1,1],#[0.998, 1.002],
+    'gateio': [1,1],#[0.998, 1.002],
     'bitfinex': [1, 1],
 }
 
@@ -142,15 +142,13 @@ def calcOneWayVirtualOrderBooks(A2C: ['bids/asks'], C2B: ['bids/asks']):
 
     return (virtualOrderBook, medium)
 
-def calcVirtualOrderBooks(orderBookA: [['bids'], ['asks']], 
+def calcVirtualOrderBooks(orderBookA: [['bids'], ['asks']],
                           orderBookB: [['bids'], ['asks']]):
     """calculate virtual order book between coin A and coin B through coin C"""
 
     # index enumeration for taking buy/sell data from order book list
     BUY, SELL = range(2)
-    
+
     orderBookBuy, mediumBuy = calcOneWayVirtualOrderBooks(orderBookA[BUY], orderBookB[BUY])
     orderBookSell, mediumSell = calcOneWayVirtualOrderBooks(orderBookA[SELL], orderBookB[SELL])
     return ([orderBookBuy, orderBookSell], [mediumBuy, mediumSell])
-
-

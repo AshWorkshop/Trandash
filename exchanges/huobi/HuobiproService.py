@@ -229,7 +229,7 @@ class Huobipro(ExchangeService):
             print(data)
             try:
                 order_id = data['data']
-                return (True,order_id)
+                return (True,int(order_id))
             except KeyError:
                 print(data)
                 order_id = '0'
@@ -262,7 +262,7 @@ class Huobipro(ExchangeService):
             print(data)
             try:
                 order_id = data['data']
-                return (True,order_id)
+                return (True,int(order_id))
             except KeyError:
                 print(data)
                 order_id = '0'
@@ -286,7 +286,6 @@ class Huobipro(ExchangeService):
         d = get(reactor,url,headers=headers)
 
         def handleBody(body):
-            print(body)
             data = json.loads(body)
             if data['data']['type']=='buy-limit':
                 data['data']['type']='buy'
@@ -344,8 +343,8 @@ class Huobipro(ExchangeService):
         """
         _from = None
         types = None
-        states = "filled"
-        size = 11
+        states = 'submitted,partial-filled,partial-canceled,filled,canceled'
+        size = None
         direct = "prev"
         symbol = self.getSymbol(pairs)
         params = {'symbol': symbol,
@@ -371,8 +370,40 @@ class Huobipro(ExchangeService):
         d = get(reactor,url,headers=headers)
 
         def handleBody(body):
+            # print(body)
             data = json.loads(body)
-            print(data)
+            # print(data)
+            orderList = []
+
+            if not isinstance(data, dict):
+                return None
+
+            for order in data['data']:
+                try:
+                    if order['type'] == 'sell-limit':
+                        order['type'] = 'sell'
+                    elif order['type'] == 'buy-limit':
+                        order['type'] = 'buy'
+
+                    if order['state'] == 'filled':
+                        order['state'] = 'done'
+                    elif order['state'] == 'canceled':
+                        order['state'] = 'cancelled'
+                    orderList.append({
+                        'orderId': order['id'],
+                        'timestamp': order['finished-at'],    #返回的字典中添加了时间戳信息
+                        'type': order['type'],
+                        'iniPrice': float(order['price']),
+                        'initAmount': float(order['amount']),
+                        'coinPair': symbol,
+                        'status': order['state']
+                        })
+                except KeyError:
+                    if 'error' in data:
+                        err = data['error']
+                        print(err)
+
+            return orderList
 
         d.addCallback(handleBody)
 

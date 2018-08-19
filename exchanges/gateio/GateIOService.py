@@ -199,7 +199,7 @@ class GateIO(ExchangeService):
             return (True, orederId)
 
         d.addCallback(handleBody)
-        d.addErrback(handleBody)
+        d.addErrback(lambda failure: print(failure.getBriefTraceback()))
 
         return d
 
@@ -236,7 +236,7 @@ class GateIO(ExchangeService):
             return (True,orederId)
 
         d.addCallback(handleBody)
-        d.addErrback(handleBody)
+        d.addErrback(lambda failure: print(failure.getBriefTraceback()))
 
         return d
 
