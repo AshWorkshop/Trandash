@@ -235,7 +235,7 @@ def cbRun():
                 balanceC = 0.0  #balance of 'eth'
                 balanceB = 0.0  #balance of 'eos'   
                 balances = BALANCES[exchangeName].getData()
-                balancesWr = str(json.dumps(balances)) 
+                # balancesWr = str(json.dumps(balances)) 
                 print(balances)
 
                 if isinstance(balances,dict):
@@ -277,9 +277,9 @@ def cbRun():
                                 print(balances)
                                 if amountBuyA*priceBuyA <= balanceA:
                                     if amountBuyB*priceBuyB <= balanceC:
-                                        reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBookA.pairs,price=priceBuyA,amount=amountBuyA)
-                                        time.sleep(1)
-                                        reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBookB.pairs,price=priceBuyB,amount=amountBuyB)
+                                        # reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBookA.pairs,price=priceBuyA,amount=amountBuyA)
+                                        # time.sleep(1)
+                                        # reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBookB.pairs,price=priceBuyB,amount=amountBuyB)
                                         buy_flag = True
                                     else:
                                         
@@ -304,7 +304,7 @@ def cbRun():
                     if isinstance(balanceA,float):
                         if amountBuy*priceBuy <= balanceA:
                             print(balances)
-                            reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=priceBuy,amount=amountBuy)
+                            # reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=priceBuy,amount=amountBuy)
                             buy_flag = True
                         else:
                             print("Not enough coin/money")
@@ -342,9 +342,10 @@ def cbRun():
                                     print(balances)
                                     if amountSellB <= balanceB:                      
                                         if amountSellA <= balanceC:
-                                            reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBookB.pairs,price=priceSellB,amount=amountSellB)
-                                            time.sleep(1)
-                                            reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBookA.pairs,price=priceSellA,amount=amountSellA)
+                                            # reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBookB.pairs,price=priceSellB,amount=amountSellB)
+                                            # time.sleep(1)
+                                            # reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBookA.pairs,price=priceSellA,amount=amountSellA)
+                                            pass
                                         else:
                                             print("Not enough coin/money")
                                             stateStr += '| Not enough coin/money to sell in orderBookA: eth-usdt, need eth:' + str(amountSellA)
@@ -366,7 +367,8 @@ def cbRun():
                         if isinstance(balanceB,float):
                             if amountSell <= balanceB:
                                 print(balances)
-                                reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooks.pairs,price=priceSell,amount=amountSell)
+                                # reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooks.pairs,price=priceSell,amount=amountSell)
+                                pass
                             else:
                                 print("Not enough coin/money")
                                 stateStr += '| Not enough coin/money to sell in real district:orderBooks: eos-usdt, need eos:' + str(amountSell)
@@ -386,6 +388,11 @@ def cbRun():
                 staFile.write("%d, %s, %s, stateStr:%s, usdtAmount:%f, noBalances_count:%d, traded_count:%d\n" % (count, balancesWr, currentTime, stateStr, usdtAmount, noBalances, traded_count))
                 staFile.close()
                 state = "GO"
+
+            else:
+                state = "GO"
+        else:
+            state = "GO"
 
     # yield cbRun()
 def ebLoopFailed(failure):
@@ -412,7 +419,7 @@ BALANCES = {
 }
 loop = task.LoopingCall(cbRun)
 
-loopDeferred = loop.start(1.0)
+loopDeferred = loop.start(2.0)
 loopDeferred.addErrback(ebLoopFailed)
 
 reactor.run()

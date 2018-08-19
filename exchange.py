@@ -171,18 +171,25 @@ def calcVirtualOrderBooks(orderBookA: [['bids'], ['asks']],
     orderBookSell, mediumSell = calcOneWayVirtualOrderBooks(orderBookA[SELL], orderBookB[SELL])
     return ([orderBookBuy, orderBookSell], [mediumBuy, mediumSell])
 
-# if __name__ == '__main__':
-#     USDT2ETH = [
-#         [100, 5],
-#         [110, 5],
-#         [120, 10],
-#         [130, 10],
-#     ]
-#     ETH2EOS = [
-#         [0.01, 300],
-#         [0.02, 500],
-#         [0.03, 500],
-#         [0.05, 500],
-#     ]
-#     print(f'USDT2ETH: {USDT2ETH}\nETH2EOS: {ETH2EOS}\nUSDT2EOS: {calcOneWayVirtualOrderBooks(USDT2ETH, ETH2EOS)}')
-#     print(f'USDT2ETH: {USDT2ETH}\nETH2EOS: {ETH2EOS}\n')
+if __name__ == '__main__':
+    USDT2ETH = [
+        [100, 5],
+        [110, 5],
+        [120, 10],
+        [130, 10],
+    ]
+    ETH2EOS = [
+        [0.01, 300],
+        [0.02, 500],
+        [0.03, 500],
+        [0.05, 500],
+    ]
+    supposedUSDT2EOS = [
+        [1, 300],
+        [2, 100],
+        [2.2, 250],
+        [2.4, 150],    
+    ]
+    supposedMedium = [300*0.01, (300*0.01)+(100*0.02), (300*0.01+100*0.02)+(250*0.02), (300*0.01+100*0.02+250*0.02)+(150*0.02)]
+    print(f'USDT2ETH: {USDT2ETH}\nETH2EOS: {ETH2EOS}\nUSDT2EOS: {calcOneWayVirtualOrderBooks(USDT2ETH, ETH2EOS)}')
+    print(f'supposed USDT2EOS: {supposedUSDT2EOS, supposedMedium}\n')
