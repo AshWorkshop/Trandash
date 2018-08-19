@@ -276,9 +276,9 @@ def cbRun():
                                 print(balances)
                                 if amountBuyA*priceBuyA <= balanceA:
                                     if amountBuyB*priceBuyB <= balanceC:
-                                        reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooksA.pairs,price=priceBuyA,amount=amountBuyA)
+                                        reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBookA.pairs,price=priceBuyA,amount=amountBuyA)
                                         time.sleep(1)
-                                        reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooksB.pairs,price=priceBuyB,amount=amountBuyB)
+                                        reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBookB.pairs,price=priceBuyB,amount=amountBuyB)
                                         buy_flag = True
                                     else:
                                         
@@ -341,9 +341,9 @@ def cbRun():
                                     print(balances)
                                     if amountSellB <= balanceB:                      
                                         if amountSellA <= balanceC:
-                                            reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooksB.pairs,price=priceSellB,amount=amountSellB)
+                                            reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBookB.pairs,price=priceSellB,amount=amountSellB)
                                             time.sleep(1)
-                                            reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooksA.pairs,price=priceSellA,amount=amountSellA)
+                                            reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBookA.pairs,price=priceSellA,amount=amountSellA)
                                         else:
                                             print("Not enough coin/money")
                                             stateStr += '| Not enough coin/money to sell in orderBookA: eth-usdt, need eth:' + str(amountSellA)
