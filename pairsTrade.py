@@ -92,7 +92,7 @@ def buy(exchange,coinPair,amount,price):
         stateStr += 'SUCCESSFULLY BUY:' + str(orderId[1])
         traded_count += 1
         try:
-            order = yield exchange.getOrder(orderId,coinPair)
+            order = yield exchange.getOrder(coinPair,orderId)
         except Exception as err:
             failure = Failure(err)
             stateStr += 'getOrder ERROR:' + str(failure.getBriefTraceback())
@@ -122,7 +122,7 @@ def sell(exchange,coinPair,amount,price):
         stateStr += 'SUCCESSFULLY SELL:' + str(orderId[1])
         traded_count += 1
         try:
-            order = yield exchange.getOrder(orderId,coinPair)
+            order = yield exchange.getOrder(coinPair,orderId)
         except Exception as err:
             failure = Failure(err)
             stateStr += 'getOrder ERROR:' + str(failure.getBriefTraceback())
@@ -271,6 +271,7 @@ def cbRun():
                                 if amountBuyA*priceBuyA <= balanceA:
                                     if amountBuyB*priceBuyB <= balanceC:
                                         reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooksA.pairs,price=priceBuyA,amount=amountBuyA)
+                                        time.sleep(1)
                                         reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooksB.pairs,price=priceBuyB,amount=amountBuyB)
                                         buy_flag = True
                                     else:
@@ -308,7 +309,7 @@ def cbRun():
                         stateStr += 'No exchange in real district:orderBooks: eos-usdt'
 
                 if buy_flag:
-                    '''do sell '''
+                    '''do sell after buying '''
                     print('do: SELL')
                     strExchange = exchangePairs[0][0][SELL]
 
@@ -335,6 +336,7 @@ def cbRun():
                                     if amountSellB <= balanceB:                      
                                         if amountSellA <= balanceC:
                                             reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooksB.pairs,price=priceSellB,amount=amountSellB)
+                                            time.sleep(1)
                                             reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooksA.pairs,price=priceSellA,amount=amountSellA)
                                         else:
                                             state = "GO"
