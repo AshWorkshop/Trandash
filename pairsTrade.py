@@ -141,7 +141,7 @@ def cbRun():
     count += 1
     wait += 1
     # print to file
-    stateStr = ''
+    
     print('[', count, state, ']')
     # time.sleep(1)
     if state == 'FIRST':
@@ -195,6 +195,7 @@ def cbRun():
 
         if hasData:
             state = "WAIT"
+            stateStr = ''
             '''add virtualOrderBook into exchangeSate '''
             virtualOrderBooks = calcVirtualOrderBooks(A, B)
             print('midAmount in virtualOrderBooks:')  
