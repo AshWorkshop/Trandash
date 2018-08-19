@@ -20,7 +20,7 @@ hasList = ['ltcbtc', 'ethbtc', 'etcbtc', 'rrtbtc', 'zecbtc', 'xmrbtc', 'dshbtc',
  'wprbtc', 'wpreth', 'zilbtc', 'zileth', 'bntbtc', 'bnteth', 'abseth', 'xraeth', 
  'maneth']
 
- midList = ['btc', 'eth', 'eos']
+midList = ['btc', 'eth', 'eos']
 
 def getPairs():
     '''return : a list of: [coinA, coinB, coinC],...'''

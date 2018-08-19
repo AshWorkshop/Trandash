@@ -20,7 +20,7 @@ from exchanges.huobi.HuobiproService import huobipro
 
 from exchange import OrderBooks
 from cycle.cycle import Cycle
-from btf_midPairs_data import hasList, midList, getPairs
+from btf_midPairs import hasList, midList, getPairs
 
 # if len(argv) == 4:
 #     _, coin, money, dataFile = argv
