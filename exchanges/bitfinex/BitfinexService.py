@@ -122,7 +122,7 @@ class Bitfinex(ExchangeService):
         def handleBody(body):
             # print(body)
             data = json.loads(body)
-            print(data)
+            # print(data)
             balances = dict()
             if not isinstance(data, list):
                 return None
@@ -131,7 +131,7 @@ class Bitfinex(ExchangeService):
                     b_type = b['type']
                     b_currency = b['currency']
                     b_available = b['available']
-                except KeyError:
+                except Exception as e:
                     b_type = ''
                     b_currency = ''
                     b_available = 0.0

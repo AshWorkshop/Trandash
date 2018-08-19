@@ -66,7 +66,8 @@ FEE = {
     'virtual': [0.996, 1.004],
 }
 state = 'FIRST'
-stateStr = 'Normal'
+stateStr = 'Normal'  #use to record state to write in log file
+noBalances = 0
 
 
 '''api'''
@@ -81,21 +82,21 @@ def buy(exchange,coinPair,amount,price):
         try:
             orderId = yield exchange.buy(coinPair,price,amount)
             print(orderId)
-            stateStr += 'BUY:' + str(orderId)
+            stateStr += '| BUY:' + str(orderId)
         except Exception as err:
             failure = Failure(err)
-            stateStr += 'BUY ERROR:' + str(failure.getBriefTraceback())
+            stateStr += '| BUY ERROR:' + str(failure.getBriefTraceback())
             print(failure.getBriefTraceback())
 
     if orderId[1] is not None and orderId[0] == True:
         print("SUCCESSFULLY BUY:", orderId[1])
-        stateStr += 'SUCCESSFULLY BUY:' + str(orderId[1])
+        stateStr += '| SUCCESSFULLY BUY:' + str(orderId[1])
         traded_count += 1
         try:
             order = yield exchange.getOrder(coinPair,orderId)
         except Exception as err:
             failure = Failure(err)
-            stateStr += 'getOrder ERROR:' + str(failure.getBriefTraceback())
+            stateStr += '| getOrder ERROR:' + str(failure.getBriefTraceback())
             print(failure.getBriefTraceback())
 
     state = "GO"
@@ -111,21 +112,21 @@ def sell(exchange,coinPair,amount,price):
         try:
             orderId = yield exchange.sell(coinPair,price,amount)
             print(orderId)
-            stateStr += 'SELL:' + str(orderId)
+            stateStr += '| SELL:' + str(orderId)
         except Exception as err:
             failure = Failure(err)
-            stateStr += 'SELL ERROR:' + str(failure.getBriefTraceback())
+            stateStr += '| SELL ERROR:' + str(failure.getBriefTraceback())
             print(failure.getBriefTraceback())
 
     if orderId[1] is not None and orderId[0] == True:
         print("SUCCESSFULLY SELL:", orderId[1])
-        stateStr += 'SUCCESSFULLY SELL:' + str(orderId[1])
+        stateStr += '| SUCCESSFULLY SELL:' + str(orderId[1])
         traded_count += 1
         try:
             order = yield exchange.getOrder(coinPair,orderId)
         except Exception as err:
             failure = Failure(err)
-            stateStr += 'getOrder ERROR:' + str(failure.getBriefTraceback())
+            stateStr += '| getOrder ERROR:' + str(failure.getBriefTraceback())
             print(failure.getBriefTraceback())
 
     state = "GO"
@@ -136,6 +137,7 @@ def cbRun():
     global wait
     global stateStr
     global usdtAmount
+    global noBalances
     count += 1
     wait += 1
     # print to file
@@ -192,6 +194,7 @@ def cbRun():
             exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bids, asks], [avgBids, avgAsks]
 
         if hasData:
+            state = "WAIT"
             '''add virtualOrderBook into exchangeSate '''
             virtualOrderBooks = calcVirtualOrderBooks(A, B)
             print('midAmount in virtualOrderBooks:')  
@@ -219,6 +222,7 @@ def cbRun():
             PRICE=0, AMOUNT=1
             '''
             if exchangePairs:  #skip when exchangePairs is [] or None.
+                state = "WAIT"
                 '''get midAmount'''
                 virtualLevel = exchangePairs[0][2][0]  #可交易对里返回的level值
                 virtualBuyList = virtualOrderBooks[1][BUY]
@@ -238,6 +242,8 @@ def cbRun():
                     balanceC = balances[coinC]  #balance of 'eth'
                     if coinB in balances:  
                         balanceB = balances[coinB]  #balance of 'eos'
+                else:
+                    noBalances += 1
                 exchange = EXCHANGE[exchangeName]  #original exchange instance, eg bitfinex
                 
                 '''do buy '''
@@ -252,7 +258,7 @@ def cbRun():
                     levelA = getLevel(amountBuyA,A[BUY])
                     # print(len(A[BUY]))
                     if levelA >= len(A[BUY]):
-                        stateStr += 'in orderBookA: eth-usdt levelA_Buy out of range, ' + str(levelA) + ',amountBuyA:' + str(amountBuyA)
+                        stateStr += '| in orderBookA: eth-usdt levelA_Buy out of range, ' + str(levelA) + ',amountBuyA:' + str(amountBuyA)
                         print(stateStr)
                     else:
                         priceBuyA = A[BUY][levelA][PRICE]                    
@@ -260,7 +266,7 @@ def cbRun():
                         amountBuyB = exchangePairs[0][2][1]  
                         levelB = getLevel(amountBuyB,B[BUY])
                         if levelB >= len(B[BUY]):
-                            stateStr += 'in orderBookB: eos-eth levelB_Buy out of range, ' +str(levelB) + ',amountBuyB:' + str(amountBuyB)
+                            stateStr += '| in orderBookB: eos-eth levelB_Buy out of range, ' +str(levelB) + ',amountBuyB:' + str(amountBuyB)
                             print(stateStr)
                         else:                   
                             priceBuyB = B[BUY][levelB][PRICE]
@@ -275,17 +281,18 @@ def cbRun():
                                         reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooksB.pairs,price=priceBuyB,amount=amountBuyB)
                                         buy_flag = True
                                     else:
-                                        state = "GO"
+                                        
                                         print("Not enough coin/money")
-                                        stateStr += 'Not enough coin/money to buy in orderBookB: eos-eth'
+                                        stateStr += '| Not enough coin/money to buy in orderBookB: eos-eth, need eth:' + str(amountBuyB*priceBuyB)
+                                        state = "GO"
                                 else:
-                                    state = "GO"
                                     print("Not enough coin/money")
-                                    stateStr += 'Not enough coin/money to buy in orderBookA: eth-usdt'
+                                    stateStr += '| Not enough coin/money to buy in orderBookA: eth-usdt, need usdt:' + str(amountBuyA*priceBuyA)
+                                    state = "GO"
                             else:
-                                state = "GO"
                                 print("No exchange")  
-                                stateStr += 'No exchange in two trade districts'
+                                stateStr += '| No exchange in two trade districts'
+                                state = "GO"
                     
                 else:
                     '''do buy in real district:orderBooks: eos-usdt'''
@@ -294,19 +301,18 @@ def cbRun():
                     print(amountBuy*priceBuy)
                     usdtAmount = amountBuy*priceBuy                    
                     if isinstance(balanceA,float):
-
                         if amountBuy*priceBuy <= balanceA:
                             print(balances)
                             reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=priceBuy,amount=amountBuy)
                             buy_flag = True
                         else:
-                            state = "GO"
                             print("Not enough coin/money")
-                            stateStr += 'Not enough coin/money to buy in real district:orderBooks: eos-usdt'
+                            stateStr += '| Not enough coin/money to buy in real district:orderBooks: eos-usdt, need usdt:' + str(amountBuy*priceBuy)
+                            state = "GO"
                     else:
-                        state = "GO"
                         print("No exchange")
-                        stateStr += 'No exchange in real district:orderBooks: eos-usdt'
+                        stateStr += '| No exchange in real district:orderBooks: eos-usdt'
+                        state = "GO"
 
                 if buy_flag:
                     '''do sell after buying '''
@@ -319,7 +325,7 @@ def cbRun():
                         amountSellB = exchangePairs[0][2][1]  
                         levelB = getLevel(amountSellB,B[SELL])
                         if levelB >= len(B[SELL]):
-                            stateStr += 'levelB_Sell out of range, ' + str(levelB) + ',amountSellB:' + str(amountSellB)
+                            stateStr += '| levelB_Sell out of range, ' + str(levelB) + ',amountSellB:' + str(amountSellB)
                             print(stateStr)                        
                         else:
                             priceSellB = B[SELL][levelB][PRICE]
@@ -327,7 +333,7 @@ def cbRun():
                             amountSellA = midAmountSell
                             levelA = getLevel(amountSellA,A[SELL])
                             if levelA >= len(A[SELL]):
-                                stateStr += 'levelA_Sell out of range, ' + str(levelA) + ',amountSellA:' + str(amountSellA)
+                                stateStr += '| levelA_Sell out of range, ' + str(levelA) + ',amountSellA:' + str(amountSellA)
                                 print(stateStr)
                             else:
                                 priceSellA = A[SELL][levelA][PRICE]
@@ -339,17 +345,17 @@ def cbRun():
                                             time.sleep(1)
                                             reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooksA.pairs,price=priceSellA,amount=amountSellA)
                                         else:
-                                            state = "GO"
                                             print("Not enough coin/money")
-                                            stateStr += 'Not enough coin/money to sell in orderBookA: eth-usdt'                                        
+                                            stateStr += '| Not enough coin/money to sell in orderBookA: eth-usdt, need eth:' + str(amountSellA)
+                                            state = "GO"                                       
                                     else:
-                                        state = "GO"
                                         print("Not enough coin/money")
-                                        stateStr += 'Not enough coin/money to sell in orderBookB: eos-eth'
+                                        stateStr += '| Not enough coin/money to sell in orderBookB: eos-eth, need eos:' + str(amountSellB)
+                                        state = "GO"
                                 else:
-                                    state = "GO"
                                     print("No exchange")
-                                    stateStr += 'No exchange in two trade districts'                   
+                                    stateStr += '| No exchange in two trade districts'  
+                                    state = "GO"                 
 
                     
                     else:
@@ -357,27 +363,28 @@ def cbRun():
                         priceSell = exchangePairs[0][1][SELL]
                         amountSell = exchangePairs[0][2][1]
                         if isinstance(balanceB,float):
-                            if amountSell*priceSell <= balanceB:
+                            if amountSell <= balanceB:
                                 print(balances)
                                 reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooks.pairs,price=priceSell,amount=amountSell)
                             else:
-                                state = "GO"
                                 print("Not enough coin/money")
-                                stateStr += 'Not enough coin/money to sell in real district:orderBooks: eos-usdt'
+                                stateStr += '| Not enough coin/money to sell in real district:orderBooks: eos-usdt, need eos:' + str(amountSell)
+                                state = "GO"
                         else:
-                            state = "GO"
                             print("No exchange")
-                            stateStr += 'No exchange in real district:orderBooks: eos-usdt'
+                            stateStr += '| No exchange in real district:orderBooks: eos-usdt'
+                            state = "GO"
                 else:
-                    stateStr += 'Not buy, so not do sell'
+                    stateStr += '| Not buy, so not do sell'
 
                 '''data log'''
                 # balances = BALANCES[exchangeName].getData()  
                 balancesWr = str(json.dumps(balances))
                 currentTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')#现在
                 staFile = open('bitfinex_' + '_balances_' + str(startTime), 'a+')
-                staFile.write("%d,%s,%s,%s,%f,%d\n" % (count, balancesWr, currentTime, stateStr, usdtAmount, traded_count))
+                staFile.write("%d, %s, %s, stateStr:%s, usdtAmount:%f, noBalances_count:%d, traded_count:%d\n" % (count, balancesWr, currentTime, stateStr, usdtAmount, noBalances, traded_count))
                 staFile.close()
+                state = "GO"
 
     # yield cbRun()
 def ebLoopFailed(failure):
