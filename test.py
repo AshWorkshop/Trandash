@@ -19,10 +19,10 @@ def test():
     #d = okexFuture.cancle(('ltc', 'usdt'), orderId=1276330619587584)
     # d = huobipro.buy(('eth','usdt'),290,500)
     #d = huobipro.getBalances(['eth','usdt'])
-    #d = bitfinex.getOrderBook(pairs)
+    # d = bitfinex.getOrderBook(pairs)
     d = bitfinex.getBalances(['eth','usdt','eos'])
-    # d = bitfinex.sell(('eth','usdt'),284.24,0.1)
-    # d = bitfinex.getOrder(pairs,15622582761)
+    # d = bitfinex.sell(('eth','usdt'),291.09,0.2)
+    # d = bitfinex.getOrder(pairs,15638551536)
     # d = bitfinex.getOrderHistory(pairs,1534608693)
 
 

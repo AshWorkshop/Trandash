@@ -244,6 +244,7 @@ def cbRun():
                 print('do: BUY')
                 strExchange = exchangePairs[0][0][BUY]
 
+                buy_flag = False
                 '''do buy in two trade districts:'''
                 if strExchange == 'virtual':
                     #first, in orderBookA: eth-usdt
@@ -251,7 +252,7 @@ def cbRun():
                     levelA = getLevel(amountBuyA,A[BUY])
                     # print(len(A[BUY]))
                     if levelA >= len(A[BUY]):
-                        stateStr += 'in orderBookA: eth-usdt levelA_Buy out of range ' + str(levelA)
+                        stateStr += 'in orderBookA: eth-usdt levelA_Buy out of range, ' + str(levelA) + ',amountBuyA:' + str(amountBuyA)
                         print(stateStr)
                     else:
                         priceBuyA = A[BUY][levelA][PRICE]                    
@@ -259,7 +260,7 @@ def cbRun():
                         amountBuyB = exchangePairs[0][2][1]  
                         levelB = getLevel(amountBuyB,B[BUY])
                         if levelB >= len(B[BUY]):
-                            stateStr += 'in orderBookB: eos-eth levelB_Buy out of range ' +str(levelB)
+                            stateStr += 'in orderBookB: eos-eth levelB_Buy out of range, ' +str(levelB) + ',amountBuyB:' + str(amountBuyB)
                             print(stateStr)
                         else:                   
                             priceBuyB = B[BUY][levelB][PRICE]
@@ -271,6 +272,7 @@ def cbRun():
                                     if amountBuyB*priceBuyB <= balanceC:
                                         reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooksA.pairs,price=priceBuyA,amount=amountBuyA)
                                         reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooksB.pairs,price=priceBuyB,amount=amountBuyB)
+                                        buy_flag = True
                                     else:
                                         state = "GO"
                                         print("Not enough coin/money")
@@ -295,6 +297,7 @@ def cbRun():
                         if amountBuy*priceBuy <= balanceA:
                             print(balances)
                             reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=priceBuy,amount=amountBuy)
+                            buy_flag = True
                         else:
                             state = "GO"
                             print("Not enough coin/money")
@@ -304,65 +307,67 @@ def cbRun():
                         print("No exchange")
                         stateStr += 'No exchange in real district:orderBooks: eos-usdt'
 
-                
-                '''do sell '''
-                print('do: SELL')
-                strExchange = exchangePairs[0][0][SELL]
+                if buy_flag:
+                    '''do sell '''
+                    print('do: SELL')
+                    strExchange = exchangePairs[0][0][SELL]
 
-                '''do sell in two trade districts:'''
-                if strExchange == 'virtual':
-                    #first, in orderBookB: eos-eth
-                    amountSellB = exchangePairs[0][2][1]  
-                    levelB = getLevel(amountSellB,B[SELL])
-                    if levelB >= len(B[SELL]):
-                        stateStr += 'levelB_Sell out of range ' + str(levelB)
-                        print(stateStr)                        
-                    else:
-                        priceSellB = B[SELL][levelB][PRICE]
-                        #second, in orderBookA: eth-usdt
-                        amountSellA = midAmountSell
-                        levelA = getLevel(amountSellA,A[SELL])
-                        if levelA >= len(A[SELL]):
-                            stateStr += 'levelA_Sell out of range ' + str(levelA)
-                            print(stateStr)
+                    '''do sell in two trade districts:'''
+                    if strExchange == 'virtual':
+                        #first, in orderBookB: eos-eth
+                        amountSellB = exchangePairs[0][2][1]  
+                        levelB = getLevel(amountSellB,B[SELL])
+                        if levelB >= len(B[SELL]):
+                            stateStr += 'levelB_Sell out of range, ' + str(levelB) + ',amountSellB:' + str(amountSellB)
+                            print(stateStr)                        
                         else:
-                            priceSellA = A[SELL][levelA][PRICE]
-                            if isinstance(balanceB,float) and isinstance(balanceC,float):
-                                print(balances)
-                                if amountSellB <= balanceB:                      
-                                    if amountSellA <= balanceC:
-                                        reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooksB.pairs,price=priceSellB,amount=amountSellB)
-                                        reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooksA.pairs,price=priceSellA,amount=amountSellA)
+                            priceSellB = B[SELL][levelB][PRICE]
+                            #second, in orderBookA: eth-usdt
+                            amountSellA = midAmountSell
+                            levelA = getLevel(amountSellA,A[SELL])
+                            if levelA >= len(A[SELL]):
+                                stateStr += 'levelA_Sell out of range, ' + str(levelA) + ',amountSellA:' + str(amountSellA)
+                                print(stateStr)
+                            else:
+                                priceSellA = A[SELL][levelA][PRICE]
+                                if isinstance(balanceB,float) and isinstance(balanceC,float):
+                                    print(balances)
+                                    if amountSellB <= balanceB:                      
+                                        if amountSellA <= balanceC:
+                                            reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooksB.pairs,price=priceSellB,amount=amountSellB)
+                                            reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooksA.pairs,price=priceSellA,amount=amountSellA)
+                                        else:
+                                            state = "GO"
+                                            print("Not enough coin/money")
+                                            stateStr += 'Not enough coin/money to sell in orderBookA: eth-usdt'                                        
                                     else:
                                         state = "GO"
                                         print("Not enough coin/money")
-                                        stateStr += 'Not enough coin/money to sell in orderBookA: eth-usdt'                                        
+                                        stateStr += 'Not enough coin/money to sell in orderBookB: eos-eth'
                                 else:
                                     state = "GO"
-                                    print("Not enough coin/money")
-                                    stateStr += 'Not enough coin/money to sell in orderBookB: eos-eth'
+                                    print("No exchange")
+                                    stateStr += 'No exchange in two trade districts'                   
+
+                    
+                    else:
+                        '''do sell in real district:orderBooks: eos-usdt'''
+                        priceSell = exchangePairs[0][1][SELL]
+                        amountSell = exchangePairs[0][2][1]
+                        if isinstance(balanceB,float):
+                            if amountSell*priceSell <= balanceB:
+                                print(balances)
+                                reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooks.pairs,price=priceSell,amount=amountSell)
                             else:
                                 state = "GO"
-                                print("No exchange")
-                                stateStr += 'No exchange in two trade districts'                   
-
-                
-                else:
-                    '''do sell in real district:orderBooks: eos-usdt'''
-                    priceSell = exchangePairs[0][1][SELL]
-                    amountSell = exchangePairs[0][2][1]
-                    if isinstance(balanceB,float):
-                        if amountSell*priceSell <= balanceB:
-                            print(balances)
-                            reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooks.pairs,price=priceSell,amount=amountSell)
+                                print("Not enough coin/money")
+                                stateStr += 'Not enough coin/money to sell in real district:orderBooks: eos-usdt'
                         else:
                             state = "GO"
-                            print("Not enough coin/money")
-                            stateStr += 'Not enough coin/money to sell in real district:orderBooks: eos-usdt'
-                    else:
-                        state = "GO"
-                        print("No exchange")
-                        stateStr += 'No exchange in real district:orderBooks: eos-usdt'
+                            print("No exchange")
+                            stateStr += 'No exchange in real district:orderBooks: eos-usdt'
+                else:
+                    stateStr += 'Not buy, so not do sell'
 
                 '''data log'''
                 # balances = BALANCES[exchangeName].getData()  
