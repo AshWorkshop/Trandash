@@ -20,9 +20,10 @@ def test():
     # d = huobipro.buy(('eth','usdt'),290,500)
     #d = huobipro.getBalances(['eth','usdt'])
     #d = bitfinex.getOrderBook(pairs)
-    # d = bitfinex.getBalances(['eth','usdt'])
+    d = bitfinex.getBalances(['eth','usdt','eos'])
     # d = bitfinex.sell(('eth','usdt'),284.24,0.1)
     # d = bitfinex.getOrder(pairs,15622582761)
+    # d = bitfinex.getOrderHistory(pairs,1534608693)
 
 
     def cbPrint(result):

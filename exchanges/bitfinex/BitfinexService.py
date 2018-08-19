@@ -345,7 +345,9 @@ class Bitfinex(ExchangeService):
             for order in data:
                 try:
                     timestamp = order['timestamp']
-                    if float(timestamp) >= givenTime:
+                    symbolGet = order['symbol'].upper()
+                    # print(symbolGet,symbol)
+                    if float(timestamp) >= givenTime and symbol==symbolGet:
                         status = 'open'
                         if order['is_cancelled']:
                             status = 'cancelled'
@@ -357,7 +359,7 @@ class Bitfinex(ExchangeService):
                             'type': order['side'],
                             'iniPrice': float(order['price']),
                             'initAmount': float(order['original_amount']),
-                            'coinPair': symbol,
+                            'coinPair': order['symbol'],
                             'status': status
                             })
                 except KeyError:
