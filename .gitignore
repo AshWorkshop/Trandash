@@ -112,3 +112,5 @@ venv.bak/
 .vscode/
 genCertifi.bat
 *.db
+bitfinex_*
+balances_logs/

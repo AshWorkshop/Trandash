@@ -5,6 +5,7 @@ from .HttpUtil import getPostHeaders
 from utils import Order
 
 from twisted.internet import reactor
+from twisted.python.failure import Failure
 
 import json
 import time
@@ -45,7 +46,7 @@ class Bitfinex(ExchangeService):
                 rawAsks = []
                 if 'error' in data:
                     err = data['error']
-                    print(err)
+                    print(err, ' from getOrderBook()')
                     if err == 'ERR_RATE_LIMIT':
                         time.sleep(1)
 
@@ -78,20 +79,20 @@ class Bitfinex(ExchangeService):
         def handleBody(body):
             # print(body)
             data = json.loads(body)
-            # print(data)
+            print(data)
             balance = 0.0
             for b in data:
                 try:
                     b_type = b['type']
                     b_currency = b['currency']
                     b_available = b['available']
-                except KeyError:
+                except Exception as e:
                     b_type = ''
                     b_currency = ''
                     b_available = 0.0
                     if 'error' in data:
                         err = data['error']
-                        print(err)
+                        print(err, ' from getBalance()')
                         if err == 'ERR_RATE_LIMIT':
                             time.sleep(1)
                 if b_type == 'exchange':
@@ -107,6 +108,7 @@ class Bitfinex(ExchangeService):
         return d
 
     def getBalances(self, coins):
+        #ratelimit: 20 req/min
         URL = "/v1/balances"
         # print(self.__url)
         url = self.__url + URL
@@ -129,13 +131,13 @@ class Bitfinex(ExchangeService):
                     b_type = b['type']
                     b_currency = b['currency']
                     b_available = b['available']
-                except KeyError:
+                except Exception as e:
                     b_type = ''
                     b_currency = ''
                     b_available = 0.0
                     if 'error' in data:
                         err = data['error']
-                        print(err)
+                        print(err, ' from getBalances()')
                         if err == 'ERR_RATE_LIMIT':
                             time.sleep(1)
                 if b_type == 'exchange':
@@ -343,7 +345,9 @@ class Bitfinex(ExchangeService):
             for order in data:
                 try:
                     timestamp = order['timestamp']
-                    if float(timestamp) >= givenTime:
+                    symbolGet = order['symbol'].upper()
+                    # print(symbolGet,symbol)
+                    if float(timestamp) >= givenTime and symbol==symbolGet:
                         status = 'open'
                         if order['is_cancelled']:
                             status = 'cancelled'
@@ -355,7 +359,7 @@ class Bitfinex(ExchangeService):
                             'type': order['side'],
                             'iniPrice': float(order['price']),
                             'initAmount': float(order['original_amount']),
-                            'coinPair': symbol,
+                            'coinPair': order['symbol'],
                             'status': status
                             })
                 except KeyError:

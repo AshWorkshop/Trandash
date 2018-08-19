@@ -32,7 +32,7 @@ class Robot(object):
             fun = getattr(self, state)
             fun()
 
-    def ebFailed(failure):
+    def ebFailed(self, failure):
         print(failure.getBriefTranceback())
 
 

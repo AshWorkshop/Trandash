@@ -71,6 +71,10 @@ class OKexFuture(ExchangeService):
             money = 'usd'
         return '_'.join((coin, money)).lower()
 
+    def ebFailed(self, failure):
+        print(failure)
+        return None
+
     def getTicker(self, pairs, contractType='quarter'):
         URL = "/api/v1/future_ticker.do"
 
@@ -81,9 +85,10 @@ class OKexFuture(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            return data.get('ticker', {})
+            assert 'ticker' in data
+            return data['ticker']
 
-        return httpGet(self.__url, URL, params, callback=handleBody)
+        return httpGet(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
     def getKLine(self, pairs, contractType='quarter', ktype='1min', size=0, since=0):
         URL = "/api/v1/future_kline"
@@ -100,7 +105,7 @@ class OKexFuture(ExchangeService):
             data = json.loads(body)
             return data
 
-        return httpGet(self.__url, URL, params, callback=handleBody)
+        return httpGet(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
     def getKLineLastMin(self, pairs, contractType='quarter', last=0):
         t = int(round(time.time() * 1000))
@@ -109,14 +114,12 @@ class OKexFuture(ExchangeService):
 
         def handleList(KLines):
             result = []
-            try:
-                result = KLines[-last:]
-            except Exception as err:
-                print(err)
-                return None
+            assert len(KLines) >= last
+            result = KLines[-last:]
             return result
 
         d.addCallback(handleList)
+        d.addErrback(self.ebFailed)
 
         return d
 
@@ -131,12 +134,11 @@ class OKexFuture(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
+            assert len(data) > 0
+            assert 'amount' in data[0]
+            return data[0]['amount']
 
-            if len(data) > 0:
-                return data[0].get('amount')
-            return 0
-
-        return httpGet(self.__url, URL, params, callback=handleBody)
+        return httpGet(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
     def getOrderBook(self, pairs):
         URL = "/api/v1/future_depth.do"
@@ -149,12 +151,13 @@ class OKexFuture(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            bids = data.get('bids', [])
-            asks = data.get('asks', [])
+            assert 'bids' in data and 'asks' in data
+            bids = data['bids']
+            asks = data['asks']
             asks.reverse()
             return [bids, asks]
 
-        return httpGet(self.__url, URL, params, callback=handleBody)
+        return httpGet(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
     def getPosition(self, pairs):
         URL = "/api/v1/future_position"
@@ -169,23 +172,11 @@ class OKexFuture(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            result = dict()
-            if 'holding' in data and len(data['holding']) > 0:
-                data = data['holding'][0]
-            else:
-                print(data)
-                data = dict()
+            assert 'holding' in data and len(data['holding']) > 0
+            return data['holding'][0]
 
-            result['buy_price_avg'] = data.get('buy_price_avg', 0.0)
-            result['buy_amount'] = data.get('buy_amount', 0.0)
-            result['sell_price_avg'] = data.get('sell_price_avg', 0.0)
-            result['sell_amount'] = data.get('sell_amount', 0.0)
-            result['buy_profit_real'] = data.get('buy_profit_real', 0.0)
-            result['sell_profit_real'] = data.get('sell_profit_real', 0.0)
 
-            return result
-
-        return httpPost(self.__url, URL, params, callback=handleBody)
+        return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
     def trade(self, pairs, contractType="quarter", price="", amount="", tradeType="", matchPrice="", leverRate=""):
         """
@@ -219,14 +210,15 @@ class OKexFuture(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            orderId = None
-            if data.get('result', False):
-                orderId = data['order_id']
-            else:
+            assert 'result' in data
+            if data['result'] == False:
                 print(data)
-            return orderId
+                return None
+            else:
+                assert 'order_id' in data
+                return data['order_id']
 
-        return httpPost(self.__url, URL, params, callback=handleBody)
+        return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
     def cancle(self, pairs, contractType="quarter", orderId=""):
         URL = "/api/v1/future_cancel"
@@ -241,13 +233,14 @@ class OKexFuture(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            if data.get('result', False):
+            assert 'result' in data
+            if data['result']:
                 return (True, orderId)
             else:
                 print(data)
                 return (False, data.get('error_code', -1))
 
-        return httpPost(self.__url, URL, params, callback=handleBody)
+        return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
     def getOrder(self, pairs, contractType='quarter', orderId="", status=""):
         URL = "/api/v1/future_order_info"
@@ -264,9 +257,9 @@ class OKexFuture(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            return data.get('orders', [])
+            return data.get('orders', None)
 
-        return httpPost(self.__url, URL, params, callback=handleBody)
+        return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
 
     def getUserInfo(self, coin):
@@ -285,7 +278,7 @@ class OKexFuture(ExchangeService):
             else:
                 return None
 
-        return httpPost(self.__url, URL, params, callback=handleBody)
+        return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
 okexFuture = OKexFuture(
     'https://www.okex.com',

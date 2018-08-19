@@ -10,6 +10,7 @@ FEE = {
     'huobipro': [1,1],#[0.998, 1.002],
     'gateio': [1,1],#[0.998, 1.002],
     'bitfinex': [1, 1],
+    'virtual': [1, 1],
 }
 
 EXCHANGE = {
@@ -78,14 +79,20 @@ def verifyExchanges(exchangesData, FEE=FEE):
     PRICE, AMOUNT = range(2)
 
     validExPairs = []
+    flag = 0
+    exchangesAmount = len(exchangesData)
     for buyExName, buyEx in exchangesData.items():
         # print(buyEx)
         for sellExName, sellEx in exchangesData.items():
+
             if buyExName == sellExName: continue
+            flag += 1
             if buyEx['avg'][BUY][0][PRICE] * FEE[buyExName][BUY] <= sellEx['avg'][SELL][0][PRICE] * FEE[sellExName][SELL]: continue
 
             level = 0
             amount = 0
+            maxLevel = min(len(buyEx['actual'][BUY]), len(sellEx['actual'][SELL]))-1
+            # print(maxLevel)
 
             for i, (buy, sell) in enumerate(zip(buyEx['avg'][BUY], sellEx['avg'][SELL])):
                 # print(buy, sell)
@@ -93,7 +100,18 @@ def verifyExchanges(exchangesData, FEE=FEE):
                 if buy[PRICE] * FEE[buyExName][BUY] <= sell[PRICE] * FEE[sellExName][SELL]:
                     level = i - 1
                     break
+                elif level >= maxLevel:
+                    print('error: one of possibility reaches max level when getting validExPairs.')
+                    possibilities = exchangesAmount
+                    if flag == possibilities:
+                        print('error: All possibilities reach max level when getting validExPairs.')
+                        return None
+                    else:
+                        break
+            if level >= maxLevel:
+                continue
 
+            # print(level)
             amount = min(buyEx['avg'][BUY][level][AMOUNT], sellEx['avg'][SELL][level][AMOUNT])
             buyPrice = float(buyEx['actual'][BUY][level][PRICE])
             sellPrice = float(sellEx['actual'][SELL][level][PRICE])
@@ -152,3 +170,26 @@ def calcVirtualOrderBooks(orderBookA: [['bids'], ['asks']],
     orderBookBuy, mediumBuy = calcOneWayVirtualOrderBooks(orderBookA[BUY], orderBookB[BUY])
     orderBookSell, mediumSell = calcOneWayVirtualOrderBooks(orderBookA[SELL], orderBookB[SELL])
     return ([orderBookBuy, orderBookSell], [mediumBuy, mediumSell])
+
+if __name__ == '__main__':
+    USDT2ETH = [
+        [100, 5],
+        [110, 5],
+        [120, 10],
+        [130, 10],
+    ]
+    ETH2EOS = [
+        [0.01, 300],
+        [0.02, 500],
+        [0.03, 500],
+        [0.05, 500],
+    ]
+    supposedUSDT2EOS = [
+        [1, 300],
+        [2, 100],
+        [2.2, 250],
+        [2.4, 150],
+    ]
+    supposedMedium = [300*0.01, (300*0.01)+(100*0.02), (300*0.01+100*0.02)+(250*0.02), (300*0.01+100*0.02+250*0.02)+(150*0.02)]
+    print(f'USDT2ETH: {USDT2ETH}\nETH2EOS: {ETH2EOS}\nUSDT2EOS: {calcOneWayVirtualOrderBooks(USDT2ETH, ETH2EOS)}')
+    print(f'supposed USDT2EOS: {supposedUSDT2EOS, supposedMedium}\n')

@@ -57,6 +57,8 @@ def getLevel(amount, dataList):
         else:
             remainAmount -= dataList[level][AMOUNT]
             level += 1
+    print('getLevel:')
+    print(level)
     return level
 
 

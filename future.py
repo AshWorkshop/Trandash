@@ -35,6 +35,8 @@ maxRight = 0.0
 maxRightEveryPeriod = 0.0
 maxDrawdown = 0.0
 accountRight = 0.0
+balance = 0.0
+delta = 0.005
 startTime = int(time.time())
 klineCycle = Cycle(reactor, okexFuture.getKLineLastMin, 'getKLineLastMin')
 tickerCycle = Cycle(reactor, okexFuture.getTicker, 'getTicker')
@@ -239,6 +241,7 @@ def searchLastAmount(amount, initAmount=1.0, rate=1.618, top=6):
             break
     return initAmount * rate ** factor
 
+
 def cbRun():
     global count
     global state
@@ -246,6 +249,7 @@ def cbRun():
     global total
     global buys
     global sells
+    global delta
     global lastBuyAmount
     global lastSellAmount
     global buypId
@@ -254,6 +258,7 @@ def cbRun():
     global maxRightEveryPeriod
     global maxDrawdown
     global accountRight
+    global balance
     count += 1
     wait += 1
     # print to file
@@ -301,16 +306,19 @@ def cbRun():
 
         print('ticker && ma:', ticker, ma)
         print('buy_amount && sell_amount:', buy_amount, sell_amount)
+        print('buys && sells:', len(buys), len(sells))
 
         if ticker > ma and buy_amount == 0 and len(buys) == 0:
             print('BUY')
             state = 'WAIT'
+            delta = 0.005
             reactor.callWhenRunning(buy)
             # reactor.callWhenRunning(buy)
 
         if ticker < ma and sell_amount == 0 and len(sells) == 0:
             print('SELL')
             state = 'WAIT'
+            delta = 0.005
             reactor.callWhenRunning(sell)
 
     # 是否平
@@ -381,28 +389,34 @@ def cbRun():
             print('BUYBOLL')
             if buy_amount > 0:
                 buy_price_last, _ = buys[-1]
-                if (buy_price_last - ticker) / buy_price_last >= 0.005:
-                    if lastBuyAmount < initAmount * rate ** 5:
+                bollRate = (buy_price_last - ticker) / buy_price_last
+                print('bollRate && delta:', bollRate, delta)
+                if bollRate > delta:
+                    if lastBuyAmount < initAmount * rate ** 6:
                         buy_amount_new = lastBuyAmount * rate
                     else:
                         buy_amount_new = lastBuyAmount
                     lastBuyAmount = buy_amount_new
                     print('BUY', buy_amount_new)
                     state = 'WAIT'
+                    delta = bollRate
                     reactor.callWhenRunning(buy, amount=buy_amount_new)
 
         if llk_close < llb_u and lk_close > lb_u:
             print('SELLBOLL')
             if sell_amount > 0:
                 sell_price_last, _ = sells[-1]
-                if (ticker - sell_price_last) / sell_price_last >= 0.005:
-                    if lastBuyAmount < initAmount * rate ** 5:
+                bollRate = (ticker - sell_price_last) / sell_price_last
+                print('bollRate && delta:', bollRate, delta)
+                if bollRate > delta:
+                    if lastBuyAmount < initAmount * rate ** 6:
                         sell_amount_new = lastSellAmount * rate
                     else:
                         sell_amount_new = lastSellAmount
                     lastSellAmount = sell_amount_new
                     print('SELL', sell_amount_new)
                     state = 'WAIT'
+                    delta = bollRate
                     reactor.callWhenRunning(sell, amount=sell_amount_new)
 
     if state == 'GO' and userInfoData is not None and positionData is not None:
@@ -424,14 +438,14 @@ def cbRun():
 
         lossRate = 1 - account_rights / maxRight
 
-        if lossRate >= 0.5 and buy_amount > 0:
+        if lossRate >= 0.1 and buy_amount > 0:
             print('PPP')
             state = 'PPP'
             reactor.callWhenRunning(buyp, amount=buy_amount, sellAmount=sell_amount)
 
 
     # 同步数据
-    if state == 'GO' and positionData is not None and count % 30 == 0:
+    if state == 'GO' and positionData is not None and count % 120 == 1:
         buy_amount = positionData['buy_amount']
         sell_amount = positionData['sell_amount']
         buy_price_avg = positionData['buy_price_avg']
@@ -470,12 +484,13 @@ def cbRun():
         profit_unreal = userInfoData['profit_unreal']
 
         accountRight = account_rights
+        balance = account_rights - profit_unreal
 
         if account_rights > maxRight:
             maxRight = account_rights
 
         lossRate = 1 - account_rights / maxRight
-        print('lossRate:', lossRate)
+        print('accountRight && lossRate && balance:', accountRight, lossRate, balance)
 
         staFile = open('okex_' + coin + '_lossRate_' + str(startTime), 'a+')
         staFile.write("%d,%f\n" % (count, lossRate))
@@ -484,6 +499,10 @@ def cbRun():
 
     staFile = open('okex_' + coin + '_accountRight_' + str(startTime), 'a+')
     staFile.write("%d,%f\n" % (count, accountRight))
+    staFile.close()
+
+    staFile = open('okex_' + coin + '_balance_' + str(startTime), 'a+')
+    staFile.write("%d,%f\n" % (count, balance))
     staFile.close()
 
 
