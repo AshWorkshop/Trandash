@@ -1,5 +1,3 @@
-
-
 import json
 import time
 import shelve
@@ -36,7 +34,8 @@ maxRightEveryPeriod = 0.0
 maxDrawdown = 0.0
 accountRight = 0.0
 balance = 0.0
-delta = 0.005
+buyDelta = 0.005
+sellDelta = 0.005
 startTime = int(time.time())
 klineCycle = Cycle(reactor, okexFuture.getKLineLastMin, 'getKLineLastMin')
 tickerCycle = Cycle(reactor, okexFuture.getTicker, 'getTicker')
@@ -249,7 +248,8 @@ def cbRun():
     global total
     global buys
     global sells
-    global delta
+    global buyDelta
+    global sellDelta
     global lastBuyAmount
     global lastSellAmount
     global buypId
@@ -311,14 +311,14 @@ def cbRun():
         if ticker > ma and buy_amount == 0 and len(buys) == 0:
             print('BUY')
             state = 'WAIT'
-            delta = 0.005
+            buyDelta = 0.005
             reactor.callWhenRunning(buy)
             # reactor.callWhenRunning(buy)
 
         if ticker < ma and sell_amount == 0 and len(sells) == 0:
             print('SELL')
             state = 'WAIT'
-            delta = 0.005
+            sellDelta = 0.005
             reactor.callWhenRunning(sell)
 
     # 是否平
@@ -390,8 +390,8 @@ def cbRun():
             if buy_amount > 0:
                 buy_price_last, _ = buys[-1]
                 bollRate = (buy_price_last - ticker) / buy_price_last
-                print('bollRate && delta:', bollRate, delta)
-                if bollRate > delta:
+                print('bollRate && delta:', bollRate, buyDelta)
+                if bollRate > buyDelta:
                     if lastBuyAmount < initAmount * rate ** 6:
                         buy_amount_new = lastBuyAmount * rate
                     else:
@@ -399,7 +399,7 @@ def cbRun():
                     lastBuyAmount = buy_amount_new
                     print('BUY', buy_amount_new)
                     state = 'WAIT'
-                    delta = bollRate
+                    buyDelta = bollRate
                     reactor.callWhenRunning(buy, amount=buy_amount_new)
 
         if llk_close < llb_u and lk_close > lb_u:
@@ -407,8 +407,8 @@ def cbRun():
             if sell_amount > 0:
                 sell_price_last, _ = sells[-1]
                 bollRate = (ticker - sell_price_last) / sell_price_last
-                print('bollRate && delta:', bollRate, delta)
-                if bollRate > delta:
+                print('bollRate && delta:', bollRate, sellDelta)
+                if bollRate > sellDelta:
                     if lastBuyAmount < initAmount * rate ** 6:
                         sell_amount_new = lastSellAmount * rate
                     else:
@@ -416,7 +416,7 @@ def cbRun():
                     lastSellAmount = sell_amount_new
                     print('SELL', sell_amount_new)
                     state = 'WAIT'
-                    delta = bollRate
+                    sellDelta = bollRate
                     reactor.callWhenRunning(sell, amount=sell_amount_new)
 
     if state == 'GO' and userInfoData is not None and positionData is not None:
