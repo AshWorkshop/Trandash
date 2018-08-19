@@ -200,11 +200,7 @@ class GateIO(ExchangeService):
             return orederId
 
         d.addCallback(handleBody)
-<<<<<<< HEAD
-        d.addErrback(lambda failure: print(failure.getBriefTraceback()))
-=======
         d.addErrback(defaultErrhandler)
->>>>>>> 70cafbae06389f7ec172a18f0e0364603c19b102
 
         return d
 
@@ -240,11 +236,7 @@ class GateIO(ExchangeService):
             return orederId
 
         d.addCallback(handleBody)
-<<<<<<< HEAD
-        d.addErrback(lambda failure: print(failure.getBriefTraceback()))
-=======
         d.addErrback(defaultErrhandler)
->>>>>>> 70cafbae06389f7ec172a18f0e0364603c19b102
 
         return d
 
