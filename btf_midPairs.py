@@ -21,3 +21,14 @@ hasList = ['ltcbtc', 'ethbtc', 'etcbtc', 'rrtbtc', 'zecbtc', 'xmrbtc', 'dshbtc',
  'maneth']
 
  midList = ['btc', 'eth', 'eos']
+
+def getPairs():
+    '''return : a list of: [coinA, coinB, coinC],...'''
+    coinA = 'usd'
+    coinPairs = []
+    for pair in hasList:
+        coinB = pair[:3]
+        coinC = pair[3:]
+        coinPairs.append([coinA, coinB, coinC])
+
+    return coinPairs
