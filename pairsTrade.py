@@ -224,7 +224,7 @@ def cbRun():
             exchangeState['virtual']['actual'], exchangeState['virtual']['avg'] = [virBids, virAsks], [avgVirBids, avgVirAsks]
             
             '''get validExPairs '''
-            exchangePairs = verifyExchanges(exchangeState)
+            exchangePairs = verifyExchanges(exchangeState,FEE=FEE)
             print('validExPairs:')
             print(count, exchangePairs)
             
