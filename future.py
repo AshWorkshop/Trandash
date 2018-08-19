@@ -306,6 +306,7 @@ def cbRun():
 
         print('ticker && ma:', ticker, ma)
         print('buy_amount && sell_amount:', buy_amount, sell_amount)
+        print('buys && sells:', len(buys), len(sells))
 
         if ticker > ma and buy_amount == 0 and len(buys) == 0:
             print('BUY')
@@ -388,7 +389,9 @@ def cbRun():
             print('BUYBOLL')
             if buy_amount > 0:
                 buy_price_last, _ = buys[-1]
-                if (buy_price_last - ticker) / buy_price_last > delta:
+                bollRate = (buy_price_last - ticker) / buy_price_last
+                print('bollRate && delta:', bollRate, delta)
+                if bollRate > delta:
                     if lastBuyAmount < initAmount * rate ** 6:
                         buy_amount_new = lastBuyAmount * rate
                     else:
@@ -396,14 +399,16 @@ def cbRun():
                     lastBuyAmount = buy_amount_new
                     print('BUY', buy_amount_new)
                     state = 'WAIT'
-                    delta = (buy_price_last - ticker) / buy_price_last
+                    delta = bollRate
                     reactor.callWhenRunning(buy, amount=buy_amount_new)
 
         if llk_close < llb_u and lk_close > lb_u:
             print('SELLBOLL')
             if sell_amount > 0:
                 sell_price_last, _ = sells[-1]
-                if (ticker - sell_price_last) / sell_price_last > delta:
+                bollRate = (ticker - sell_price_last) / sell_price_last
+                print('bollRate && delta:', bollRate, delta)
+                if bollRate > delta:
                     if lastBuyAmount < initAmount * rate ** 6:
                         sell_amount_new = lastSellAmount * rate
                     else:
@@ -411,7 +416,7 @@ def cbRun():
                     lastSellAmount = sell_amount_new
                     print('SELL', sell_amount_new)
                     state = 'WAIT'
-                    delta = (ticker - sell_price_last) / sell_price_last
+                    delta = bollRate
                     reactor.callWhenRunning(sell, amount=sell_amount_new)
 
     if state == 'GO' and userInfoData is not None and positionData is not None:
@@ -433,7 +438,7 @@ def cbRun():
 
         lossRate = 1 - account_rights / maxRight
 
-        if lossRate >= 0.5 and buy_amount > 0:
+        if lossRate >= 0.1 and buy_amount > 0:
             print('PPP')
             state = 'PPP'
             reactor.callWhenRunning(buyp, amount=buy_amount, sellAmount=sell_amount)
