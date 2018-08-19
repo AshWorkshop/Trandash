@@ -18,22 +18,19 @@ def test():
 
     d = huobipro.getOrderHistory(pairs = pairs,start_date = "2018-8-1",end_date = "2018-8-19")
     #d = okexFuture.cancle(('ltc', 'usdt'), orderId=1276330619587584)
-<<<<<<< HEAD
     #d = huobipro.sell(coinPair=('eth','usdt'),price=293,amount=0.05)
     #d = huobipro.getBalances(['eth','usdt'])
     #d = gateio.getBalances(['eth','usdt'])
     #d = gateio.getOrder(1209262944,pairs)
     #d = gateio.buy(coinPair=('eth','usdt'),price=292.9,amount=0.05)
-    # d = bitfinex.getOrderBook(('eos', 'eth'))
-=======
     # d = huobipro.buy(('eth','usdt'),290,500)
-    #d = huobipro.getBalances(['eth','usdt'])
+    # d = huobipro.getBalances(['eth','usdt'])
+
     # d = bitfinex.getOrderBook(pairs)
     # d = bitfinex.getBalances(['eth','usdt','eos'])
     # d = bitfinex.sell(('eth','usdt'),291.09,0.2)
     # d = bitfinex.getOrder(pairs,15638551536)
     # d = bitfinex.getOrderHistory(pairs,1534608693)
->>>>>>> 70cafbae06389f7ec172a18f0e0364603c19b102
 
 
     def cbPrint(result):
