@@ -5,9 +5,13 @@ from .gateio_key import ApiKey, SecretKey
 from hashlib import sha512 as encodeMethod
 import hmac
 
-from twisted.internet import reactor
+from twisted.internet import reactor, defer
+from twisted.python.failure import Failure
 
 import json
+
+def defaultErrhandler(failure):
+    print(failure)
 
 class GateIO(ExchangeService):
 
@@ -66,17 +70,17 @@ class GateIO(ExchangeService):
             # print(data)
 
             flag = data['result']
-            if type(flag) is str:
+            if isinstance(flag, str):
                 flag = flag.upper() == 'TRUE'
-            if not flag:
-                return (False, data['code'], data['message'])
+            assert flag, f"{data.get('message', 'unknown error')}, ErrorCode: {data.get('code', 'unknown')}"
 
             bids = [list(map(float, bid)) for bid in data['bids']]
             asks = [list(map(float, ask)) for ask in data['asks']]
             asks.reverse()
-            return [bids, asks] # (True, [bids, asks]) #TODO: handle error
+            return [bids, asks]
 
         d.addCallback(handleBody)
+        d.addErrback(defaultErrhandler)
 
         return d
 
@@ -100,15 +104,15 @@ class GateIO(ExchangeService):
             # print(data)
 
             flag = data['result']
-            if type(flag) is str:
+            if isinstance(flag, str):
                 flag = flag.upper() == 'TRUE'
-            if not flag:
-                return (False, data['code'], data['message'])
+            assert flag, f"{data.get('message', 'unknown error')}, ErrorCode: {data.get('code', 'unknown')}"
 
             addr = data['addr']
             return addr
 
         d.addCallback(handleBody)
+        d.addErrback(defaultErrhandler)
 
         return d
 
@@ -116,9 +120,7 @@ class GateIO(ExchangeService):
         d = self.getBalances()
 
         def handleBody(data):
-            if isinstance(data, tuple) and not data[0]:
-                return data
-            elif coin.upper() in data:
+            if coin.upper() in data:
                 return data[coin.upper()]
             else:
                 return 0
@@ -147,13 +149,12 @@ class GateIO(ExchangeService):
             # print(data)
 
             flag = data['result']
-            if type(flag) is str:
+            if isinstance(flag, str):
                 flag = flag.upper() == 'TRUE'
-            if not flag:
-                return (False, data['code'], data['message'])
+            assert flag, f"{data.get('message', 'unknown error')}, ErrorCode: {data.get('code', 'unknown')}"
 
             if not data['available']:
-                return None
+                return {}
             balances = {key: float(value) for key, value in data['available'].items()}
 
             if not coins:
@@ -162,6 +163,7 @@ class GateIO(ExchangeService):
                 return {coin: balances.get(coin.upper(), 0) for coin in coins}
 
         d.addCallback(handleBody)
+        d.addErrback(defaultErrhandler)
 
         return d
 
@@ -189,17 +191,16 @@ class GateIO(ExchangeService):
             data = json.loads(body)
             # print(data)
 
-            flag = data.get('result',False)
-            if type(flag) is str:
+            flag = data['result']
+            if isinstance(flag, str):
                 flag = flag.upper() == 'TRUE'
-            if not flag:
-                return (False, data['code'], data['message'])
+            assert flag, f"{data.get('message', 'unknown error')}, ErrorCode: {data.get('code', 'unknown')}"
 
             orederId = int(data['orderNumber'])
-            return (True, orederId)
+            return orederId
 
         d.addCallback(handleBody)
-        d.addErrback(handleBody)
+        d.addErrback(defaultErrhandler)
 
         return d
 
@@ -226,17 +227,16 @@ class GateIO(ExchangeService):
             data = json.loads(body)
             # print(data)
 
-            flag = data.get('result',False)
-            if type(flag) is str:
+            flag = data['result']
+            if isinstance(flag, str):
                 flag = flag.upper() == 'TRUE'
-            if not flag:
-                return (False, data['code'], data['message'])
+            assert flag, f"{data.get('message', 'unknown error')}, ErrorCode: {data.get('code', 'unknown')}"
 
             orederId = int(data['orderNumber'])
-            return (True,orederId)
+            return orederId
 
         d.addCallback(handleBody)
-        d.addErrback(handleBody)
+        d.addErrback(defaultErrhandler)
 
         return d
 
@@ -265,45 +265,46 @@ class GateIO(ExchangeService):
             # print(data)
 
             flag = data['result']
-            if type(flag) is str:
+            if isinstance(flag, str):
                 flag = flag.upper() == 'TRUE'
-            if not flag:
-                return (False, data['code'], data['message'])
+            assert flag, f"{data.get('message', 'unknown error')}, ErrorCode: {data.get('code', 'unknown')}"
 
             status = data['order']['status']
             if status == 'closed':
                 status = 'done'
 
-            order = Order(
-                'gateio',
-                orderId,
-                data['order']['type'],
-                float(data['order']['initialRate']),
-                float(data['order']['initialAmount']),
-                coinPair,
-                status
-            )
+            order = {
+                'orderId': orderId,
+                'type': data['order']['type'],
+                'initPrice': float(data['order']['initialRate']),
+                'initAmount': float(data['order']['initialAmount']),
+                'coinPair': coinPair,
+                'status': status
+            }
             # print(str(order))
 
-            return (True, order)
+            return order
 
         d.addCallback(handleBody)
+        d.addErrback(defaultErrhandler)
 
         return d
 
-    def getOpenOrders(self, coinPair = None):
-        URL = "/api2/1/private/openOrders/"
+    def getOrders(self, coinPair):
+        URLdone = "/api2/1/private/tradeHistory/"
+        URLopen = "/api2/1/private/openOrders/"
 
-        url = self.__url['balance'] + URL
+        urlDone = self.__url['balance'] + URLdone
+        urlOpen = self.__url['balance'] + URLopen
         # print(url)
 
         if coinPair:
             currencyPair = self.getSymbol(coinPair)
         else:
-            coinPair = ''
+            currencyPair = ''
 
         prams = {
-            'currencyPair': coinPair,
+            'currencyPair': currencyPair,
         }
 
         body = self.getPostBodyStr(prams)
@@ -311,40 +312,58 @@ class GateIO(ExchangeService):
         # print(header)
         # print(prams)
 
-        d = post(reactor, url, headers = header, body = body)
+        dDone = post(reactor, urlDone, headers = header, body = body)
+        dOpen = post(reactor, urlOpen, headers = header, body = body)
+        
+        d = defer.DeferredList([dDone, dOpen], consumeErrors=True)
 
-        def handleBody(body):
-            # print(body)
-            data = json.loads(body)
+        def handleBody(res):
+            # print(res)
+            for state, err in res:
+                if not state:
+                    raise err
+            
+            (_, dataDone), (_, dataOpen) = res
+            dataDone, dataOpen = json.loads(dataDone), json.loads(dataOpen)
+            # print(dataDone, dataOpen)
 
-            # print(data)
-
-            flag = data['result']
-            if type(flag) is str:
-                flag = flag.upper() == 'TRUE'
-            if not flag:
-                return (False, data['code'], data['message'])
+            for data in [dataDone, dataOpen]:
+                flag = data['result']
+                if isinstance(flag, str):
+                    flag = flag.upper() == 'TRUE'
+                assert flag, f"{data.get('message', 'unknown error')}, ErrorCode: {data.get('code', 'unknown')}"
 
             orders = []
-            for orderData in data['orders']:
-                order = Order(
-                    'gateio',
-                    orderData['orderNumber'],
-                    orderData['type'],
-                    float(orderData['initialRate']),
-                    float(orderData['initialAmount']),
-                    tuple(orderData['currencyPair'].split('_')),
-                    'open'
-                )
+            for orderData in dataOpen['orders']:
+                order = {
+                    'orderId': orderData['orderNumber'],
+                    'type': orderData['type'],
+                    'initPrice': float(orderData['initialRate']),
+                    'initAmount': float(orderData['initialAmount']),
+                    'coinPair': tuple(orderData['currencyPair'].split('_')),
+                    'status': 'open'
+                }
                 # print(str(order))
                 orders.append(order)
-            return (True, orders)
+            for orderData in dataDone['trades']:
+                order = {
+                    'orderId': orderData['orderNumber'],
+                    'type': orderData['type'],
+                    'initPrice': float(orderData['rate']),
+                    'initAmount': float(orderData['amount']),
+                    'coinPair': tuple(orderData['pair'].split('_')),
+                    'status': 'done'
+                }
+                # print(str(order))
+                orders.append(order)
+            return orders
 
         d.addCallback(handleBody)
+        d.addErrback(defaultErrhandler)
 
         return d
 
-    def cancelOrder(self, orderId, coinPair):
+    def cancel(self, orderId, coinPair):
         URL = "/api2/1/private/cancelOrder/"
 
         url = self.__url['balance'] + URL
@@ -367,14 +386,18 @@ class GateIO(ExchangeService):
             # print(data)
 
             flag = data['result']
-            if type(flag) is str:
+            if isinstance(flag, str):
                 flag = flag.upper() == 'TRUE'
-            if not flag:
-                return (False, data['code'], data['message'])
+            assert flag, f"{data.get('message', 'unknown error')}, ErrorCode: {data.get('code', 'unknown')}"
 
-            return (True, data['message'])
+            return True
+            
+        def errhandler(failure):
+            print(failure)
+            return False
 
         d.addCallback(handleBody)
+        d.addErrback(errhandler)
 
         return d
 
