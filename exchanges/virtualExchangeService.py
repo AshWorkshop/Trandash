@@ -8,6 +8,7 @@ import copy
 
 def defaultErrHandler(failure):
     print(failure.getBriefTraceback())
+    return failure
 
 class OrderData(object):
     def __init__(self, orders=None):
@@ -108,7 +109,72 @@ class VirtualExchange(ExchangeService):
         return d
 
     def buy(self, pairs, price, amount):
-        pass # TODO
+        data = self.orderBookData
+
+        # check if data is available
+        if data is None:
+            d = defer.fail(Exception('No available order book data'))
+        elif pairs != self.orderBookPairs:
+            d = defer.fail(Exception("coin pairs 'pairs' does not match the order book data"))
+        else:
+            PRICE, AMOUNT = range(2)
+            (_, sell), (_, mediumSell) = data
+
+            overflow = False
+
+            A = amount
+            B = price * amount
+            M = 0
+
+            # calculate the amount of medium
+            sumM = 0
+            for l, order in enumerate(sell):
+                s = sumM + order[AMOUNT]
+                if s == A:
+                    M = sum(mediumSell[:l + 1])
+                    break
+                elif s > A:
+                    M = sum(mediumSell[:l]) + (A - sumM) / order[AMOUNT] * mediumSell[l]
+                    break
+                sumM = s
+            else:
+                overflow = True
+
+            if overflow:
+                d = defer.fail(Exception("'amount' is too big"))
+            else:
+                # initiate transaction
+                symbol = self.exchange.getSymbol(pairs)
+
+                dA = self.exchange.sell( (pairs[0], self.medium) , M / A, A)
+                dB = self.exchange.sell( (self.medium, pairs[1]) , B / M, M)
+                d = defer.DeferredList( [dA, dB], consumeErrors=True)
+
+                def handleBody(datas):
+                    (stateA, dataA), (stateB, dataB) = datas
+                    if stateA and stateB and dataA[0] and dataB[0]:
+                        id = self.orders.recordOrder({
+                            'orderId': (dataA[1], dataB[1]),
+                            'type': 'sell',
+                            'initPrice': price,
+                            'initAmount': amount,
+                            'coinPair': symbol,
+                            'status': 'open',
+                        })
+                        return (True, id)
+                    else:
+                        # TODO: retry or cancel order
+                        res = [False]
+                        for data in [dataA, dataB]:
+                            if isinstance(data, tuple):
+                                res.append(data[1])
+                            else:
+                                res.append(data)
+                        return tuple(res)
+                d.addCallback(handleBody)
+
+        d.addErrback(defaultErrHandler)
+        return d
 
     def sell(self, pairs, price, amount):
         data = self.orderBookData
@@ -154,18 +220,25 @@ class VirtualExchange(ExchangeService):
 
                 def handleBody(datas):
                     (stateA, dataA), (stateB, dataB) = datas
-                    if stateA and stateB:
-                        return self.orders.recordOrder({
-                            'orderId': (dataA, dataB),
+                    if stateA and stateB and dataA[0] and dataB[0]:
+                        id = self.orders.recordOrder({
+                            'orderId': (dataA[1], dataB[1]),
                             'type': 'sell',
                             'initPrice': price,
                             'initAmount': amount,
                             'coinPair': symbol,
                             'status': 'open',
                         })
+                        return (True, id)
                     else:
-                        # TODO: cancel or retry order
-                        return None
+                        # TODO: retry or cancel order
+                        res = [False]
+                        for data in [dataA, dataB]:
+                            if isinstance(data, tuple):
+                                res.append(data[1])
+                            else:
+                                res.append(data)
+                        return tuple(res)
                 d.addCallback(handleBody)
 
         d.addErrback(defaultErrHandler)
@@ -173,12 +246,12 @@ class VirtualExchange(ExchangeService):
 
     def getOrder(self, pairs, orderId, fromRemote=True):
         """method to query the order info with order id
-        
+
         :param fromRemote flag used to determine order data from obtained local or remote server
         """
         data = self.orders.getOrder(orderId)
         symbol = self.exchange.getSymbol(pairs)
-        
+
         # check if the orderId exist
         if data is None:
             d = defer.fail(Exception('this orderId does not exist'))
@@ -188,18 +261,18 @@ class VirtualExchange(ExchangeService):
             idA, idB = data['orderId']
             dA = self.exchange.getOrder( (pairs[0], self.medium), idA)
             dB = self.exchange.getOrder( (self.medium, pairs[1]), idB)
-            
+
             d = defer.DeferredList( [dA, dB] , consumeErrors=True)
-            
+
             def handleBody(res):
                 for state, err in res:
                     if not state:
                         raise err
 
                 (_, resA), (_, resB) = res
-                
+
                 statusA, statusB = resA['status'], resB['status']
-                
+
                 unusual = ('error', 'cancelled')
                 if statusA == 'done' and statusB == 'done':
                     status = 'done'
@@ -212,7 +285,7 @@ class VirtualExchange(ExchangeService):
 
                 # update local data
                 self.orders.getOrderRef(orderId)['status'] = status
-                
+
                 order = {
                     'orderId': orderId,
                     'type': data['type'],
@@ -232,7 +305,7 @@ class VirtualExchange(ExchangeService):
     def cancel(self, pairs, orderId):
         data = self.orders.getOrder(orderId)
         symbol = self.exchange.getSymbol(pairs)
-        
+
         # check if the orderId exist
         if data is None:
             d = defer.fail(Exception('this orderId does not exist'))
@@ -242,7 +315,7 @@ class VirtualExchange(ExchangeService):
             idA, idB = data['orderId']
             dA = self.exchange.cancel( (pairs[0], self.medium), idA)
             dB = self.exchange.cancel( (self.medium, pairs[1]), idB)
-            
+
             d = defer.DeferredList( [dA, dB] , consumeErrors=True)
             def handleBody(res):
                 for state, err in res:
@@ -253,7 +326,7 @@ class VirtualExchange(ExchangeService):
                     return (True, dataA, dataB)
                 else:
                     return (False, dataA, dataB)
-        
+
         d.addErrback(defaultErrHandler)
         return d
 
