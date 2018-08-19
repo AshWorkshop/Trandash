@@ -96,3 +96,39 @@ def GetOrder(coinPair, orderId):
         coinPair,
         status
     )
+
+def symbols():
+    data = bitfinex.symbols()
+    # print(data)
+    return data
+
+symbolsList = bitfinex.symbols()
+usdDistrict = []
+for symbol in symbolsList:
+    # print(symbol[3:])
+    if symbol[3:] == 'usd':
+        usdDistrict.append(symbol)
+print('usdDistrict:')
+print(usdDistrict)
+# otherDistrict = dict()
+# for symbol in symbolsList:
+#     for symbolu in usdDistrict:
+#         if symbolu[:3] == symbol[3:]:
+#             otherDistrict[symbol[3:]] = symbol
+# print('otherDistrict:')
+# print(otherDistrict)
+hasList = []  #符合：“同时为usd区的货币的两个币的组合，这个组合在整个bitfinex的交易对里”
+for symbol in usdDistrict:
+    for symbolo in usdDistrict:
+        symbolm = ''.join((symbol[:3],symbolo[:3]))
+        if symbolm in symbolsList and symbolm not in hasList:
+            hasList.append(symbolm)
+# hasList = list(set(hasList))           
+print('hasList:')
+print(len(hasList),hasList)
+midList = []  #可作为中间货币的列表
+for symbol in hasList:
+    midList.append(symbol[3:])
+midList = list(set(midList))
+print('midList:')
+print(midList)

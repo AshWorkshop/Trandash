@@ -20,6 +20,7 @@ from exchanges.huobi.HuobiproService import huobipro
 
 from exchange import OrderBooks
 from cycle.cycle import Cycle
+from btf_midPairs import hasList, midList, getPairs
 
 # if len(argv) == 4:
 #     _, coin, money, dataFile = argv
@@ -33,13 +34,24 @@ usdtAmount = 0.0
 traded_count = 0
 startTime = int(time.time())
 '''initial OrderBooks'''
+
+'''approach to get every coinA, coinB, coinC'''
+# coinPairs = getPairs() 
+# for pair in coinPairs:
+#     coinA = pair[0]
+#     coinB = pair[1]
+#     coinC = pair[2]
+
 coinA = 'usdt'  #A2C, C2B -> A2B
 coinC = 'eth'
 coinB = 'eos'
 coinList = [coinA, coinC, coinB]  #A,C,B | A2C,C2B -> A2B
-coinPair1 = ('eth', 'usdt')  #1 2 ->3
-coinPair2 = ('eos', 'eth')
-coinPair3 = ('eos', 'usdt')
+# coinPair1 = ('eth', 'usdt')  #1 2 ->3
+# coinPair2 = ('eos', 'eth')
+# coinPair3 = ('eos', 'usdt')
+coinPair1 = (coinC, coinA)  #A2C
+coinPair2 = (coinB, coinC)  #C2B
+coinPair3 = (coinB, coinA)  #A2B
 exchangeName = 'bitfinex'
 if exchangeName == 'bitfinex':
     if coinA =='usdt':
@@ -212,7 +224,7 @@ def cbRun():
             exchangeState['virtual']['actual'], exchangeState['virtual']['avg'] = [virBids, virAsks], [avgVirBids, avgVirAsks]
             
             '''get validExPairs '''
-            exchangePairs = verifyExchanges(exchangeState)
+            exchangePairs = verifyExchanges(exchangeState,FEE=FEE)
             print('validExPairs:')
             print(count, exchangePairs)
             

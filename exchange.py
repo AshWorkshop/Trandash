@@ -7,8 +7,8 @@ from twisted.python.failure import Failure
 import copy
 
 FEE = {
-    'huobipro': [1, 1],
-    'gateio': [1, 1],
+    'huobipro': [1,1],#[0.998, 1.002],
+    'gateio': [1,1],#[0.998, 1.002],
     'bitfinex': [1, 1],
     'virtual': [1, 1],
 }
@@ -84,9 +84,9 @@ def verifyExchanges(exchangesData, FEE=FEE):
     for buyExName, buyEx in exchangesData.items():
         # print(buyEx)
         for sellExName, sellEx in exchangesData.items():
-            
-            if buyExName == sellExName: continue 
-            flag += 1           
+
+            if buyExName == sellExName: continue
+            flag += 1
             if buyEx['avg'][BUY][0][PRICE] * FEE[buyExName][BUY] <= sellEx['avg'][SELL][0][PRICE] * FEE[sellExName][SELL]: continue
 
             level = 0
@@ -160,36 +160,36 @@ def calcOneWayVirtualOrderBooks(A2C: ['bids/asks'], C2B: ['bids/asks']):
 
     return (virtualOrderBook, medium)
 
-def calcVirtualOrderBooks(orderBookA: [['bids'], ['asks']], 
+def calcVirtualOrderBooks(orderBookA: [['bids'], ['asks']],
                           orderBookB: [['bids'], ['asks']]):
     """calculate virtual order book between coin A and coin B through coin C"""
 
     # index enumeration for taking buy/sell data from order book list
     BUY, SELL = range(2)
-    
+
     orderBookBuy, mediumBuy = calcOneWayVirtualOrderBooks(orderBookA[BUY], orderBookB[BUY])
     orderBookSell, mediumSell = calcOneWayVirtualOrderBooks(orderBookA[SELL], orderBookB[SELL])
     return ([orderBookBuy, orderBookSell], [mediumBuy, mediumSell])
 
-if __name__ == '__main__':
-    USDT2ETH = [
-        [100, 5],
-        [110, 5],
-        [120, 10],
-        [130, 10],
-    ]
-    ETH2EOS = [
-        [0.01, 300],
-        [0.02, 500],
-        [0.03, 500],
-        [0.05, 500],
-    ]
-    supposedUSDT2EOS = [
-        [1, 300],
-        [2, 100],
-        [2.2, 250],
-        [2.4, 150],    
-    ]
-    supposedMedium = [300*0.01, (300*0.01)+(100*0.02), (300*0.01+100*0.02)+(250*0.02), (300*0.01+100*0.02+250*0.02)+(150*0.02)]
-    print(f'USDT2ETH: {USDT2ETH}\nETH2EOS: {ETH2EOS}\nUSDT2EOS: {calcOneWayVirtualOrderBooks(USDT2ETH, ETH2EOS)}')
-    print(f'supposed USDT2EOS: {supposedUSDT2EOS, supposedMedium}\n')
+# if __name__ == '__main__':
+#     USDT2ETH = [
+#         [100, 5],
+#         [110, 5],
+#         [120, 10],
+#         [130, 10],
+#     ]
+#     ETH2EOS = [
+#         [0.01, 300],
+#         [0.02, 500],
+#         [0.03, 500],
+#         [0.05, 500],
+#     ]
+#     supposedUSDT2EOS = [  #have question
+#         [1, 300],
+#         [2, 100],
+#         [2.2, 250],
+#         [2.4, 150],
+#     ]
+#     supposedMedium = [300*0.01, (300*0.01)+(100*0.02), (300*0.01+100*0.02)+(250*0.02), (300*0.01+100*0.02+250*0.02)+(150*0.02)]
+#     print(f'USDT2ETH: {USDT2ETH}\nETH2EOS: {ETH2EOS}\nUSDT2EOS: {calcOneWayVirtualOrderBooks(USDT2ETH, ETH2EOS)}')
+#     print(f'supposed USDT2EOS: {supposedUSDT2EOS, supposedMedium}\n')
