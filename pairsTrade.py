@@ -84,7 +84,7 @@ def buy(exchange,coinPair,amount,price):
             stateStr += 'BUY:' + str(orderId)
         except Exception as err:
             failure = Failure(err)
-            stateStr += 'BUY ERROR:' str(failure.getBriefTraceback())
+            stateStr += 'BUY ERROR:' + str(failure.getBriefTraceback())
             print(failure.getBriefTraceback())
 
     if orderId[1] is not None and orderId[0] == True:
