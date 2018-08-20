@@ -56,6 +56,7 @@ state = 'FIRST'
 def buy(amount=1.0, price=""):
     global state
     global buys
+    global lastBuyAmount
     orderId = None
     try:
         if price:
@@ -81,6 +82,7 @@ def buy(amount=1.0, price=""):
             buys.append((price, float(amount)))
             data = shelve.open(dataFile)
             data['buys'] = buys
+            lastBuyAmount = amount
             data.close()
             # time.sleep(1)
 
@@ -129,6 +131,7 @@ def buyp(amount, price="", sellAmount=0):
 def sell(amount=1.0, price=""):
     global state
     global sells
+    global lastSellAmount
     orderId = None
     try:
         if price:
@@ -154,6 +157,7 @@ def sell(amount=1.0, price=""):
             sells.append((price, float(amount)))
             data = shelve.open(dataFile)
             data['sells'] = sells
+            lastSellAmount = amount
             data.close()
             # time.sleep(1)
     state = 'GO'
@@ -409,7 +413,7 @@ def cbRun():
                 bollRate = (ticker - sell_price_last) / sell_price_last
                 print('bollRate && delta:', bollRate, sellDelta)
                 if bollRate > sellDelta:
-                    if lastBuyAmount < initAmount * rate ** 6:
+                    if lastSellAmount < initAmount * rate ** 6:
                         sell_amount_new = lastSellAmount * rate
                     else:
                         sell_amount_new = lastSellAmount
