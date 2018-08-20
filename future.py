@@ -396,11 +396,12 @@ def cbRun():
                 bollRate = (buy_price_last - ticker) / buy_price_last
                 print('bollRate && delta:', bollRate, buyDelta)
                 if bollRate > buyDelta:
+                    print('lastBuyAmount:', lastBuyAmount)
                     if lastBuyAmount < initAmount * rate ** 6:
                         buy_amount_new = lastBuyAmount * rate
                     else:
                         buy_amount_new = lastBuyAmount
-                    lastBuyAmount = buy_amount_new
+
                     print('BUY', buy_amount_new)
                     state = 'WAIT'
                     buyDelta = bollRate
@@ -413,11 +414,11 @@ def cbRun():
                 bollRate = (ticker - sell_price_last) / sell_price_last
                 print('bollRate && delta:', bollRate, sellDelta)
                 if bollRate > sellDelta:
+                    print('lastSellAmount:', lastSellAmount)
                     if lastSellAmount < initAmount * rate ** 6:
                         sell_amount_new = lastSellAmount * rate
                     else:
                         sell_amount_new = lastSellAmount
-                    lastSellAmount = sell_amount_new
                     print('SELL', sell_amount_new)
                     state = 'WAIT'
                     sellDelta = bollRate
