@@ -30,5 +30,5 @@ def getPairs():
         coinB = pair[:3]
         coinC = pair[3:]
         coinPairs.append([coinA, coinB, coinC])
-
+        
     return coinPairs
