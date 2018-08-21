@@ -53,7 +53,7 @@ def httpPost(url, resource, params, callback=None, errback=None):
 
 class Sisty(ExchangeService):
 
-    def __init__(self, url, accessKey):
+    def __init__(self, url, md5Key):
         self.__url = url
         self.__md5Key = md5Key
 
