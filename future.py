@@ -443,7 +443,7 @@ def cbRun():
 
         lossRate = 1 - account_rights / maxRight
 
-        if lossRate >= 0.1 and buy_amount > 0:
+        if lossRate >= 0.2 and buy_amount > 0:
             print('PPP')
             state = 'PPP'
             reactor.callWhenRunning(buyp, amount=buy_amount, sellAmount=sell_amount)
