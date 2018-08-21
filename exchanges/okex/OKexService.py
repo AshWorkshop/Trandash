@@ -114,6 +114,7 @@ class OKexFuture(ExchangeService):
 
         def handleList(KLines):
             result = []
+            assert KLines is not None
             assert len(KLines) >= last
             result = KLines[-last:]
             return result
