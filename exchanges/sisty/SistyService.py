@@ -129,6 +129,7 @@ class Sisty(ExchangeService):
             if data['code'] == 0:
                 return data
             else:
+                print('errorCode:', data['code'])
                 return None
 
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
