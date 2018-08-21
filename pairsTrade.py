@@ -30,7 +30,6 @@ from btf_midPairs import hasList, midList, getPairs, getCoinList
 
 count = 0
 wait = 0
-usdtAmount = 0.0
 traded_count = 0
 startTime = int(time.time())
 '''initial OrderBooks'''
@@ -118,42 +117,11 @@ def sell(exchange,coinPair,amount,price):
 
     state = "GO"
 
-def cbRun():
-    '''approach to get every coinA, coinB, coinC'''
-    for pair in coinPairs:
-        coinA = pair[0]
-        coinB = pair[1]
-        coinC = pair[2]
-
-    # coinA = 'usdt'  #A2C, C2B -> A2B
-    # coinC = 'eth'
-    # coinB = 'eos'
-        coinListp = [coinA, coinC, coinB]  #A,C,B | A2C,C2B -> A2B
-    # coinPair1 = ('eth', 'usdt')  #1 2 ->3
-    # coinPair2 = ('eos', 'eth')
-    # coinPair3 = ('eos', 'usdt')
-        coinPair1 = (coinC, coinA)  #A2C
-        coinPair2 = (coinB, coinC)  #C2B
-        coinPair3 = (coinB, coinA)  #A2B
-        
-        if exchangeName == 'bitfinex':
-            if coinA =='usdt':
-                coinA = 'usd'
-
-        orderBooks = OrderBooks( [exchangeName], coinPair3)
-        orderBooks.start(reactor)
-        orderBookA = OrderBooks( [exchangeName], coinPair1)
-        orderBookA.start(reactor)
-        orderBookB = OrderBooks( [exchangeName], coinPair2)
-        orderBookB.start(reactor)
-        cbRunPart(orderBooks=orderBooks, orderBookA=orderBookA, orderBookB=orderBookB)
-
 def cbRunPart(orderBooks, orderBookA, orderBookB):
     global count
     global state
     global wait
     global stateStr
-    global usdtAmount
     global noBalances
     count += 1
     wait += 1
@@ -213,6 +181,7 @@ def cbRunPart(orderBooks, orderBookA, orderBookB):
         if hasData:
             state = "WAIT"
             stateStr = ''
+            
             '''add virtualOrderBook into exchangeSate '''
             virtualOrderBooks = calcVirtualOrderBooks(A, B)
             print('midAmount in virtualOrderBooks:')  
@@ -241,22 +210,22 @@ def cbRunPart(orderBooks, orderBookA, orderBookB):
             '''
             if exchangePairs:  #skip when exchangePairs is [] or None.
                 state = "WAIT"
+                
                 '''get midAmount'''
                 virtualLevel = exchangePairs[0][2][0]  #可交易对里返回的level值
                 virtualBuyList = virtualOrderBooks[1][BUY]
                 virtualSellList = virtualOrderBooks[1][SELL]
                 midAmountBuy = sum(virtualBuyList[:virtualLevel+1])   #get midAmount according to virtual Level
                 midAmountSell = sum(virtualSellList[:virtualLevel+1]) #get midAmount according to virtual Level
+                
                 '''get each balance'''
                 balanceA = 0.0  #balance of 'usdt'
                 balanceC = 0.0  #balance of 'eth'
                 balanceB = 0.0  #balance of 'eos'   
                 balances = BALANCES[exchangeName].getData()
-                # balancesWr = str(json.dumps(balances)) 
-                print(balances)
-
+                # balancesWr = str(json.dumps(balances))
                 if isinstance(balances,dict):
-                    if coinAin balances:
+                    if coinA in balances:
                         balanceA = balances[coinA]  #balance of 'usdt'
                     if coinC in balances: 
                         balanceC = balances[coinC]  #balance of 'eth'
@@ -265,84 +234,37 @@ def cbRunPart(orderBooks, orderBookA, orderBookB):
                 else:
                     noBalances += 1
 
+                '''get exchange data'''
                 exchange = EXCHANGE[exchangeName]  #original exchange instance, eg bitfinex
+                strExchangeBuy = exchangePairs[0][0][BUY]
+                strExchangeSell = exchangePairs[0][0][SELL]
+
+                '''get all data to check buy and sell can both be done:'''
                 
-                '''do buy '''
-                print('do: BUY')
-                strExchange = exchangePairs[0][0][BUY]
-
-                buy_flag = False
-                '''do buy in two trade districts:'''
-                if strExchange == 'virtual':
-                    #first, in orderBookA: eth-usdt
-                    amountBuyA = midAmountBuy
-                    levelA = getLevel(amountBuyA,A[BUY])
-                    # print(len(A[BUY]))
-                    if levelA >= len(A[BUY]):
-                        stateStr += '| in orderBookA: eth-usdt levelA_Buy out of range, ' + str(levelA) + ',amountBuyA:' + str(amountBuyA)
-                        print(stateStr)
-                    else:
-                        priceBuyA = A[BUY][levelA][PRICE]                    
-                        #second, in orderBookB: eos-eth
-                        amountBuyB = exchangePairs[0][2][1]  
-                        levelB = getLevel(amountBuyB,B[BUY])
-                        if levelB >= len(B[BUY]):
-                            stateStr += '| in orderBookB: eos-eth levelB_Buy out of range, ' +str(levelB) + ',amountBuyB:' + str(amountBuyB)
-                            print(stateStr)
-                        else:                   
-                            priceBuyB = B[BUY][levelB][PRICE]
-                            print(amountBuyA*priceBuyA)
-                            usdtAmount = amountBuyA*priceBuyA
-                            if isinstance(balanceA,float) and isinstance(balanceC,float):
-                                print(balances)
-                                if amountBuyA*priceBuyA <= balanceA:
-                                    if amountBuyB*priceBuyB <= balanceC:
-                                        # reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBookA.pairs,price=priceBuyA,amount=amountBuyA)
-                                        # time.sleep(1)
-                                        # reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBookB.pairs,price=priceBuyB,amount=amountBuyB)
-                                        buy_flag = True
-                                    else:
-                                        
-                                        print("Not enough coin/money")
-                                        stateStr += '| Not enough coin/money to buy in orderBookB: eos-eth, need eth:' + str(amountBuyB*priceBuyB)
-                                        state = "GO"
-                                else:
-                                    print("Not enough coin/money")
-                                    stateStr += '| Not enough coin/money to buy in orderBookA: eth-usdt, need usdt:' + str(amountBuyA*priceBuyA)
-                                    state = "GO"
-                            else:
-                                print("No exchange")  
-                                stateStr += '| No exchange in two trade districts'
-                                state = "GO"
-                    
+                ''' get buy data in virtual exchange '''
+                #first, in orderBookA: eth-usdt
+                amountBuyA = midAmountBuy
+                levelA = getLevel(amountBuyA,A[BUY])
+                # print(len(A[BUY]))
+                if levelA >= len(A[BUY]):
+                    stateStr += '| in orderBookA: eth-usdt levelA_Buy out of range, ' + str(levelA) + ',amountBuyA:' + str(amountBuyA)
+                    print(stateStr)
                 else:
-                    '''do buy in real district:orderBooks: eos-usdt'''
-                    priceBuy = exchangePairs[0][1][BUY]
-                    amountBuy = exchangePairs[0][2][1]
-                    print(amountBuy*priceBuy)
-                    usdtAmount = amountBuy*priceBuy                    
-                    if isinstance(balanceA,float):
-                        if amountBuy*priceBuy <= balanceA:
-                            print(balances)
-                            # reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=priceBuy,amount=amountBuy)
-                            buy_flag = True
-                        else:
-                            print("Not enough coin/money")
-                            stateStr += '| Not enough coin/money to buy in real district:orderBooks: eos-usdt, need usdt:' + str(amountBuy*priceBuy)
-                            state = "GO"
-                    else:
-                        print("No exchange")
-                        stateStr += '| No exchange in real district:orderBooks: eos-usdt'
-                        state = "GO"
+                    priceBuyA = A[BUY][levelA][PRICE]                    
+                    #second, in orderBookB: eos-eth
+                    amountBuyB = exchangePairs[0][2][1]  
+                    levelB = getLevel(amountBuyB,B[BUY])
+                    if levelB >= len(B[BUY]):
+                        stateStr += '| in orderBookB: eos-eth levelB_Buy out of range, ' +str(levelB) + ',amountBuyB:' + str(amountBuyB)
+                        print(stateStr)
+                    else:                   
+                        priceBuyB = B[BUY][levelB][PRICE]
 
-                if buy_flag:
-                    '''do sell after buying '''
-                    print('do: SELL')
-                    strExchange = exchangePairs[0][0][SELL]
+                        ''' get buy data in origin exchange  '''
+                        priceBuy = exchangePairs[0][1][BUY]
+                        amountBuy = exchangePairs[0][2][1]
 
-                    '''do sell in two trade districts:'''
-                    if strExchange == 'virtual':
-                        #first, in orderBookB: eos-eth
+                        ''' get sell data in virtual exchange '''      
                         amountSellB = exchangePairs[0][2][1]  
                         levelB = getLevel(amountSellB,B[SELL])
                         if levelB >= len(B[SELL]):
@@ -358,60 +280,94 @@ def cbRunPart(orderBooks, orderBookA, orderBookB):
                                 print(stateStr)
                             else:
                                 priceSellA = A[SELL][levelA][PRICE]
-                                if isinstance(balanceB,float) and isinstance(balanceC,float):
+
+                                ''' get sell data in origin exchange '''
+                                priceSell = exchangePairs[0][1][SELL]
+                                amountSell = exchangePairs[0][2][1] 
+
+                                '''judge after getting all data with using accordingly data '''
+                                # if isinstance(balanceA,float) and isinstance(balanceC,float) and instance(balanceC,float):
+                                if isinstance(balances,dict):
+                                    # buy_flag = False
+                                    flag = ''
+                                    print("balances:")
                                     print(balances)
-                                    if amountSellB <= balanceB:                      
-                                        if amountSellA <= balanceC:
+                                    if strExchangeBuy == 'virtual':
+                                        #whether can buy in two districts and sell in real distract
+                                        if amountBuyA*priceBuyA <= balanceA and amountBuyB*priceBuyB <= balanceC and amountSell <= balanceB :
+                                            flag = 'canBuyInVir'
+                                        else:
+                                            print("not enough money to buy in two districts and sell in real distract")
+                                            print("need coinA:%f, coinB:%f, coinC:%f" % (amountBuyA*priceBuyA, amountSell, amountBuyB*priceBuyB))
+                                            state = "GO"
+                                    else:
+                                        #whether can buy in real distract and sell in two districts
+                                        if amountBuy*priceBuy <= balanceA and amountSellB <= balanceB and amountSellA <= balanceC :
+                                            flag = 'canBuyInReal'
+                                        else:
+                                            print("not enough money to buy in real distract and sell in two districts")
+                                            print("need coinA:%f, coinB:%f, coinC:%f" % (amountBuy*priceBuy, amountSellB, amountSellA))
+                                            state = "GO"
+
+                                    '''do buy '''
+                                    print('do: BUY')
+                                    buy_flag = False
+                                    
+                                    if strExchangeBuy == 'virtual' and flag == 'canBuyInVir':
+                                        '''do buy in two trade districts:'''
+                                        # reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBookA.pairs,price=priceBuyA,amount=amountBuyA)
+                                        # time.sleep(1)
+                                        # reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBookB.pairs,price=priceBuyB,amount=amountBuyB)
+                                        buy_flag = True
+                                        print("SUCCESSFULLY do buy in two trade districts orderBookA,B")
+                                        state = "GO"
+                                        
+                                    if strExchangeBuy == 'bitfinex' and flag == 'canBuyInReal': 
+                                        '''do buy in real district:orderBooks: eos-usdt'''
+                                        # reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=priceBuy,amount=amountBuy)
+                                        buy_flag = True
+                                        print("SUCCESSFULLY do buy in real district:orderBooks")
+                                        state = "GO"
+
+                                    if buy_flag:
+                                        '''do sell after buying '''
+                                        print('do: SELL')
+
+                                        if strExchangeSell == 'virtual':
+                                            '''do sell in two trade districts:'''
                                             # reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBookB.pairs,price=priceSellB,amount=amountSellB)
                                             # time.sleep(1)
                                             # reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBookA.pairs,price=priceSellA,amount=amountSellA)
-                                            pass
+                                            print("SUCCESSFULLY do sell in two trade districts orderBookA,B")
+                                            state = "GO"      
                                         else:
-                                            print("Not enough coin/money")
-                                            stateStr += '| Not enough coin/money to sell in orderBookA: eth-usdt, need eth:' + str(amountSellA)
-                                            state = "GO"                                       
+                                            '''do sell in real district:orderBooks: eos-usdt'''
+                                            # reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooks.pairs,price=priceSell,amount=amountSell)
+                                            print("SUCCESSFULLY do sell in real district:orderBooks")
+                                            state = "GO"
                                     else:
-                                        print("Not enough coin/money")
-                                        stateStr += '| Not enough coin/money to sell in orderBookB: eos-eth, need eos:' + str(amountSellB)
+                                        print("not buy, so not do sell")
                                         state = "GO"
                                 else:
-                                    print("No exchange")
-                                    stateStr += '| No exchange in two trade districts'  
-                                    state = "GO"                 
+                                    print("no balances data")
+                                    state = "GO"
 
-                    
-                    else:
-                        '''do sell in real district:orderBooks: eos-usdt'''
-                        priceSell = exchangePairs[0][1][SELL]
-                        amountSell = exchangePairs[0][2][1]
-                        if isinstance(balanceB,float):
-                            if amountSell <= balanceB:
-                                print(balances)
-                                # reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooks.pairs,price=priceSell,amount=amountSell)
-                                pass
-                            else:
-                                print("Not enough coin/money")
-                                stateStr += '| Not enough coin/money to sell in real district:orderBooks: eos-usdt, need eos:' + str(amountSell)
+                                '''data log'''
+                                # balances = BALANCES[exchangeName].getData()  
+                                balancesWr = str(json.dumps(balances))
+                                currentTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')#现在
+                                staFile = open('bitfinex_' + '_balances_' + str(startTime), 'a+')
+                                staFile.write("%d, %s, %s, stateStr:%s, noBalances_count:%d, traded_count:%d\n" % (count, balancesWr, currentTime, stateStr, noBalances, traded_count))
+                                staFile.close()
                                 state = "GO"
-                        else:
-                            print("No exchange")
-                            stateStr += '| No exchange in real district:orderBooks: eos-usdt'
-                            state = "GO"
-                else:
-                    stateStr += '| Not buy, so not do sell'
 
-                '''data log'''
-                # balances = BALANCES[exchangeName].getData()  
-                balancesWr = str(json.dumps(balances))
-                currentTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')#现在
-                staFile = open('bitfinex_' + '_balances_' + str(startTime), 'a+')
-                staFile.write("%d, %s, %s, stateStr:%s, usdtAmount:%f, noBalances_count:%d, traded_count:%d\n" % (count, balancesWr, currentTime, stateStr, usdtAmount, noBalances, traded_count))
-                staFile.close()
-                state = "GO"
 
             else:
+                #no validExPairs
                 state = "GO"
+
         else:
+            #no data
             state = "GO"
 
     # yield cbRun()
@@ -423,7 +379,6 @@ def ebLoopFailed(failure):
     reactor.stop()
 
 # reactor.callWhenRunning(cbRun)
-
 
 # coinPair = ('usdt', 'eth')
 # HuobiBalancesCycle = Cycle(reactor,huobipro.getBalances,'balances',clean=False)
@@ -438,9 +393,39 @@ BALANCES = {
     'gateio': None,
     'bitfinex': BitfinexBalancesCycle
 }
-loop = task.LoopingCall(cbRun)
 
-loopDeferred = loop.start(1.0)
-loopDeferred.addErrback(ebLoopFailed)
+'''approach to get every coinA, coinB, coinC'''
+for pair in coinPairs:
+    coinA = pair[0]
+    coinB = pair[1]
+    coinC = pair[2]
+
+    # coinA = 'usdt'  #A2C, C2B -> A2B
+    # coinC = 'eth'
+    # coinB = 'eos'
+    coinListp = [coinA, coinC, coinB]  #A,C,B | A2C,C2B -> A2B
+    # coinPair1 = ('eth', 'usdt')  #1 2 ->3
+    # coinPair2 = ('eos', 'eth')
+    # coinPair3 = ('eos', 'usdt')
+    coinPair1 = (coinC, coinA)  #A2C
+    coinPair2 = (coinB, coinC)  #C2B
+    coinPair3 = (coinB, coinA)  #A2B
+    
+    if exchangeName == 'bitfinex':
+        if coinA =='usdt':
+            coinA = 'usd'
+
+    orderBooks = OrderBooks( [exchangeName], coinPair3)
+    orderBooks.start(reactor)
+    orderBookA = OrderBooks( [exchangeName], coinPair1)
+    orderBookA.start(reactor)
+    orderBookB = OrderBooks( [exchangeName], coinPair2)
+    orderBookB.start(reactor)
+    # cbRunPart(orderBooks=orderBooks, orderBookA=orderBookA, orderBookB=orderBookB)
+
+    loop = task.LoopingCall(cbRunPart(orderBooks=orderBooks, orderBookA=orderBookA, orderBookB=orderBookB))
+
+    loopDeferred = loop.start(1.0)
+    loopDeferred.addErrback(ebLoopFailed)
 
 reactor.run()
