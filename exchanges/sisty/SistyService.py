@@ -107,7 +107,7 @@ class Sisty(ExchangeService):
         return httpGet(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
     def trade(self, pairs, price, amount, tradeType):
-        URL = "/tradeOpen/v2/apiAddEntrustV2Robot"
+        URL = "/tradeOpen/v3/apiAddEntrustV2Robot"
 
         cipherText = getSign(self.__userId, pairs[0], pairs[1], self.__md5Key)
 
