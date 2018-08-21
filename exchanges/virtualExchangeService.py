@@ -5,6 +5,7 @@ from exchanges.base import ExchangeService
 from exchange import calcVirtualOrderBooks
 
 import copy
+import time
 
 def defaultErrHandler(failure):
     print(failure.getBriefTraceback())
@@ -82,7 +83,7 @@ class VirtualExchange(ExchangeService):
             self.orders = orders
 
         self.retryTimes = 3
-        self.retryWaitTime = 1
+        self.retryWaitTime = 1 # second
 
     def cleanOrderBookData(self):
         self.orderBookData = None
@@ -183,6 +184,7 @@ class VirtualExchange(ExchangeService):
                         (stateA, dataA), (stateB, dataB) = res
                         if stateA and stateB: # succeeded
                             break
+                        time.sleep(self.retryWaitTime)
                         taskA, taskB = lambda: defer.succeed(dataA), lambda: defer.succeed(dataB)
                         if not stateA:
                             print(dataA)
@@ -199,7 +201,7 @@ class VirtualExchange(ExchangeService):
                         returnValue(None)
 
                     id = self.orders.recordOrder({
-                        'orderId': (dataA[1], dataB[1]),
+                        'orderId': (dataA, dataB),
                         'type': 'buy',
                         'initPrice': price,
                         'initAmount': amount,
@@ -261,6 +263,7 @@ class VirtualExchange(ExchangeService):
                         (stateA, dataA), (stateB, dataB) = res
                         if stateA and stateB: # succeeded
                             break
+                        time.sleep(self.retryWaitTime)
                         taskA, taskB = lambda: defer.succeed(dataA), lambda: defer.succeed(dataB)
                         if not stateA:
                             print(dataA)
@@ -277,7 +280,7 @@ class VirtualExchange(ExchangeService):
                         returnValue(None)
 
                     id = self.orders.recordOrder({
-                        'orderId': (dataA[1], dataB[1]),
+                        'orderId': (dataA, dataB),
                         'type': 'sell',
                         'initPrice': price,
                         'initAmount': amount,
