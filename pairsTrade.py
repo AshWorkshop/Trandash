@@ -32,6 +32,7 @@ count = 0
 wait = 0
 usdtAmount = 0.0
 traded_count = 0
+# valid_pair_count = 0
 startTime = int(time.time())
 '''initial OrderBooks'''
 exchangeName = 'bitfinex'
@@ -118,35 +119,35 @@ def sell(exchange,coinPair,amount,price):
 
     state = "GO"
 
-def cbRun():
-    '''approach to get every coinA, coinB, coinC'''
-    for pair in coinPairs:
-        coinA = pair[0]
-        coinB = pair[1]
-        coinC = pair[2]
+# def cbRun():
+#     '''approach to get every coinA, coinB, coinC'''
+#     for pair in coinPairs:
+#         coinA = pair[0]
+#         coinB = pair[1]
+#         coinC = pair[2]
 
-    # coinA = 'usdt'  #A2C, C2B -> A2B
-    # coinC = 'eth'
-    # coinB = 'eos'
-        coinListp = [coinA, coinC, coinB]  #A,C,B | A2C,C2B -> A2B
-    # coinPair1 = ('eth', 'usdt')  #1 2 ->3
-    # coinPair2 = ('eos', 'eth')
-    # coinPair3 = ('eos', 'usdt')
-        coinPair1 = (coinC, coinA)  #A2C
-        coinPair2 = (coinB, coinC)  #C2B
-        coinPair3 = (coinB, coinA)  #A2B
+#     # coinA = 'usdt'  #A2C, C2B -> A2B
+#     # coinC = 'eth'
+#     # coinB = 'eos'
+#         coinListp = [coinA, coinC, coinB]  #A,C,B | A2C,C2B -> A2B
+#     # coinPair1 = ('eth', 'usdt')  #1 2 ->3
+#     # coinPair2 = ('eos', 'eth')
+#     # coinPair3 = ('eos', 'usdt')
+#         coinPair1 = (coinC, coinA)  #A2C
+#         coinPair2 = (coinB, coinC)  #C2B
+#         coinPair3 = (coinB, coinA)  #A2B
         
-        if exchangeName == 'bitfinex':
-            if coinA =='usdt':
-                coinA = 'usd'
+#         if exchangeName == 'bitfinex':
+#             if coinA =='usdt':
+#                 coinA = 'usd'
 
-        orderBooks = OrderBooks( [exchangeName], coinPair3)
-        orderBooks.start(reactor)
-        orderBookA = OrderBooks( [exchangeName], coinPair1)
-        orderBookA.start(reactor)
-        orderBookB = OrderBooks( [exchangeName], coinPair2)
-        orderBookB.start(reactor)
-        cbRunPart(orderBooks=orderBooks, orderBookA=orderBookA, orderBookB=orderBookB)
+#         orderBooks = OrderBooks( [exchangeName], coinPair3)
+#         orderBooks.start(reactor)
+#         orderBookA = OrderBooks( [exchangeName], coinPair1)
+#         orderBookA.start(reactor)
+#         orderBookB = OrderBooks( [exchangeName], coinPair2)
+#         orderBookB.start(reactor)
+#         cbRunPart(orderBooks=orderBooks, orderBookA=orderBookA, orderBookB=orderBookB)
 
 def cbRunPart(orderBooks, orderBookA, orderBookB):
     global count
@@ -241,20 +242,20 @@ def cbRunPart(orderBooks, orderBookA, orderBookB):
             '''
             if exchangePairs:  #skip when exchangePairs is [] or None.
                 state = "WAIT"
+                
                 '''get midAmount'''
                 virtualLevel = exchangePairs[0][2][0]  #可交易对里返回的level值
                 virtualBuyList = virtualOrderBooks[1][BUY]
                 virtualSellList = virtualOrderBooks[1][SELL]
                 midAmountBuy = sum(virtualBuyList[:virtualLevel+1])   #get midAmount according to virtual Level
                 midAmountSell = sum(virtualSellList[:virtualLevel+1]) #get midAmount according to virtual Level
+                
                 '''get each balance'''
                 balanceA = 0.0  #balance of 'usdt'
                 balanceC = 0.0  #balance of 'eth'
                 balanceB = 0.0  #balance of 'eos'   
                 balances = BALANCES[exchangeName].getData()
-                # balancesWr = str(json.dumps(balances)) 
-                print(balances)
-
+                # balancesWr = str(json.dumps(balances))
                 if isinstance(balances,dict):
                     if coinAin balances:
                         balanceA = balances[coinA]  #balance of 'usdt'
@@ -264,6 +265,7 @@ def cbRunPart(orderBooks, orderBookA, orderBookB):
                         balanceB = balances[coinB]  #balance of 'eos'
                 else:
                     noBalances += 1
+                    # return
 
                 exchange = EXCHANGE[exchangeName]  #original exchange instance, eg bitfinex
                 
@@ -301,17 +303,18 @@ def cbRunPart(orderBooks, orderBookA, orderBookB):
                                         # time.sleep(1)
                                         # reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBookB.pairs,price=priceBuyB,amount=amountBuyB)
                                         buy_flag = True
+                                        print("SUCCESSFULLY do buy in two trade districts orderBookA,B")
+                                        state = "GO"
                                     else:
-                                        
-                                        print("Not enough coin/money")
-                                        stateStr += '| Not enough coin/money to buy in orderBookB: eos-eth, need eth:' + str(amountBuyB*priceBuyB)
+                                        stateStr += '| Not enough coin/money to buy in orderBookB:' + orderBookB.pairs + ', need coinC:' + str(amountBuyB*priceBuyB)
+                                        print("Not enough coin/money to buy in orderBookB: %s, need coinC:%f" % (orderBookB.pairs, amountBuyB*priceBuyB))
                                         state = "GO"
                                 else:
-                                    print("Not enough coin/money")
-                                    stateStr += '| Not enough coin/money to buy in orderBookA: eth-usdt, need usdt:' + str(amountBuyA*priceBuyA)
+                                    stateStr += '| Not enough coin/money to buy in orderBookA:' + orderBookA.pairs + ', need usdt:' + str(amountBuyA*priceBuyA)
+                                    print("Not enough coin/money to buy in orderBookA: %s, need usdt:%f" % (orderBookA.pairs, amountBuyA*priceBuyA))
                                     state = "GO"
                             else:
-                                print("No exchange")  
+                                print("No exchange in two trade districts")  
                                 stateStr += '| No exchange in two trade districts'
                                 state = "GO"
                     
@@ -323,16 +326,18 @@ def cbRunPart(orderBooks, orderBookA, orderBookB):
                     usdtAmount = amountBuy*priceBuy                    
                     if isinstance(balanceA,float):
                         if amountBuy*priceBuy <= balanceA:
-                            print(balances)
+                            # print(balances)
                             # reactor.callWhenRunning(buy,exchange=exchange,coinPair=orderBooks.pairs,price=priceBuy,amount=amountBuy)
                             buy_flag = True
+                            print("SUCCESSFULLY do buy in real district:orderBooks: %s" % orderBooks.pairs)
+                            state = "GO"
                         else:
-                            print("Not enough coin/money")
-                            stateStr += '| Not enough coin/money to buy in real district:orderBooks: eos-usdt, need usdt:' + str(amountBuy*priceBuy)
+                            print("Not enough coin/money to buy in real district:orderBooks: %s, need usdt:%f" % (orderBooks.pairs, amountBuy*priceBuy))
+                            stateStr += '| Not enough coin/money to buy in real district:orderBooks:' + orderBooks.pairs + ', need usdt:' + str(amountBuy*priceBuy)
                             state = "GO"
                     else:
-                        print("No exchange")
-                        stateStr += '| No exchange in real district:orderBooks: eos-usdt'
+                        print("No exchange in real district:orderBooks")
+                        stateStr += '| No exchange in real district:orderBooks'
                         state = "GO"
 
                 if buy_flag:
@@ -365,15 +370,16 @@ def cbRunPart(orderBooks, orderBookA, orderBookB):
                                             # reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBookB.pairs,price=priceSellB,amount=amountSellB)
                                             # time.sleep(1)
                                             # reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBookA.pairs,price=priceSellA,amount=amountSellA)
-                                            pass
+                                            print("SUCCESSFULLY do sell in real district:orderBooks: %s" % orderBooks.pairs)
+                                            state = "GO"
                                         else:
-                                            print("Not enough coin/money")
-                                            stateStr += '| Not enough coin/money to sell in orderBookA: eth-usdt, need eth:' + str(amountSellA)
-                                            state = "GO"                                       
+                                            stateStr += '| Not enough coin/money to sell in orderBookA:' + orderBookA.pairs + ', need coinC:' + str(amountSellA)
+                                            print("Not enough coin/money to sell in orderBookA: %s, need coinC:%f" % (orderBookA.pairs, amountSellA))
+                                            state = "GO"                                                                                  
                                     else:
-                                        print("Not enough coin/money")
-                                        stateStr += '| Not enough coin/money to sell in orderBookB: eos-eth, need eos:' + str(amountSellB)
-                                        state = "GO"
+                                        stateStr += '| Not enough coin/money to sell in orderBookB:' + orderBookB.pairs + ', need coinB:' + str(amountSellB)
+                                        print("Not enough coin/money to buy in orderBookB: %s, need coinB:%f" % (orderBookB.pairs, amountSellB))
+                                        state = "GO"                                        
                                 else:
                                     print("No exchange")
                                     stateStr += '| No exchange in two trade districts'  
@@ -386,26 +392,31 @@ def cbRunPart(orderBooks, orderBookA, orderBookB):
                         amountSell = exchangePairs[0][2][1]
                         if isinstance(balanceB,float):
                             if amountSell <= balanceB:
-                                print(balances)
+                                # print(balances)
                                 # reactor.callWhenRunning(sell,exchange=exchange,coinPair=orderBooks.pairs,price=priceSell,amount=amountSell)
-                                pass
+                                print("SUCCESSFULLY do sell in real district:orderBooks: %s" % orderBooks.pairs)
+                                state = "GO"                                
                             else:
-                                print("Not enough coin/money")
-                                stateStr += '| Not enough coin/money to sell in real district:orderBooks: eos-usdt, need eos:' + str(amountSell)
+                                print("Not enough coin/money to sell in real district:orderBooks: %s, need coinB:%f" % (orderBooks.pairs, amountSell))
+                                stateStr += '| Not enough coin/money to sell in real district:orderBooks:' + orderBooks.pairs + ', need coinB:' + str(amountSell)
                                 state = "GO"
                         else:
-                            print("No exchange")
-                            stateStr += '| No exchange in real district:orderBooks: eos-usdt'
+                            print("No exchange in real district:orderBooks")
+                            stateStr += '| No exchange in real district:orderBooks'
                             state = "GO"
                 else:
                     stateStr += '| Not buy, so not do sell'
+                    print("Not buy, so not do sell")
+                    state = "GO"
 
                 '''data log'''
-                # balances = BALANCES[exchangeName].getData()  
+                # balances = BALANCES[exchangeName].getData() 
+                print(balances) 
                 balancesWr = str(json.dumps(balances))
+                pairsName = orderBookB.pairs+ ' ' + orderBookA.pairs
                 currentTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')#现在
                 staFile = open('bitfinex_' + '_balances_' + str(startTime), 'a+')
-                staFile.write("%d, %s, %s, stateStr:%s, usdtAmount:%f, noBalances_count:%d, traded_count:%d\n" % (count, balancesWr, currentTime, stateStr, usdtAmount, noBalances, traded_count))
+                staFile.write("%d, pairsName:%s, balances:%s, %s, stateStr:%s, usdtAmount:%f, noBalances_count:%d, traded_count:%d\n" % (count, pairsName, balancesWr, currentTime, stateStr, usdtAmount, noBalances, traded_count))
                 staFile.close()
                 state = "GO"
 
@@ -438,9 +449,39 @@ BALANCES = {
     'gateio': None,
     'bitfinex': BitfinexBalancesCycle
 }
-loop = task.LoopingCall(cbRun)
 
-loopDeferred = loop.start(1.0)
-loopDeferred.addErrback(ebLoopFailed)
+'''approach to get every coinA, coinB, coinC'''
+for pair in coinPairs:
+    coinA = pair[0]
+    coinB = pair[1]
+    coinC = pair[2]
+
+    # coinA = 'usdt'  #A2C, C2B -> A2B
+    # coinC = 'eth'
+    # coinB = 'eos'
+    coinListp = [coinA, coinC, coinB]  #A,C,B | A2C,C2B -> A2B
+    # coinPair1 = ('eth', 'usdt')  #1 2 ->3
+    # coinPair2 = ('eos', 'eth')
+    # coinPair3 = ('eos', 'usdt')
+    coinPair1 = (coinC, coinA)  #A2C
+    coinPair2 = (coinB, coinC)  #C2B
+    coinPair3 = (coinB, coinA)  #A2B
+    
+    if exchangeName == 'bitfinex':
+        if coinA =='usdt':
+            coinA = 'usd'
+
+    orderBooks = OrderBooks( [exchangeName], coinPair3)
+    orderBooks.start(reactor)
+    orderBookA = OrderBooks( [exchangeName], coinPair1)
+    orderBookA.start(reactor)
+    orderBookB = OrderBooks( [exchangeName], coinPair2)
+    orderBookB.start(reactor)
+    # cbRunPart(orderBooks=orderBooks, orderBookA=orderBookA, orderBookB=orderBookB)
+
+    loop = task.LoopingCall(cbRunPart(orderBooks=orderBooks, orderBookA=orderBookA, orderBookB=orderBookB))
+
+    loopDeferred = loop.start(1.0)
+    loopDeferred.addErrback(ebLoopFailed)
 
 reactor.run()
