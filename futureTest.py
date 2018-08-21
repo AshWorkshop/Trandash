@@ -20,8 +20,21 @@ pairs = ('eth', 'usdt')
 
 start = time.time()
 
+def test():
+    d = sisty.trade(pairs, 260, 1, 0)
+    def cbTest(result):
+        print(result)
+        return result
 
-tickerCycle = Cycle(reactor, sisty.getUserInfo, 'test')
-tickerCycle.start()
-# reactor.callWhenRunning(test)
+    def ebTest(failure):
+        print(failure)
+    d.addCallback(cbTest)
+    d.addErrback(ebTest)
+
+    
+
+
+# tickerCycle = Cycle(reactor, sisty.getUserInfo, 'test')
+# tickerCycle.start()
+reactor.callWhenRunning(test)
 reactor.run()
