@@ -11,6 +11,16 @@ import json
 import time
 import urllib
 
+def defaultErrhandler(failure):
+    print(failure)
+    # time.sleep(1)
+    return None
+
+def ratelimitErrhandler(failure):
+    print(failure)
+    time.sleep(1)
+    return None
+
 class Bitfinex(ExchangeService):
 
     def __init__(self, url, accessKey, secretKey):
@@ -38,17 +48,17 @@ class Bitfinex(ExchangeService):
             data = json.loads(body)
             # print(data)
 
-            try:
-                rawBids = data['bids']
-                rawAsks = data['asks']
-            except KeyError:
-                rawBids = []
-                rawAsks = []
-                if 'error' in data:
-                    err = data['error']
-                    print(err, ' from getOrderBook()')
-                    if err == 'ERR_RATE_LIMIT':
-                        time.sleep(1)
+            assert 'bids' in data, str(data)
+            rawBids = data['bids']
+            rawAsks = data['asks']
+            # except KeyError:
+            #     rawBids = []
+            #     rawAsks = []
+            #     if 'error' in data:
+            #         err = data['error']
+            #         print(err, ' from getOrderBook()')
+            #         if err == 'ERR_RATE_LIMIT':
+            #             time.sleep(1)
 
             bids = []
             asks = []
@@ -62,6 +72,7 @@ class Bitfinex(ExchangeService):
             return [bids, asks]
 
         d.addCallback(handleBody)
+        d.addErrback(ratelimitErrhandler)
 
         return d
 
@@ -81,20 +92,21 @@ class Bitfinex(ExchangeService):
             data = json.loads(body)
             print(data)
             balance = 0.0
+            assert isinstance(data, list), str(data)
+
             for b in data:
-                try:
-                    b_type = b['type']
-                    b_currency = b['currency']
-                    b_available = b['available']
-                except Exception as e:
-                    b_type = ''
-                    b_currency = ''
-                    b_available = 0.0
-                    if 'error' in data:
-                        err = data['error']
-                        print(err, ' from getBalance()')
-                        if err == 'ERR_RATE_LIMIT':
-                            time.sleep(1)
+                b_type = b['type']
+                b_currency = b['currency']
+                b_available = b['available']
+                # except Exception as e:
+                #     b_type = ''
+                #     b_currency = ''
+                #     b_available = 0.0
+                #     if 'error' in data:
+                #         err = data['error']
+                #         print(err, ' from getBalance()')
+                #         if err == 'ERR_RATE_LIMIT':
+                #             time.sleep(1)
                 if b_type == 'exchange':
                     # print(b)
                     if b_currency == coin:
@@ -104,6 +116,7 @@ class Bitfinex(ExchangeService):
             return balance
 
         d.addCallback(handleBody)
+        d.addErrback(ratelimitErrhandler)
 
         return d
 
@@ -124,22 +137,21 @@ class Bitfinex(ExchangeService):
             data = json.loads(body)
             # print(data)
             balances = dict()
-            if not isinstance(data, list):
-                return None
+            assert isinstance(data, list), str(data)
+            
             for b in data:
-                try:
-                    b_type = b['type']
-                    b_currency = b['currency']
-                    b_available = b['available']
-                except Exception as e:
-                    b_type = ''
-                    b_currency = ''
-                    b_available = 0.0
-                    if 'error' in data:
-                        err = data['error']
-                        print(err, ' from getBalances()')
-                        if err == 'ERR_RATE_LIMIT':
-                            time.sleep(1)
+                b_type = b['type']
+                b_currency = b['currency']
+                b_available = b['available']
+                # except Exception as e:
+                #     b_type = ''
+                #     b_currency = ''
+                #     b_available = 0.0
+                #     if 'error' in data:
+                #         err = data['error']
+                #         print(err, ' from getBalances()')
+                #         if err == 'ERR_RATE_LIMIT':
+                #             time.sleep(1)
                 if b_type == 'exchange':
                     # print(b)
                     if b_currency in coins:
@@ -151,6 +163,7 @@ class Bitfinex(ExchangeService):
             return balances
 
         d.addCallback(handleBody)
+        d.addErrback(ratelimitErrhandler)
 
         return d
 
@@ -176,20 +189,21 @@ class Bitfinex(ExchangeService):
             data = json.loads(body)
             # print(data)
 
-            try:
-                order_id = data['order_id']
-                return (True, int(order_id))
-            except KeyError:
-                print(data)
-                order_id = '0'
-                if 'error' in data:
-                    err = data['error']
-                    print(err)
-                    if err == 'ERR_RATE_LIMIT':
-                        time.sleep(1)
-                return (False, data)
+            assert 'order_id' in data, str(data)
+            order_id = data['order_id']
+            return int(order_id)
+            # except KeyError:
+            #     print(data)
+            #     order_id = '0'
+            #     if 'error' in data:
+            #         err = data['error']
+            #         print(err)
+            #         if err == 'ERR_RATE_LIMIT':
+            #             time.sleep(1)
+            #     return (False, data)
 
         d.addCallback(handleBody)
+        d.addErrback(defaultErrhandler)
 
         return d
 
@@ -215,20 +229,24 @@ class Bitfinex(ExchangeService):
             data = json.loads(body)
             # print(data)
 
-            try:
-                order_id = data['order_id']
-                return (True, int(order_id))
-            except KeyError:
-                print(data)
-                order_id = '0'
-                if 'error' in data:
-                    err = data['error']
-                    print(err)
-                    if err == 'ERR_RATE_LIMIT':
-                        time.sleep(1)
-                return (False, data)
+            assert 'order_id' in data, str(data)
+            order_id = data['order_id']
+            return int(order_id)
+            # try:
+            #     order_id = data['order_id']
+            #     return (True, int(order_id))
+            # except KeyError:
+            #     print(data)
+            #     order_id = '0'
+            #     if 'error' in data:
+            #         err = data['error']
+            #         print(err)
+            #         if err == 'ERR_RATE_LIMIT':
+            #             time.sleep(1)
+            #     return (False, data)
 
         d.addCallback(handleBody)
+        d.addErrback(defaultErrhandler)
 
         return d
 
@@ -248,23 +266,24 @@ class Bitfinex(ExchangeService):
             data = json.loads(body)
             # print(data)
 
-            try:
-                side = data['side']
-                price = data['price']
-                amount = data['original_amount']
-                is_cancelled = data['is_cancelled']
-                is_live = data['is_live']
-            except KeyError:
-                side = ''
-                price = '0'
-                amount = '0'
-                is_cancelled = False
-                is_live = False
-                if 'error' in data:
-                    err = data['error']
-                    print(err)
-                    if err == 'ERR_RATE_LIMIT':
-                        time.sleep(1)
+            assert 'side' in data, str(data)
+            side = data['side']
+            price = float(data['price'])
+            amount = float(data['original_amount'])
+            is_cancelled = data['is_cancelled']
+            is_live = data['is_live']
+            timestamp = data['timestamp']
+            # except KeyError:
+            #     side = ''
+            #     price = '0'
+            #     amount = '0'
+            #     is_cancelled = False
+            #     is_live = False
+            #     if 'error' in data:
+            #         err = data['error']
+            #         print(err)
+            #         if err == 'ERR_RATE_LIMIT':
+            #             time.sleep(1)
 
             status = 'open'
             if 'error' in data:    #若有错误，status置为'error'
@@ -273,18 +292,20 @@ class Bitfinex(ExchangeService):
                 status = 'cancelled'
             elif not is_live:      #若没有被取消，并且不能继续被填充（not live），
                 status = 'done'            #则表示交易已完成（done）
-
-            return Order(
-                'bitfinex',
-                orderId,
-                side,
-                float(price),
-                float(amount),
-                symbol,
-                status
-            )
+            order_data  = dict()
+            order_data = {
+                    'orderId': orderId,
+                    'timestamp': timestamp,     #返回的字典中添加了时间戳信息
+                    'type': side,
+                    'iniPrice': price,
+                    'initAmount': amount,
+                    'coinPair': symbol,
+                    'status': status
+                    }
+            return order_data
 
         d.addCallback(handleBody)
+        d.addErrback(defaultErrhandler)
 
         return d
 
@@ -304,20 +325,23 @@ class Bitfinex(ExchangeService):
             data = json.loads(body)
             # print(data)
 
-            try:
-                is_cancelled = data['is_cancelled']
-            except KeyError:
-                is_cancelled = False
-                if 'error' in data:
-                    err = data['error']
-                    print(err)
-                    if err == 'ERR_RATE_LIMIT':
-                        time.sleep(1)
-                return (False, data)
+            assert 'is_cancelled' in data, str(data)
+            is_cancelled = data['is_cancelled']
+            # except KeyError:
+            #     is_cancelled = False
+            #     if 'error' in data:
+            #         err = data['error']
+            #         print(err)
+            #         if err == 'ERR_RATE_LIMIT':
+            #             time.sleep(1)
+            #     return (False, data)
             if is_cancelled:
-                return(True, data)
+                return True
+            else:
+                return False
 
         d.addCallback(handleBody)
+        d.addErrback(defaultErrhandler)
 
         return d
 
@@ -339,39 +363,38 @@ class Bitfinex(ExchangeService):
             # print(data)
             orderList = []
 
-            if not isinstance(data, list):
-                return None
-
+            assert isinstance(data, list), str(data)
             for order in data:
-                try:
-                    timestamp = order['timestamp']
-                    symbolGet = order['symbol'].upper()
-                    # print(symbolGet,symbol)
-                    if float(timestamp) >= givenTime and symbol==symbolGet:
-                        status = 'open'
-                        if order['is_cancelled']:
-                            status = 'cancelled'
-                        elif not order['is_live']:      #若没有被取消，并且不能继续被填充（not live），
-                            status = 'done'             #则表示交易已完成（done）
-                        orderList.append({
-                            'orderId': order['id'],
-                            'timestamp': timestamp,     #返回的字典中添加了时间戳信息
-                            'type': order['side'],
-                            'iniPrice': float(order['price']),
-                            'initAmount': float(order['original_amount']),
-                            'coinPair': order['symbol'],
-                            'status': status
-                            })
-                except KeyError:
-                    if 'error' in data:
-                        err = data['error']
-                        print(err)
-                        if err == 'ERR_RATE_LIMIT':
-                            time.sleep(1)
+                assert 'price' in order, str(order)
+                timestamp = order['timestamp']
+                symbolGet = order['symbol'].upper()
+                # print(symbolGet,symbol)
+                if float(timestamp) >= givenTime and symbol==symbolGet:
+                    status = 'open'
+                    if order['is_cancelled']:
+                        status = 'cancelled'
+                    elif not order['is_live']:      #若没有被取消，并且不能继续被填充（not live），
+                        status = 'done'             #则表示交易已完成（done）
+                    orderList.append({
+                        'orderId': order['id'],
+                        'timestamp': timestamp,     #返回的字典中添加了时间戳信息
+                        'type': order['side'],
+                        'iniPrice': float(order['price']),
+                        'initAmount': float(order['original_amount']),
+                        'coinPair': order['symbol'],
+                        'status': status
+                        })
+                # except KeyError:
+                #     if 'error' in data:
+                #         err = data['error']
+                #         print(err)
+                #         if err == 'ERR_RATE_LIMIT':
+                #             time.sleep(1)
 
             return orderList
 
         d.addCallback(handleBody)
+        d.addErrback(ratelimitErrhandler)
 
         return d
 
@@ -394,6 +417,7 @@ class Bitfinex(ExchangeService):
                 return None
 
         d.addCallback(handleBody)
+        d.addErrback(defaultErrhandler)
 
         return d
 
@@ -429,6 +453,7 @@ class Bitfinex(ExchangeService):
                         print(kline)
             return result
         d.addCallback(handleBody)
+        d.addErrback(defaultErrhandler)
 
         return d
 
@@ -448,6 +473,7 @@ class Bitfinex(ExchangeService):
                 return None
             return result
         d.addCallback(handleList)
+        d.addErrback(defaultErrhandler)
 
         return d
 
