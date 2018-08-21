@@ -32,3 +32,14 @@ def getPairs():
         coinPairs.append([coinA, coinB, coinC])
         
     return coinPairs
+
+def getCoinList():
+    coinList = ['usd']
+    coinList.extend(midList)
+
+    for pair in hasList:
+        if pair[:3] not in coinList:
+            coinList.append(pair[:3])
+
+    return coinList
+

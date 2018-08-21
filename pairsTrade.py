@@ -20,7 +20,7 @@ from exchanges.huobi.HuobiproService import huobipro
 
 from exchange import OrderBooks
 from cycle.cycle import Cycle
-from btf_midPairs import hasList, midList, getPairs
+from btf_midPairs import hasList, midList, getPairs, getCoinList
 
 # if len(argv) == 4:
 #     _, coin, money, dataFile = argv
@@ -34,41 +34,16 @@ usdtAmount = 0.0
 traded_count = 0
 startTime = int(time.time())
 '''initial OrderBooks'''
-
-'''approach to get every coinA, coinB, coinC'''
-# coinPairs = getPairs() 
-# for pair in coinPairs:
-#     coinA = pair[0]
-#     coinB = pair[1]
-#     coinC = pair[2]
-
-coinA = 'usdt'  #A2C, C2B -> A2B
-coinC = 'eth'
-coinB = 'eos'
-coinList = [coinA, coinC, coinB]  #A,C,B | A2C,C2B -> A2B
-# coinPair1 = ('eth', 'usdt')  #1 2 ->3
-# coinPair2 = ('eos', 'eth')
-# coinPair3 = ('eos', 'usdt')
-coinPair1 = (coinC, coinA)  #A2C
-coinPair2 = (coinB, coinC)  #C2B
-coinPair3 = (coinB, coinA)  #A2B
 exchangeName = 'bitfinex'
-if exchangeName == 'bitfinex':
-    if coinA =='usdt':
-        coinA = 'usd'
 
-orderBooks = OrderBooks( [exchangeName], coinPair3)
-orderBooks.start(reactor)
-orderBookA = OrderBooks( [exchangeName], coinPair1)
-orderBookA.start(reactor)
-orderBookB = OrderBooks( [exchangeName], coinPair2)
-orderBookB.start(reactor)
+coinPairs = getPairs() 
+
 
 SELL, BUY = range(2)
 PRICE, AMOUNT = range(2)
 EXCHANGE = {
-    'huobipro': huobipro,
-    'gateio': gateio,
+    # 'huobipro': huobipro,
+    # 'gateio': gateio,
     'bitfinex': bitfinex
 }
 FEE = {
@@ -144,6 +119,36 @@ def sell(exchange,coinPair,amount,price):
     state = "GO"
 
 def cbRun():
+    '''approach to get every coinA, coinB, coinC'''
+    for pair in coinPairs:
+        coinA = pair[0]
+        coinB = pair[1]
+        coinC = pair[2]
+
+    # coinA = 'usdt'  #A2C, C2B -> A2B
+    # coinC = 'eth'
+    # coinB = 'eos'
+        coinListp = [coinA, coinC, coinB]  #A,C,B | A2C,C2B -> A2B
+    # coinPair1 = ('eth', 'usdt')  #1 2 ->3
+    # coinPair2 = ('eos', 'eth')
+    # coinPair3 = ('eos', 'usdt')
+        coinPair1 = (coinC, coinA)  #A2C
+        coinPair2 = (coinB, coinC)  #C2B
+        coinPair3 = (coinB, coinA)  #A2B
+        
+        if exchangeName == 'bitfinex':
+            if coinA =='usdt':
+                coinA = 'usd'
+
+        orderBooks = OrderBooks( [exchangeName], coinPair3)
+        orderBooks.start(reactor)
+        orderBookA = OrderBooks( [exchangeName], coinPair1)
+        orderBookA.start(reactor)
+        orderBookB = OrderBooks( [exchangeName], coinPair2)
+        orderBookB.start(reactor)
+        cbRunPart(orderBooks=orderBooks, orderBookA=orderBookA, orderBookB=orderBookB)
+
+def cbRunPart(orderBooks, orderBookA, orderBookB):
     global count
     global state
     global wait
@@ -251,12 +256,15 @@ def cbRun():
                 print(balances)
 
                 if isinstance(balances,dict):
-                    balanceA = balances[coinA]  #balance of 'usdt' 
-                    balanceC = balances[coinC]  #balance of 'eth'
+                    if coinAin balances:
+                        balanceA = balances[coinA]  #balance of 'usdt'
+                    if coinC in balances: 
+                        balanceC = balances[coinC]  #balance of 'eth'
                     if coinB in balances:  
                         balanceB = balances[coinB]  #balance of 'eos'
                 else:
                     noBalances += 1
+
                 exchange = EXCHANGE[exchangeName]  #original exchange instance, eg bitfinex
                 
                 '''do buy '''
@@ -422,6 +430,7 @@ def ebLoopFailed(failure):
 # HuobiBalancesCycle.start(list(coinPair))
 # GateioBalancesCycle = Cycle(reactor,gateio.getBalances,'gateio',clean=False)
 # GateioBalancesCycle.start(list(coinPair))
+coinList = getCoinList()
 BitfinexBalancesCycle = Cycle(reactor,bitfinex.getBalances,'balances',clean=False)
 BitfinexBalancesCycle.start(coinList)
 BALANCES = {
@@ -431,7 +440,7 @@ BALANCES = {
 }
 loop = task.LoopingCall(cbRun)
 
-loopDeferred = loop.start(2.0)
+loopDeferred = loop.start(1.0)
 loopDeferred.addErrback(ebLoopFailed)
 
 reactor.run()
