@@ -221,4 +221,4 @@ class Sisty(ExchangeService):
 
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
-sisty = Sisty('https://47.75.31.125/app', MD5Key, '222', '12345678')
+sisty = Sisty('http://47.75.31.125/app', MD5Key, '222', '12345678')
