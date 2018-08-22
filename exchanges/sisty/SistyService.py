@@ -2,6 +2,7 @@ from utils import Order
 from exchanges.base import ExchangeService
 from requestUtils.request import get, post
 from exchanges.sisty.sisty_key import MD5Key
+from twisted.python.failure import Failure
 
 import hashlib
 import urllib
@@ -10,6 +11,12 @@ import time
 from twisted.internet import reactor
 
 import json
+
+def cbReturn(result):
+        if isinstance(result, Failure):
+            return None
+        else:
+            return result
 
 def httpGet(url, resource, params, callback=None, errback=None):
     headers = {
@@ -27,6 +34,8 @@ def httpGet(url, resource, params, callback=None, errback=None):
         d.addCallback(callback)
     if errback:
         d.addErrback(errback)
+
+    d.addCallback(cbReturn)
     return d
 
 def httpPost(url, resource, params, callback=None, errback=None):
@@ -47,6 +56,8 @@ def httpPost(url, resource, params, callback=None, errback=None):
         d.addCallback(callback)
     if errback:
         d.addErrback(errback)
+
+    d.addCallback(cbReturn)
     return d
 
 def getSign(*args):
@@ -72,7 +83,7 @@ class Sisty(ExchangeService):
 
     def ebFailed(self, failure):
         print(failure)
-        return None
+        return failure
 
     def getTicker(self, pairs):
         URL = "/trademarket/v1/api/ticker"
