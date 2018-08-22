@@ -8,13 +8,14 @@ from exchanges.sisty.SistyService import sisty
 from requestUtils.request import get, post
 
 
-from twisted.internet import reactor
+from twisted.internet import reactor, task
 
 from cycle.cycle import Cycle
 
 import urllib
 import hashlib
 import time
+import json
 
 pairs = ('eth', 'usdt')
 
@@ -31,10 +32,29 @@ def test():
     d.addCallback(cbTest)
     d.addErrback(ebTest)
 
+def fun():
+    print('Testing!')
+    return "Testing!"
+
+def cbPrint(result):
+    data = json.loads(result)
+    return data
+
+def ebPrint(failure):
+    print(failure)
+    return None
+
+def cycleTest():
+    d = task.deferLater(reactor, 1, fun)
+    d.addCallback(cbPrint)
+    d.addErrback(ebPrint)
+
+    return d
+
     
 
 
-# tickerCycle = Cycle(reactor, sisty.getUserInfo, 'test')
-# tickerCycle.start()
-reactor.callWhenRunning(test)
+cycle = Cycle(reactor, cycleTest, 'test')
+cycle.start()
+# reactor.callWhenRunning(test)
 reactor.run()
