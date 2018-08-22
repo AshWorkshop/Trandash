@@ -34,12 +34,16 @@ def test():
 
 def fun():
     print('Testing!')
-    json.loads('T')
-    return "Testing!"
+    data = json.loads('T')
+    return None
 
 def cbPrint(result):
-    data = json.loads(result)
-    return data
+    print(result)
+    return result
+
+def cbPrint2(result):
+    print(result)
+    return result
 
 def ebPrint(failure):
     print(failure)
@@ -48,14 +52,19 @@ def ebPrint(failure):
 def cycleTest():
     d = task.deferLater(reactor, 1, fun)
     d.addCallback(cbPrint)
+    # d.addErrback(ebPrint)
+
+    return d
+
+def cycleTest2():
+    d = cycleTest()
+    d.addCallback(cbPrint2)
     d.addErrback(ebPrint)
 
     return d
 
-    
 
-
-cycle = Cycle(reactor, cycleTest, 'test')
+cycle = Cycle(reactor, cycleTest2, 'test')
 cycle.start()
 # reactor.callWhenRunning(test)
 print(cycle.getData())

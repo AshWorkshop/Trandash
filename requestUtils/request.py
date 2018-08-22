@@ -23,6 +23,10 @@ def cbRequest(response):
     d.addCallback(cbBody)
     return d
 
+def ebPrint(failure):
+    print(failure)
+    return failure
+
 def cbBody(body):
     # print('Response body:')
     body = body.decode('utf8')
@@ -45,6 +49,7 @@ def get(reactor, url, headers={}, body=None):
         Headers(headers),
         _body)
     d.addCallback(cbRequest)
+    # d.addErrback(ebPrint)
     return d
 
 def post(reactor, url, headers={}, body=None):
@@ -64,4 +69,5 @@ def post(reactor, url, headers={}, body=None):
         Headers(headers),
         _body)
     d.addCallback(cbRequest)
+    # d.addErrback(ebPrint)
     return d
