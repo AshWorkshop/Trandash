@@ -29,7 +29,6 @@ def httpGet(url, resource, params, callback=None, errback=None):
     if errback:
         d.addErrback(errback)
 
-    d.addCallback(cbReturn)
     return d
 
 def httpPost(url, resource, params, callback=None, errback=None):
@@ -128,6 +127,7 @@ class Sisty(ExchangeService):
 
 
         def handleBody(body):
+            print(body)
             data = json.loads(body)
             assert 'code' in data
             if data['code'] == 0:
