@@ -12,12 +12,6 @@ from twisted.internet import reactor
 
 import json
 
-def cbReturn(result):
-        if isinstance(result, Failure):
-            return None
-        else:
-            return result
-
 def httpGet(url, resource, params, callback=None, errback=None):
     headers = {
         "Content-type": ["application/x-www-form-urlencoded"],
@@ -57,7 +51,6 @@ def httpPost(url, resource, params, callback=None, errback=None):
     if errback:
         d.addErrback(errback)
 
-    d.addCallback(cbReturn)
     return d
 
 def getSign(*args):

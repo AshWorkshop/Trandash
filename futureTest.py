@@ -34,6 +34,7 @@ def test():
 
 def fun():
     print('Testing!')
+    json.loads('T')
     return "Testing!"
 
 def cbPrint(result):
@@ -57,4 +58,5 @@ def cycleTest():
 cycle = Cycle(reactor, cycleTest, 'test')
 cycle.start()
 # reactor.callWhenRunning(test)
+print(cycle.getData())
 reactor.run()
