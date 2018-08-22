@@ -64,8 +64,8 @@ def cycleTest2():
     return d
 
 
-cycle = Cycle(reactor, cycleTest2, 'test')
-cycle.start()
-# reactor.callWhenRunning(test)
-print(cycle.getData())
+# cycle = Cycle(reactor, cycleTest2, 'test')
+# cycle.start()
+reactor.callWhenRunning(test)
+# print(cycle.getData())
 reactor.run()
