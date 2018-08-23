@@ -120,6 +120,93 @@ def verifyExchanges(exchangesData, FEE=FEE):
 
     return validExPairs
 
+ def verifyExchangesFix(exchangesData, FEE=FEE):
+    # index enumeration for taking buy/sell data from exchange tuple
+    # return: list of [( (buyExName, sellExName), (buyPrice, sellPrice), (level, amount) ) ,...]
+    # return: list of ( (下买单的交易所名，下卖单的交易所名), (下买单的价格，下卖单的价格), (深度，数量) )
+    BUY, SELL = range(2)
+    DOSELL, DOBUY = range(2) #实际对应原交易所数据的买盘和卖盘
+
+    # index enumeration for taking price/amount data from price/amount tuple
+    PRICE, AMOUNT = range(2)
+
+    validExPairs = []
+    flag = 0
+    exchangesAmount = len(exchangesData)
+    for buyExName, buyEx in exchangesData.items():
+        # print(buyEx)
+        for sellExName, sellEx in exchangesData.items():
+
+            if buyExName == sellExName: continue
+            flag += 1
+            if buyEx['avg'][DOBUY][0][PRICE] * FEE[buyExName][DOBUY] <= sellEx['avg'][DOSELL][0][PRICE] * FEE[sellExName][DOSELL]: continue
+            # DOBUY = 1, 卖盘 & DOSELL = 0, 买盘
+            # 应该是 下买单的交易所的【卖盘价格】*大于1的FEE <= 下卖单的交易所的【买盘价格】*小于1的FEE
+            # 即 用较少的钱买（以市场卖盘的价格），卖到较多的钱（以市场买盘的价格），赚此差价
+            level = 0
+            amount = 0
+            maxLevel = min(len(buyEx['actual'][DOBUY]), len(sellEx['actual'][DOSELL]))-1
+            # print(maxLevel)
+
+            for i, (buy, sell) in enumerate(zip(buyEx['avg'][DOBUY], sellEx['avg'][DOSELL])):
+                # print(buy, sell)
+                level = i  # i increase from 1
+                if buy[PRICE] * FEE[buyExName][DOBUY] <= sell[PRICE] * FEE[sellExName][DOSELL]:
+                    level = i - 1
+                    break
+                elif level >= maxLevel:
+                    print('error: one of possibility reaches max level when getting validExPairs.')
+                    possibilities = exchangesAmount
+                    if flag == possibilities:
+                        print('error: All possibilities reach max level when getting validExPairs.')
+                        return None
+                    else:
+                        break
+            if level >= maxLevel:
+                continue
+
+            # print(level)
+            amount = min(buyEx['avg'][DOBUY][level][AMOUNT], sellEx['avg'][DOSELL][level][AMOUNT])
+            buyPrice = float(buyEx['actual'][DOBUY][level][PRICE])
+            sellPrice = float(sellEx['actual'][DOSELL][level][PRICE])
+
+            validExPairs.append( ((buyExName, sellExName), (buyPrice, sellPrice), (level, amount)) )
+
+    return validExPairs
+
+
+def verifyExchangesOne(exchangesData, FEE=FEE):
+    # index enumeration for taking buy/sell data from exchange tuple
+    BUY, SELL = range(2)
+    DOSELL, DOBUY = range(2)
+
+    # index enumeration for taking price/amount data from price/amount tuple
+    PRICE, AMOUNT = range(2)
+
+    validExPairs = []
+    flag = 0
+    exchangesAmount = len(exchangesData)
+    for buyExName, buyEx in exchangesData.items():
+        # print(buyEx)
+        for sellExName, sellEx in exchangesData.items():
+
+            if buyExName == sellExName: continue
+            flag += 1
+            amount = 0
+            level = 0
+            if buyEx['avg'][DOBUY][0][PRICE] * FEE[buyExName][DOBUY] <= sellEx['avg'][DOSELL][0][PRICE] * FEE[sellExName][DOSELL]:
+                level = 0
+            else:
+                continue
+            # print(level)
+            amount = min(buyEx['avg'][DOBUY][level][AMOUNT], sellEx['avg'][DOSELL][level][AMOUNT])
+            buyPrice = float(buyEx['actual'][DOBUY][level][PRICE])
+            sellPrice = float(sellEx['actual'][DOSELL][level][PRICE])
+
+            validExPairs.append( ((buyExName, sellExName), (buyPrice, sellPrice), (level, amount)) )
+
+    return validExPairs
+
 def calcOneWayVirtualOrderBooks(A2C: ['bids/asks'], C2B: ['bids/asks']):
     """calculate virtual order book from coin A to coin B through coin C"""
 
