@@ -2,6 +2,7 @@ from utils import Order
 from exchanges.base import ExchangeService
 from requestUtils.request import get, post
 from exchanges.sisty.sisty_key import MD5Key
+from twisted.python.failure import Failure
 
 import hashlib
 import urllib
@@ -27,6 +28,7 @@ def httpGet(url, resource, params, callback=None, errback=None):
         d.addCallback(callback)
     if errback:
         d.addErrback(errback)
+
     return d
 
 def httpPost(url, resource, params, callback=None, errback=None):
@@ -47,15 +49,25 @@ def httpPost(url, resource, params, callback=None, errback=None):
         d.addCallback(callback)
     if errback:
         d.addErrback(errback)
+
     return d
+
+def getSign(*args):
+    data = ''
+    for arg in args:
+        assert isinstance(arg, str)
+        data += arg
+    return hashlib.md5(data.encode("utf8")).hexdigest().upper()
 
 
 
 class Sisty(ExchangeService):
 
-    def __init__(self, url, md5Key):
+    def __init__(self, url, md5Key, userId, secret):
         self.__url = url
         self.__md5Key = md5Key
+        self.__userId = userId
+        self.__secret = secret
 
     def getSymbol(self, pairs):
         coin, money = pairs
@@ -63,14 +75,13 @@ class Sisty(ExchangeService):
 
     def ebFailed(self, failure):
         print(failure)
-        return None
+        return failure
 
-    def getTicker(self, pairs, contractType='quarter'):
-        URL = "/api/v1/future_ticker.do"
+    def getTicker(self, pairs):
+        URL = "/trademarket/v1/api/ticker"
 
         params = {
-            'symbol': self.getSymbol(pairs),
-            'contract_type': contractType
+            'market': self.getSymbol(pairs),
         }
 
         def handleBody(body):
@@ -80,63 +91,13 @@ class Sisty(ExchangeService):
 
         return httpGet(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
-    def getKLine(self, pairs, contractType='quarter', ktype='1min', size=0, since=0):
-        URL = "/api/v1/future_kline"
-
-        params = {
-            'symbol': self.getSymbol(pairs),
-            'contract_type': contractType,
-            'type': ktype,
-            'size': str(size),
-            'since': str(since)
-        }
-
-        def handleBody(body):
-            data = json.loads(body)
-            return data
-
-        return httpGet(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
-
-    def getKLineLastMin(self, pairs, contractType='quarter', last=0):
-        t = int(round(time.time() * 1000))
-        sincet = t - last * 60 * 1100
-        d = self.getKLine(pairs, contractType=contractType, since=sincet)
-
-        def handleList(KLines):
-            result = []
-            assert len(KLines) >= last
-            result = KLines[-last:]
-            return result
-
-        d.addCallback(handleList)
-        d.addErrback(self.ebFailed)
-
-        return d
-
-
-    def getHoldAmount(self, pairs, contractType='quarter'):
-        URL = "/api/v1/future_hold_amount"
-
-        params = {
-            'symbol': self.getSymbol(pairs),
-            'contract_type': contractType
-        }
-
-        def handleBody(body):
-            data = json.loads(body)
-            assert len(data) > 0
-            assert 'amount' in data[0]
-            return data[0]['amount']
-
-        return httpGet(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
     def getOrderBook(self, pairs):
-        URL = "/api/v1/future_depth.do"
+        URL = "/trademarket/v1/api/depth"
         # print(self.__url)
 
         params = {
-            'symbol': self.getSymbol(pairs),
-            'contract_type': 'quarter',
+            'market': self.getSymbol(pairs),
         }
 
         def handleBody(body):
@@ -144,130 +105,120 @@ class Sisty(ExchangeService):
             assert 'bids' in data and 'asks' in data
             bids = data['bids']
             asks = data['asks']
-            asks.reverse()
             return [bids, asks]
 
         return httpGet(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
-    def getPosition(self, pairs):
-        URL = "/api/v1/future_position"
+    def trade(self, pairs, price, amount, tradeType):
+        URL = "/tradeOpen/v2/apiAddEntrustV2Robot"
+
+        cipherText = getSign(self.__userId, pairs[0], pairs[1], self.__md5Key)
 
         params = {
-            'symbol': self.getSymbol(pairs),
-            'contract_type': 'quarter',
-            'api_key': self.__accessKey,
-        }
-        sign = buildMySign(params, self.__secretKey)
-        params['sign'] = sign
-
-        def handleBody(body):
-            data = json.loads(body)
-            assert 'holding' in data and len(data['holding']) > 0
-            return data['holding'][0]
-
-
-        return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
-
-    def trade(self, pairs, contractType="quarter", price="", amount="", tradeType="", matchPrice="", leverRate=""):
-        """
-        参数名	参数类型	必填	描述
-        api_key	String	是	用户申请的apiKey
-        symbol	String	是	btc_usd ltc_usd eth_usd etc_usd bch_usd
-        contract_type	String	是	合约类型: this_week:当周 next_week:下周 quarter:季度
-        orders_data	String	是	JSON类型的字符串 例：[{price:5,amount:2,type:1,match_price:1},{price:2,amount:3,type:1,match_price:1}] 最大下单量为5，price,amount,type,match_price参数参考future_trade接口中的说明
-        sign	String	是	请求参数的签名
-        lever_rate	String	否	杠杆倍数，下单时无需传送，系统取用户在页面上设置的杠杆倍数。且“开仓”若有10倍多单，就不能再下20倍多单
-        """
-        URL = "/api/v1/future_trade.do"
-        params = {
-            'api_key': self.__accessKey,
-            'symbol': self.getSymbol(pairs),
-            'contract_type': contractType,
+            'coinName': pairs[0],
+            'payCoinName': pairs[1],
             'amount': amount,
-            'type': tradeType,
-            'match_price': matchPrice,
+            'price': price,
+            'type': tradeType, # 0: sell, 1: buy
+            'cipherText': cipherText,
+            'secret': self.__secret,
+            'userId': self.__userId
         }
 
-        if price:
-            params['price'] = price
-
-        if leverRate:
-            params['lever_rate'] = leverRate
-
-
-        sign = buildMySign(params, self.__secretKey)
-        params['sign'] = sign
 
         def handleBody(body):
+            # print(body)
             data = json.loads(body)
-            assert 'result' in data
-            if data['result'] == False:
-                print(data)
-                return None
+            assert 'code' in data
+            if data['code'] == 0:
+                return data
             else:
-                assert 'order_id' in data
-                return data['order_id']
+                print('errorCode:', data['code'])
+                return None
 
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
-    def cancle(self, pairs, contractType="quarter", orderId=""):
-        URL = "/api/v1/future_cancel"
+    def cancle(self, pairs, orderId=""):
+        URL = "/tradeOpen/v2/apiCancelEntrustV2Robot"
+        cipherText = getSign(self.__userId, orderId, self.__md5Key)
         params = {
-            "api_key": self.__accessKey,
-            "symbol": self.getSymbol(pairs),
-            "order_id": orderId,
-            "contract_type": contractType
+            'entrustId': orderId,
+            'cipherText': cipherText,
+            'userId': self.__userId
         }
-        sign = buildMySign(params, self.__secretKey)
-        params['sign'] = sign
+
 
         def handleBody(body):
             data = json.loads(body)
-            assert 'result' in data
-            if data['result']:
-                return (True, orderId)
+            assert 'code' in data
+            if data['code']:
+                return True
             else:
                 print(data)
-                return (False, data.get('error_code', -1))
+                return False
 
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
     def getOrder(self, pairs, contractType='quarter', orderId="", status=""):
-        URL = "/api/v1/future_order_info"
+        URL = "/tradeOpen/ v2/selectEntrustById"
+        cipherText = getSign(self.__userId, orderId, self.__md5Key)
         params = {
-            "api_key": self.__accessKey,
-            "symbol": self.getSymbol(pairs),
-            "order_id": orderId,
-            "contract_type": contractType
+            'entrustId': orderId,
+            'cipherText': cipherText,
+            'userId': self.__userId
         }
-        if status:
-            params['status'] = status
-        sign = buildMySign(params, self.__secretKey)
-        params['sign'] = sign
 
         def handleBody(body):
             data = json.loads(body)
-            return data.get('orders', None)
-
-        return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
-
-
-    def getUserInfo(self, coin):
-        URL = "/api/v1/future_userinfo"
-        params = {
-            "api_key": self.__accessKey,
-        }
-        sign = buildMySign(params, self.__secretKey)
-        params['sign'] = sign
-
-        def handleBody(body):
-            data = json.loads(body)
-            # print(data)
-            if data.get('result', False):
-                return data.get('info', {}).get(coin)
+            assert 'code' in data
+            if data['code']:
+                return data
             else:
                 return None
 
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
 
+    def getOrders(self, pairs, tradeType, status, pageNum=1, pageSize=100):
+        URL = "/tradeOpen/v2/apiSelectEntrustV2Robot"
+        cipherText = getSign(self.__userId, self.__md5Key)
+        params = {
+            'coinName': pairs[0],
+            'payCoinName': pairs[1],
+            'type': tradeType,
+            'status': status,
+            'pageNum': pageNum,
+            'pageSize': pageSize,
+            'cipherText': cipherText,
+            'userId': self.__userId
+        }
+
+        def handleBody(body):
+            data = json.loads(body)
+            assert 'code' in data
+            if data['code']:
+                return data
+            else:
+                return None
+
+        return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
+
+    def getUserInfo(self):
+        URL = "/tradeOpen/v3/getUserCapitalInfoRobot"
+        cipherText = getSign(self.__userId, self.__md5Key)
+        params = {
+            'cipherText': cipherText,
+            'userId': self.__userId
+        }
+
+        def handleBody(body):
+            data = json.loads(body)
+            assert 'code' in data
+            if data['code']:
+                return data
+            else:
+                return None
+
+        return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
+
+sisty = Sisty('http://47.75.31.125/app', MD5Key, '222', '12345678')

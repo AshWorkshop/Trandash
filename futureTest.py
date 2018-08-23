@@ -4,73 +4,68 @@ from exchanges.okex.OKexService import okexFuture
 # from exchanges.gateio.GateIOService import gateio
 # from exchanges.bitfinex.BitfinexService import bitfinex
 from exchanges.sisty.sisty_key import MD5Key
+from exchanges.sisty.SistyService import sisty
 from requestUtils.request import get, post
 
 
-from twisted.internet import reactor
+from twisted.internet import reactor, task
 
 from cycle.cycle import Cycle
 
 import urllib
 import hashlib
 import time
+import json
 
 pairs = ('eth', 'usdt')
 
 start = time.time()
 
 def test():
-    url = 'http://47.75.31.125/app/'
-    resource = '/tradeOpen/v2/apiAddEntrustV2Robot'
-    headers = {
-        "Content-type": ["application/x-www-form-urlencoded"],
-        'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36'],
-    }
-    userId = str(222)
-    coinName = 'eth'
-    payCoinIdName = 'usdt'
-
-    data = userId + coinName + payCoinIdName + MD5Key
-
-    cipherText = hashlib.md5(data.encode("utf8")).hexdigest().upper()
-    params = {
-        'coinName': coinName,
-        'payCoinName': payCoinIdName,
-        'amount': 1,
-        'price': 265.46,
-        'type': '1',
-        'cipherText': cipherText,
-        'secret': '12345678',
-        'userId': userId
-    }
-    postdata = urllib.parse.urlencode(params)
-    
-
-    # print(url + resource + '?' + postdata)
-    d = post(
-        reactor,
-        url=url + resource,
-        headers=headers,
-        body=postdata
-    )
-
-
-
-    def cbPrint(result):
-        now = time.time()
-        print(now - start, result)
+    d = sisty.trade(pairs, 265.46, 1, 1)
+    def cbTest(result):
+        print(result)
         return result
 
-    def ebPrint(failure):
-        print(failure.getBriefTraceback())
-        reactor.stop()
+    def ebTest(failure):
+        print(failure)
+    d.addCallback(cbTest)
+    d.addErrback(ebTest)
 
+def fun():
+    print('Testing!')
+    data = json.loads('T')
+    return None
+
+def cbPrint(result):
+    print(result)
+    return result
+
+def cbPrint2(result):
+    print(result)
+    return result
+
+def ebPrint(failure):
+    print(failure)
+    return None
+
+def cycleTest():
+    d = task.deferLater(reactor, 1, fun)
     d.addCallback(cbPrint)
+    # d.addErrback(ebPrint)
+
+    return d
+
+def cycleTest2():
+    d = cycleTest()
+    d.addCallback(cbPrint2)
     d.addErrback(ebPrint)
 
     return d
 
-tickerCycle = Cycle(reactor, test, 'test')
-tickerCycle.start()
-# reactor.callWhenRunning(test)
+
+# cycle = Cycle(reactor, cycleTest2, 'test')
+# cycle.start()
+reactor.callWhenRunning(test)
+# print(cycle.getData())
 reactor.run()

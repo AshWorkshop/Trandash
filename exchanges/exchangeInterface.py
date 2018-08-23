@@ -23,7 +23,7 @@ class ExchangeInterface(ExchangeService):
     def getOrderBook(self, pairs: ('coin1', 'coin2')) -> 'orderBook data':
         """query order book info
         :param pairs: tuple consisting of 2 str, each str stands for a currency
-        
+
         :return: [
                      [[bidPrice, bidAmount], ...],
                      [[askPrice, askAmount], ...]
@@ -45,7 +45,7 @@ class ExchangeInterface(ExchangeService):
     def getBalances(self, coins: ['coin']) -> 'balances data':
         """query balances of multiple currencies
         :param coins: [coin1, coin2, ...], code of all the currencies to be queried
-        
+
         :return: {
                      'coin1': coin1Amount,
                      'coin2': coin2Amount,
