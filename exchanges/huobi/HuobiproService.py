@@ -91,7 +91,7 @@ class Huobipro(ExchangeService):
         URL = "/market/depth?"
 
         params={'symbol':self.getSymbol(pairs),
-                'type':'percent10'
+                'type':self.toGradeStr(grade)
         }
         postdata = urllib.parse.urlencode(params)
         url = self.__market_url + URL + postdata

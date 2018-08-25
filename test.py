@@ -3,6 +3,7 @@
 # from exchanges.huobi.HuobiproService import huobipro
 from exchanges.gateio.GateIOService import gateio
 from exchanges.bitfinex.BitfinexService import bitfinex
+from exchanges.sisty.SistyService import sisty
 
 
 from twisted.internet import reactor
@@ -16,7 +17,7 @@ pairs = ('eth', 'usdt')
 
 def test():
 
-    d = huobipro.getOrderHistory(pairs = pairs,start_date = "2018-8-1",end_date = "2018-8-19")
+    #d = huobipro.getOrderHistory(pairs = pairs,start_date = "2018-8-1",end_date = "2018-8-19")
     #d = okexFuture.cancle(('ltc', 'usdt'), orderId=1276330619587584)
     #d = huobipro.sell(coinPair=('eth','usdt'),price=293,amount=0.05)
     #d = huobipro.getBalances(['eth','usdt'])
@@ -31,6 +32,7 @@ def test():
     # d = bitfinex.sell(('eth','usdt'),291.09,0.2)
     # d = bitfinex.getOrder(pairs,15638551536)
     # d = bitfinex.getOrderHistory(pairs,1534608693)
+    d = sisty.getOrders(pairs,-1,-1)
 
 
     def cbPrint(result):

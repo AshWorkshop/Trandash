@@ -2,58 +2,79 @@ from robots.base import RobotBase, CycleSource, Action, LoopSource
 from twisted.internet import reactor, task
 from exchanges.gateio.GateIOService import gateio
 from exchanges.huobi.HuobiproService import huobipro
+from exchanges.sisty.SistyService import sisty
+from exchanges.bitfinex.BitfinexService import bitfinex
+
+import time
 
 BIDS,ASKS = range(2)
 PRICE,AMOUNT = range(2)
+
+POWER = [0.5,0.5]
 
 def counter():
     print('tick')
 
 def books(newState,exchange):
-    if newState[exchange]['orderbook'] is not None:
-        if newState['orderbooks'] == {}:
-            newState['orderbooks']['bids'] = newState[exchange]['orderbook'][BIDS]
-            newState['orderbooks']['asks'] = newState[exchange]['orderbook'][ASKS]
+
+    newState['orderbooks'] = {'bids':[],'asks':[]}
+    A,B = 0,0
+    maxLevelA = len(newState[exchange[0]]['orderbook'][BIDS])
+    maxLevelB = len(newState[exchange[1]]['orderbook'][BIDS])
+    while A < maxLevelA and B < maxLevelB:
+        orderA = newState[exchange[0]]['orderbook'][BIDS][A]
+        orderB = newState[exchange[1]]['orderbook'][BIDS][B]
+        if orderA[PRICE] == orderB[PRICE]:
+            orderA[AMOUNT] = orderA[AMOUNT]*POWER[0] + orderB[AMOUNT]*POWER[1]
+            newState['orderbooks']['bids'].append(orderA)
+            A += 1
+            B += 1
+        elif orderA[PRICE] > orderB[PRICE]:
+            newState['orderbooks']['bids'].append(orderA)
+            A += 1
         else:
-            for order in newState['gateio']['orderbook'][BIDS]:
-                level = 0
-                while level < len(newState['orderbooks']['asks']):
-                    if order[PRICE] == newState['orderbooks']['bids'][level][PRICE]:
-                        newState['orderbooks']['bids'][level][AMOUNT] = (order[AMOUNT]+newState['orderbooks']['bids'][level][AMOUNT])/2
-                        break
-                    elif level == len(newState['orderbooks']['asks']):
-                        newState['orderbooks']['bids'].append(order)
-                    else:
-                        level += 1
+            newState['orderbooks']['bids'].append(orderB)
+            B += 1
+    if maxLevelA >= maxLevelB:
+        while A < maxLevelA:
+            orderA = newState[exchange[0]]['orderbook'][BIDS][A]
+            newState['orderbooks']['bids'].append(orderA)
+            A += 1
+    elif maxLevelA < maxLevelB:
+        while B < maxLevelB:
+            orderB = newState[exchange[1]]['orderbook'][BIDS][B]
+            newState['orderbooks']['bids'].append(orderB)
+            B += 1
 
+    A,B = 0,0
+    maxLevelA = len(newState[exchange[0]]['orderbook'][ASKS])
+    maxLevelB = len(newState[exchange[1]]['orderbook'][ASKS])
+    while A < maxLevelA and B < maxLevelB:
+        orderA = newState[exchange[0]]['orderbook'][ASKS][A]
+        orderB = newState[exchange[1]]['orderbook'][ASKS][B]
+        if orderA[PRICE] == orderB[PRICE]:
+            orderA[AMOUNT] = orderA[AMOUNT]*POWER[0] + orderB[AMOUNT]*POWER[1]
+            newState['orderbooks']['asks'].append(orderA)
+            A += 1
+            B += 1
+        elif orderA[PRICE] < orderB[PRICE]:
+            newState['orderbooks']['asks'].append(orderA)
+            A += 1
+        else:
+            newState['orderbooks']['asks'].append(orderB)
+            B += 1
+    if maxLevelA >= maxLevelB:
+        while A < maxLevelA:
+            orderA = newState[exchange[0]]['orderbook'][BIDS][A]
+            newState['orderbooks']['asks'].append(orderA)
+            A += 1
+    elif maxLevelA < maxLevelB:
+        while B < maxLevelB:
+            orderB = newState[exchange[1]]['orderbook'][BIDS][B]
+            newState['orderbooks']['asks'].append(orderB)
+            B += 1
 
-
-            for order in newState['gateio']['orderbook'][ASKS]:
-                level = 0
-                while level < len(newState['orderbooks']['asks']):
-                    if order[PRICE] == newState['orderbooks']['asks'][level][PRICE]:
-                        newState['orderbooks']['asks'][level][AMOUNT] = (order[AMOUNT]+newState['orderbooks']['asks'][level][AMOUNT])/2
-                        break
-                    elif level == len(newState['orderbooks']['asks']):
-                        newState['orderbooks']['asks'].append(order)
-                    else:
-                        level += 1
-
-    newState['orderbooks']['bids'].sort(reverse=True)
-    newState['orderbooks']['asks'].sort()
-
-    #level = 0
-    #while level < len(newState['orderbooks']['bids']):
-    #    level += 1
-    #    if newState['orderbooks']['bids'][level-1] == newState['orderbooks']['bids'][level]:
-    #        orderA = newState['orderbooks']['bids'].pop(level)
-    #        newState['orderbooks']['bids'][level-1][AMOUNT] = (orderA[AMOUNT]+newState['orderbooks']['bids'][level-1][AMOUNT])/2
-
-    if len(newState['orderbooks']['bids']) >= 50:
-        newState['orderbooks']['asks'] = newState['orderbooks']['asks'][:50]
-    if len(newState['orderbooks']['bids']) >= 50:
-        newState['orderbooks']['bids'] = newState['orderbooks']['bids'][:50]
-
+    newState['orderbooks']['time'] = time.time()
     return newState
 
 def cutOrderBook(orderBook, capacity=1):
@@ -102,6 +123,10 @@ def adjustOrderBook(oldState, newState, capacity=1):
 class TestRobot(RobotBase):
     def launch(self, oldState, newState):
         actions = []
+
+        if 'orderbooks' in newState:
+            print(newState['orderbooks'])
+
         print(newState.get('count'))
         if newState['count'] == 10 and newState.get('tickSource') is not None:
             print('STOP LISTEN TICKEVENT')
@@ -118,33 +143,54 @@ class TestRobot(RobotBase):
         newState['gateio'] = dict()
         newState['gateio'].update(state.get('gateio', dict()))
         newState['gateio']['orderbook'] = dataRecivedEvent.data['data']
+
         if newState['gateio']['orderbook'] is not None:
+            newState['gateio']['time'] = time.time()
             for order in newState['gateio']['orderbook'][BIDS]:
                 order.append('gateio')
             for order in newState['gateio']['orderbook'][ASKS]:
                 order.append('gateio')
 
-            newState['orderbooks'] = state.get('orderbooks',dict())
-            #print(newState)
-            newState = books(newState,'gateio')
-
+            if 'huobipro' in newState:
+                if (time.time()-newState['huobipro']['time']) <= 300 and newState['huobipro']['orderbook'] is not None:
+                    newState = books(newState,['gateio','huobipro'])
 
         return newState
 
     def huobiproOrderBookHandler(self, state, dataRecivedEvent):
         newState = dict()
         newState.update(state)
+        newState['huobipro'] = dict()
         newState['huobipro'] = state.get('huobipro',dict())
         newState['huobipro']['orderbook'] = dataRecivedEvent.data['data']
-        if newState['gateio']['orderbook'] is not None:
+        if newState['huobipro']['orderbook'] is not None:
+            newState['huobipro']['time'] = time.time()
             for order in newState['huobipro']['orderbook'][BIDS]:
                 order.append('huobipro')
             for order in newState['huobipro']['orderbook'][ASKS]:
                 order.append('huobipro')
 
+            if 'gateio' in newState:
+                if (time.time()-newState['gateio']['time']) <= 300 and newState['gateio']['orderbook'] is not None:
+                    newState = books(newState,['huobipro','gateio'])
+
+        return newState
+
+    def bitfinexOrderBookHandler(self, state, dataRecivedEvent):
+        newState = dict()
+        newState.update(state)
+        newState['bitfinex'] = state.get('bitfinex',dict())
+        newState['bitfinex']['orderbook'] = dataRecivedEvent.data['data']
+        if newState['bitfinex']['orderbook'] is not None:
+            newState['bitfinex']['time'] = time.time()
+            for order in newState['bitfinex']['orderbook'][BIDS]:
+                order.append('bitfinex')
+            for order in newState['bitfinex']['orderbook'][ASKS]:
+                order.append('bitfinex')
+
             newState['orderbooks'] = state.get('orderbooks',dict())
             #print(newState)
-            newState = book(newState,'huobipro')
+            newState = books(newState,'bitfinex')
 
         return newState
 
@@ -176,6 +222,9 @@ gateioSource = CycleSource(reactor, gateio.getOrderBook, key='gateio', payload={
 huobiproSource = CycleSource(reactor,huobipro.getOrderBook, key='huobipro',payload={
     'args': [('eth','usdt')]
 })
+bitfinexSource = CycleSource(reactor,bitfinex.getOrderBook, key='bitfinex',payload={
+    'args': [('eth','usdt')]
+})
 
 tickSource = LoopSource(
     reactor,
@@ -194,6 +243,11 @@ robot.bind(
     robot.huobiproOrderBookHandler,
     'huobipro'
 )
+robot.bind(
+    'dataRecivedEvent',
+    robot.bitfinexOrderBookHandler,
+    'bitfinex'
+)
 
 robot.bind(
     'tickEvent',
@@ -205,6 +259,6 @@ robot.state.update({
 })
 
 gateioSource.start()
-#huobiproSource.start()
+huobiproSource.start()
 tickSource.start()
 reactor.run()
