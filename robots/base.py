@@ -7,17 +7,46 @@ class RobotBase(object):
     def __init__(self):
         self.state = dict()  # 机器人状态
         self.state['actions'] = list() # 机器人动作执行列表
-        self.sources = list()  # 事件源列表
         self.binds = list()  # 事件绑定列表
-
         self.bind('actionDoneEvent', self._actionDoneHandler)
+        self.bind('systemEvent', self.systemEventHandler)
+        self.doLastWork = False
+        self.lastWork = None
+        self.lastWorkArgs = None
+        self.lastWorkKwargs = None
 
     def listen(self, sources):
-        assert isinstance(sources, list)
-        
-        for source in sources:
-            self.sources.append(source)
-            source.addListener(self)
+        if isinstance(sources, list):
+            for source in sources:
+                source.addListener(self)
+            
+            self.activeSystemEvent(
+                'LISTEN_STARTED',
+                info={
+                    'source': None,
+                    'sources': sources
+                }
+            )
+
+        else:
+            sources.addListener(self)
+            self.activeSystemEvent(
+                'LISTEN_STARTED',
+                info={
+                    'source': sources,
+                    'sources': None
+                }
+            )
+
+    def stopListen(self, source):
+        if source is not None:
+            if source.removeListener(self):
+                self.activeSystemEvent(
+                    'LISTEN_STOPPED',
+                    info={
+                        'source': source
+                    }
+                )
 
     def bind(self, eventType, handler, key=None):
         _bind = {
@@ -27,9 +56,38 @@ class RobotBase(object):
         }
         self.binds.append(_bind)
 
+    def _setLastWork(self, func, *args, **kwargs):
+        self.lastWork = func
+        self.lastWorkArgs = args
+        self.lastWorkKwargs = kwargs
+        self.doLastWork = True
+    
+    def _resetLastWork(self):
+        self.lastWork = None
+        self.lastWorkArgs = None
+        self.lastWorkKwargs = None
+        self.doLastWork = False
+
+    def _doLastWork(self):
+        if self.doLastWork:
+            self.doLastWork = False
+            self.lastWork(*self.lastWorkArgs, **self.lastWorkKwargs)
+
+    def activeEvent(self, event):  # 以同步的方式触发事件
+        print(event)
+        self._setLastWork(self.cbListen, event)
+
+    def activeSystemEvent(self, sysEventType, info={}):
+        return self.activeEvent(Event(
+            'systemEvent',
+            data={
+                'type': sysEventType,
+                'info': info
+            }
+        ))
 
     # IListener
-    def cbListen(self, event):
+    def cbListen(self, event):  # 以异步的方式触发事件
         self.dispatch(event)
 
         return event
@@ -71,6 +129,8 @@ class RobotBase(object):
             action.addListener(self)
             action.start()
             self.state['actions'].append(action)
+
+        self._doLastWork()
         
         
     def _actionDoneHandler(self, state, actionDoneEvent):
@@ -82,6 +142,12 @@ class RobotBase(object):
                 newState['actions'].append(action)
         
         return newState
+
+    def systemEventHandler(self, state, systemEvent):
+        newState = dict()
+        newState.update(state)
+        return newState
+
 
 
 class Event(object):
@@ -97,7 +163,10 @@ class Event(object):
 
 class ISource(object):
 
-    def addListener(self, listener, key):
+    def addListener(self, listener):
+        pass
+
+    def removeListener(self, listener):
         pass
 
     def cbEvent(self, data):
@@ -134,6 +203,12 @@ class Action(object):
 
     def addListener(self, listener):
         self.listeners.append(listener)
+
+    def removeListener(self, listener):
+        if listener in self.listeners:
+            self.listeners.remove(listener)
+            return True
+        return False
 
     def cbEvent(self, data):
         _data = dict()
@@ -211,6 +286,12 @@ class CycleSource(object):
     def addListener(self, listener):
         self.listeners.append(listener)
 
+    def removeListener(self, listener):
+        if listener in self.listeners:
+            self.listeners.remove(listener)
+            return True
+        return False
+
     def cbEvent(self, data):
         _data = dict()
         _data['data'] = data
@@ -269,6 +350,12 @@ class LoopSource(object):
 
     def addListener(self, listener):
         self.listeners.append(listener)
+
+    def removeListener(self, listener):
+        if listener in self.listeners:
+            self.listeners.remove(listener)
+            return True
+        return False
 
     def cbEvent(self, data):
         _data = dict()
