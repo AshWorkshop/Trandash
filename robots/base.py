@@ -100,9 +100,10 @@ class RobotBase(object):
     def dispatch(self, event):
         _handlers = list()
 
-        for action in self.state['actions']:
-            if action.wait:
-                return
+        if event.eventType == 'dataRecivedEvent' or event.eventType == 'dataRecivedFailureEvent':
+            for action in self.state['actions']:
+                if action.wait:
+                    return
 
         for _bind in self.binds:
             if _bind['eventType'] == event.eventType:
