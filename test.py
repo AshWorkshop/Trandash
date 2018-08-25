@@ -32,7 +32,7 @@ def test():
     # d = bitfinex.sell(('eth','usdt'),291.09,0.2)
     # d = bitfinex.getOrder(pairs,15638551536)
     # d = bitfinex.getOrderHistory(pairs,1534608693)
-    d = sisty.getOrders(pairs)
+    d = sisty.getOrders(pairs,-1,-1)
 
 
     def cbPrint(result):

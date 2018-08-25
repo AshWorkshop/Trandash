@@ -10,51 +10,120 @@ import time
 BIDS,ASKS = range(2)
 PRICE,AMOUNT = range(2)
 
-power = [0.5,0.5]
+POWER = [0.5,0.5]
 
 def counter():
     print('tick')
 
 def books(newState,exchange):
 
-    newState['orderbooks'] = dict()
-    newState['orderbooks']['bids'] = newState[exchange[0]]['orderbook'][BIDS]
-    newState['orderbooks']['asks'] = newState[exchange[0]]['orderbook'][ASKS]
-    maxLevel = len(newState['orderbooks']['bids'])
+    newState['orderbooks'] = {'bids':[],'asks':[]}
+    A,B = 0,0
+    maxLevelA = len(newState[exchange[0]]['orderbook'][BIDS])
+    maxLevelB = len(newState[exchange[1]]['orderbook'][BIDS])
+    while A < maxLevelA and B < maxLevelB:
+        orderA = newState[exchange[0]]['orderbook'][BIDS][A]
+        orderB = newState[exchange[1]]['orderbook'][BIDS][B]
+        if orderA[PRICE] == orderB[PRICE]:
+            orderA[AMOUNT] = orderA[AMOUNT]*POWER[0] + orderB[AMOUNT]*POWER[1]
+            newState['orderbooks']['bids'].append(orderA)
+            A += 1
+            B += 1
+        elif orderA[PRICE] > orderB[PRICE]:
+            newState['orderbooks']['bids'].append(orderA)
+            A += 1
+        else:
+            newState['orderbooks']['bids'].append(orderB)
+            B += 1
+    if maxLevelA >= maxLevelB:
+        while A < maxLevelA:
+            orderA = newState[exchange[0]]['orderbook'][BIDS][A]
+            newState['orderbooks']['bids'].append(orderA)
+            A += 1
+    elif maxLevelA < maxLevelB:
+        while B < maxLevelB:
+            orderB = newState[exchange[1]]['orderbook'][BIDS][B]
+            newState['orderbooks']['bids'].append(orderB)
+            B += 1
 
-    for order in newState[exchange[1]]['orderbook'][BIDS]:
-        level = 0
-        while level < maxLevel:
-            if order[PRICE] == newState['orderbooks']['bids'][level][PRICE]:
-                newState['orderbooks']['bids'][level][AMOUNT] = order[AMOUNT]*power[0]+newState['orderbooks']['bids'][level][AMOUNT]*power[1]
-                break
-            elif level == maxLevel:
-                newState['orderbooks']['bids'].append(order)
-            else:
-                level += 1
+    A,B = 0,0
+    maxLevelA = len(newState[exchange[0]]['orderbook'][ASKS])
+    maxLevelB = len(newState[exchange[1]]['orderbook'][ASKS])
+    while A < maxLevelA and B < maxLevelB:
+        orderA = newState[exchange[0]]['orderbook'][ASKS][A]
+        orderB = newState[exchange[1]]['orderbook'][ASKS][B]
+        if orderA[PRICE] == orderB[PRICE]:
+            orderA[AMOUNT] = orderA[AMOUNT]*POWER[0] + orderB[AMOUNT]*POWER[1]
+            newState['orderbooks']['asks'].append(orderA)
+            A += 1
+            B += 1
+        elif orderA[PRICE] < orderB[PRICE]:
+            newState['orderbooks']['asks'].append(orderA)
+            A += 1
+        else:
+            newState['orderbooks']['asks'].append(orderB)
+            B += 1
+    if maxLevelA >= maxLevelB:
+        while A < maxLevelA:
+            orderA = newState[exchange[0]]['orderbook'][BIDS][A]
+            newState['orderbooks']['asks'].append(orderA)
+            A += 1
+    elif maxLevelA < maxLevelB:
+        while B < maxLevelB:
+            orderB = newState[exchange[1]]['orderbook'][BIDS][B]
+            newState['orderbooks']['asks'].append(orderB)
+            B += 1
 
-
-    maxLevel = len(newState['orderbooks']['asks'])
-    for order in newState[exchange[1]]['orderbook'][ASKS]:
-        level = 0
-        while level < maxLevel:
-            if order[PRICE] == newState['orderbooks']['asks'][level][PRICE]:
-                newState['orderbooks']['asks'][level][AMOUNT] = (order[AMOUNT]+newState['orderbooks']['asks'][level][AMOUNT])/2
-                break
-            elif level == maxLevel:
-                newState['orderbooks']['asks'].append(order)
-            else:
-                level += 1
-
-    newState['orderbooks']['bids'].sort(reverse=True)
-    newState['orderbooks']['asks'].sort()
     newState['orderbooks']['time'] = time.time()
     return newState
+
+def cutOrderBook(orderBook, capacity=1):
+    #orderBook: one of bids or asks (type: list)
+    #return: cuttedOrderBook, also one of  bids or asks (list of: [price1, capacity],...,[priceN, remainAmount])
+    cuttedOrderBook = list()
+
+    for data in orderBook:
+        remainAmount = data[AMOUNT]
+        while remainAmount >= capacity:
+            remainAmount -= capacity
+            cuttedOrderBook.append([data[PRICE], capacity])
+        if remainAmount != 0:
+            cuttedOrderBook.append([data[PRICE], remainAmount])
+
+    return cuttedOrderBook
+
+def adjustOrderBook(oldState, newState, capacity=1):
+    #思路1：将目标深度表按照capacity分割成小份的表，(用cutOrderBook()函数)
+    #直接拿这份表和old表对比，
+    #存在价格一样就不管，S中没有的价格就添加（挂单），S中有而目标深度小表中没有的价格就撤单
+    #return: adjustmentDict ; eg:
+    # { 'bids': [(276, 1), (276, 1), (274, 1), (274, 1), (274,1), ....], 
+    #   'asks':[(278, 1), (278, 0.5), ...], 
+    #   'cancle':[1357684 (# orderId), 1357898, ...]}
+    adjustmentDict = dict()
+    adjustmentDict['bids'] = list()
+    adjustmentDict['asks'] = list()
+    adjustmentDict['cancle'] = list()
+    nBids = newState['orderbooks']['bids']
+    cuttedBids = cutOrderBook(nBids)
+    nAsks = newState['orderbooks']['asks']
+    cuttedAsks = cutOrderBook(nAsks)
+    for bid in oldState['sisty']['orderbook']['bids']:
+        for cBid in cuttedBids:
+            if bid[PRICE] == cBid[PRICE]:
+                pass
+            elif bid[PRICE] > cBid[PRICE]:
+                orderId = 0 # TO DO: how to get orderId?
+                adjustmentDict['cancle'].append(orderId)
+            elif bid[PRICE] < cBid[PRICE]:
+                adjustmentDict['bids'].append([cBid[PRICE], cBid[AMOUNT]])
+
 
 
 class TestRobot(RobotBase):
     def launch(self, oldState, newState):
         actions = []
+
         if 'orderbooks' in newState:
             print(newState['orderbooks'])
 
@@ -83,7 +152,7 @@ class TestRobot(RobotBase):
                 order.append('gateio')
 
             if 'huobipro' in newState:
-                if time.time()-newState['huobipro']['time'] <= 300 and newState['huobipro']['orderbook'] is not None:
+                if (time.time()-newState['huobipro']['time']) <= 300 and newState['huobipro']['orderbook'] is not None:
                     newState = books(newState,['gateio','huobipro'])
 
         return newState
@@ -91,6 +160,7 @@ class TestRobot(RobotBase):
     def huobiproOrderBookHandler(self, state, dataRecivedEvent):
         newState = dict()
         newState.update(state)
+        newState['huobipro'] = dict()
         newState['huobipro'] = state.get('huobipro',dict())
         newState['huobipro']['orderbook'] = dataRecivedEvent.data['data']
         if newState['huobipro']['orderbook'] is not None:
@@ -101,7 +171,7 @@ class TestRobot(RobotBase):
                 order.append('huobipro')
 
             if 'gateio' in newState:
-                if time.time()-newState['gateio']['time'] <= 300 and newState['gateio']['orderbook'] is not None:
+                if (time.time()-newState['gateio']['time']) <= 300 and newState['gateio']['orderbook'] is not None:
                     newState = books(newState,['huobipro','gateio'])
 
         return newState
