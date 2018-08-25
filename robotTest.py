@@ -56,6 +56,48 @@ def books(newState,exchange):
 
     return newState
 
+def cutOrderBook(orderBook, capacity=1):
+    #orderBook: one of bids or asks (type: list)
+    #return: cuttedOrderBook, also one of  bids or asks (list of: [price1, capacity],...,[priceN, remainAmount])
+    cuttedOrderBook = list()
+
+    for data in orderBook:
+        remainAmount = data[AMOUNT]
+        while remainAmount >= capacity:
+            remainAmount -= capacity
+            cuttedOrderBook.append([data[PRICE], capacity])
+        if remainAmount != 0:
+            cuttedOrderBook.append([data[PRICE], remainAmount])
+
+    return cuttedOrderBook
+
+def adjustOrderBook(oldState, newState, capacity=1):
+    #思路1：将目标深度表按照capacity分割成小份的表，(用cutOrderBook()函数)
+    #直接拿这份表和old表对比，
+    #存在价格一样就不管，S中没有的价格就添加（挂单），S中有而目标深度小表中没有的价格就撤单
+    #return: adjustmentDict ; eg:
+    # { 'bids': [(276, 1), (276, 1), (274, 1), (274, 1), (274,1), ....], 
+    #   'asks':[(278, 1), (278, 0.5), ...], 
+    #   'cancle':[1357684 (# orderId), 1357898, ...]}
+    adjustmentDict = dict()
+    adjustmentDict['bids'] = list()
+    adjustmentDict['asks'] = list()
+    adjustmentDict['cancle'] = list()
+    nBids = newState['orderbooks']['bids']
+    cuttedBids = cutOrderBook(nBids)
+    nAsks = newState['orderbooks']['asks']
+    cuttedAsks = cutOrderBook(nAsks)
+    for bid in oldState['sisty']['orderbook']['bids']:
+        for cBid in cuttedBids:
+            if bid[PRICE] == cBid[PRICE]:
+                pass
+            elif bid[PRICE] > cBid[PRICE]:
+                orderId = 0 # TO DO: how to get orderId?
+                adjustmentDict['cancle'].append(orderId)
+            elif bid[PRICE] < cBid[PRICE]:
+                adjustmentDict['bids'].append([cBid[PRICE], cBid[AMOUNT]])
+
+
 
 class TestRobot(RobotBase):
     def launch(self, oldState, newState):
@@ -93,7 +135,7 @@ class TestRobot(RobotBase):
         newState = dict()
         newState.update(state)
         newState['huobipro'] = state.get('huobipro',dict())
-        newState['huobipro']['orderBook'] = dataRecivedEvent.data['data']
+        newState['huobipro']['orderbook'] = dataRecivedEvent.data['data']
         if newState['gateio']['orderbook'] is not None:
             for order in newState['huobipro']['orderbook'][BIDS]:
                 order.append('huobipro')
