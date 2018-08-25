@@ -22,7 +22,7 @@ pairs = ('eth', 'usdt')
 start = time.time()
 
 def test():
-    d = sisty.trade(pairs, 265.46, 1, 1)
+    d = sisty.trade(pairs, 265.46, 1, 2)
     def cbTest(result):
         print(result)
         return result

@@ -4,7 +4,8 @@ import json
 from twisted.web.client import readBody
 from twisted.web.client import BrowserLikePolicyForHTTPS
 from twisted.web.http_headers import Headers
-from twisted.web.client import Agent
+from twisted.web.client import Agent, ProxyAgent
+from twisted.internet.endpoints import TCP4ClientEndpoint
 from requestUtils.agent import TunnelingAgent
 from requestUtils.bytesprod import BytesProducer
 import settings
@@ -39,7 +40,11 @@ def get(reactor, url, headers={}, body=None):
     if ssl == 'https' and  settings.USE_PROXY:
         agent = TunnelingAgent(reactor, (settings.PROXY_ADDRESS, settings.PROXY_PORT, None), BrowserLikePolicyForHTTPS())
     else:
-        agent = Agent(reactor)
+        if settings.USE_PROXY:
+            endpoint = TCP4ClientEndpoint(reactor, settings.PROXY_ADDRESS, settings.PROXY_PORT)
+            agent = ProxyAgent(endpoint)
+        else:
+            agent = Agent(reactor)
     url = bytes(str(url), encoding="utf8")
     _body = None
     if body:
@@ -59,7 +64,11 @@ def post(reactor, url, headers={}, body=None):
     if ssl == 'https' and settings.USE_PROXY:
         agent = TunnelingAgent(reactor, (settings.PROXY_ADDRESS, settings.PROXY_PORT, None), BrowserLikePolicyForHTTPS())
     else:
-        agent = Agent(reactor)
+        if settings.USE_PROXY:
+            endpoint = TCP4ClientEndpoint(reactor, settings.PROXY_ADDRESS, settings.PROXY_PORT)
+            agent = ProxyAgent(endpoint)
+        else:
+            agent = Agent(reactor)
     url = bytes(str(url), encoding="utf8")
     _body = None
     if body:
