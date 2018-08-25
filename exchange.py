@@ -71,7 +71,7 @@ class OrderBooks(object):
         result = self.slots.copy()
         return result
 
-def verifyExchanges(exchangesData, FEE=FEE):
+def verifyExchanges(exchangesData, FEE):
     # index enumeration for taking buy/sell data from exchange tuple
     BUY, SELL = range(2)
 
@@ -113,14 +113,17 @@ def verifyExchanges(exchangesData, FEE=FEE):
 
             # print(level)
             amount = min(buyEx['avg'][BUY][level][AMOUNT], sellEx['avg'][SELL][level][AMOUNT])
+            buyOne = float(buyEx['actual'][BUY][0][PRICE])
             buyPrice = float(buyEx['actual'][BUY][level][PRICE])
+            sellOne = float(sellEx['actual'][SELL][0][PRICE])
             sellPrice = float(sellEx['actual'][SELL][level][PRICE])
 
-            validExPairs.append( ((buyExName, sellExName), (buyPrice, sellPrice), (level, amount)) )
+
+            validExPairs.append( ((buyExName, sellExName), (buyOne, sellOne), (level, amount)) )
 
     return validExPairs
 
- def verifyExchangesFix(exchangesData, FEE=FEE):
+def verifyExchangesFix(exchangesData, FEE=FEE):
     # index enumeration for taking buy/sell data from exchange tuple
     # return: list of [( (buyExName, sellExName), (buyPrice, sellPrice), (level, amount) ) ,...]
     # return: list of ( (下买单的交易所名，下卖单的交易所名), (下买单的价格，下卖单的价格), (深度，数量) )

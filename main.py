@@ -2,6 +2,7 @@
 
 import json
 import time
+import datetime
 
 from twisted.internet import defer, task
 from twisted.internet import reactor
@@ -18,17 +19,24 @@ from exchange import OrderBooks
 from cycle.cycle import Cycle
 from twisted.python.failure import Failure
 
+startTime = int(time.time())
 count = 0
 coinPair = ('eth', 'usdt')
-orderBooks = OrderBooks(['gateio', 'bitfinex'], coinPair)
+orderBooks = OrderBooks(['gateio', 'huobipro'], coinPair)
 SELL,BUY = range(2)
 EXCHANGE = {
     'huobipro': huobipro,
     'gateio': gateio,
     'bitfinex': bitfinex
 }
+FEE = {
+    'huobipro': [0.998, 1.002],
+    'gateio': [0.998, 1.002],
+    'bitfinex': [0.998, 1.002],
+    'virtual': [1, 1],
+}
 profit = 0.0
-submit = 1
+traded_count = 1
 sells = 1
 buys = 1
 pairsDone = 1
@@ -96,7 +104,7 @@ def cbRun():
     global count
     global state
 
-    global submit
+    global traded_count
     global pairsDone
     global sell
     global buy
@@ -109,9 +117,9 @@ def cbRun():
         "count":count,
         "pairsDone":[pairsDone,pairsDone/count],
         "balance":[balance,balance/pairsDone],
-        "submit":[submit,submit/pairsDone,submit/balance],
-        #"sell":[sells,sells/submit],
-        #"buy":[buys,buys/submit]
+        "traded_count":[traded_count,traded_count/pairsDone,traded_count/balance],
+        "sell":[sells,sells/traded_count],
+        "buy":[buys,buys/traded_count]
     }
     print(mark)
 
@@ -134,15 +142,13 @@ def cbRun():
         #print(GateioBalancesCycle.getData())
 
         if hasData:
-            exchangePairs = verifyExchanges(exchangeState)
+            exchangePairs = verifyExchanges(exchangeState,FEE)
             print(count, exchangePairs)
-            pairsDone += 1
+
             if exchangePairs:
+                pairsDone += 1
                 state = "GO"
-                if exchangePairs[0][2][1] <= 0.005:
-                    amount = exchangePairs[0][2][1]
-                else:
-                    amount = 0.005
+                amount = exchangePairs[0][2][1]*0.1
                 exBuy = EXCHANGE[exchangePairs[0][0][BUY]]
                 priceBuy  = exchangePairs[0][1][BUY]
                 #print(exchange.getBalance('usdt'),price,amount)
@@ -154,11 +160,12 @@ def cbRun():
                 balanceSell = BALANCES[exchangePairs[0][0][SELL]].getData()
                 balanceBuy = BALANCES[exchangePairs[0][0][BUY]].getData()
 
-                #print(balanceSell,balanceBuy)
+                print(balanceSell,balanceBuy)
                 if isinstance(balanceSell,dict) and isinstance(balanceBuy,dict):
                     balance += 1
                     exBalanceSell = balanceSell[coinPair[SELL]]
                     exBalanceBuy = balanceBuy[coinPair[BUY]]
+                    usdtAmount = balanceBuy[coinPair[BUY]]+balanceSell[coinPair[BUY]]
 
                 #print(isinstance(exBalanceSell,float),isinstance(exBalanceBuy,float))
                 #print("SELL",exBalanceSell,"BUY",exBalanceBuy)
@@ -166,9 +173,15 @@ def cbRun():
 
                 if isinstance(exBalanceSell,float) and isinstance(exBalanceBuy,float):
                     if amount <= exBalanceSell and amount*priceBuy <= exBalanceBuy:
-                        #reactor.callWhenRunning(buy,exchange=exBuy,coinPair=orderBooks.pairs,price=priceBuy,amount=amount)
-                        #reactor.callWhenRunning(sell,exchange=exSell,coinPair=orderBooks.pairs,price=priceSell,amount=amount)
-                        submit += 1
+                        amount = amount*0.01
+                        reactor.callWhenRunning(buy,exchange=exBuy,coinPair=orderBooks.pairs,price=priceBuy,amount=amount)
+                        reactor.callWhenRunning(sell,exchange=exSell,coinPair=orderBooks.pairs,price=priceSell,amount=amount)
+                        traded_count += 1
+                        pairsName = orderBooks.pairs
+                        currentTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')#现在
+                        staFile = open('gatoio' + 'huobipro' + str(startTime), 'a+')
+                        staFile.write("%d, pairsName:%s, currentTime:%s, usdtAmount:%f, traded_count:%d\n" % (count, pairsName,currentTime, usdtAmount, traded_count))
+                        staFile.close()
                     else:
                         state = "GO"
                         print("Not enough coin/money")

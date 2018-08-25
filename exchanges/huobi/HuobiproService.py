@@ -91,7 +91,7 @@ class Huobipro(ExchangeService):
         URL = "/market/depth?"
 
         params={'symbol':self.getSymbol(pairs),
-                'type':self.toGradeStr(grade),
+                'type':'percent10'
         }
         postdata = urllib.parse.urlencode(params)
         url = self.__market_url + URL + postdata
@@ -106,11 +106,12 @@ class Huobipro(ExchangeService):
             #print(body)
             data = json.loads(body)
             #print(data)
-            bids = data['tick']['bids']
-            asks = data['tick']['asks']
+            bids = data['tick']['bids'] #买单
+            asks = data['tick']['asks'] #卖单
             return [bids, asks]
 
         d.addCallback(handleBody)
+        d.addErrback(handleBody)
         #print(b)
         return d
 
