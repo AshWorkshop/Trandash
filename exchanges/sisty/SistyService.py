@@ -113,13 +113,13 @@ class Sisty(ExchangeService):
         URL = "/tradeOpen/v2/apiAddEntrustV2Robot"
 
         cipherText = getSign(self.__userId, pairs[0], pairs[1], self.__md5Key)
-
+        # print(cipherText, self.__md5Key)
         params = {
             'coinName': pairs[0],
             'payCoinName': pairs[1],
             'amount': amount,
             'price': price,
-            'type': tradeType, # 0: sell, 1: buy
+            'type': tradeType, # 1: buy, 2: sell
             'cipherText': cipherText,
             'secret': self.__secret,
             'userId': self.__userId
