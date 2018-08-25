@@ -13,7 +13,7 @@ from twisted.python.failure import Failure
 
 
 from utils import calcMean, getLevel
-from exchange import calcVirtualOrderBooks, verifyExchanges
+from exchange import calcVirtualOrderBooks, verifyExchanges, verifyExchangesOne
 from exchanges.gateio.GateIOService import gateio
 from exchanges.bitfinex.BitfinexService import bitfinex
 from exchanges.huobi.HuobiproService import huobipro
@@ -185,7 +185,12 @@ def cbRunPart(orderBooks, orderBookA, orderBookB):
             if len(bids) == 0:
                 hasData = False
                 break
-            A = [bids, asks]
+            
+            bid = bids[0]
+            ask = asks[0]
+            A = [bid, ask]
+
+            # A = [bids, asks]
 
         '''get orderBookB'''
         B = []
@@ -194,8 +199,13 @@ def cbRunPart(orderBooks, orderBookA, orderBookB):
             slot.setOrderBook()
             if len(bids) == 0:
                 hasData = False
-                break   
-            B = [bids, asks] 
+                break 
+            
+            bid = bids[0]
+            ask = asks[0]
+            B = [bid, ask]
+
+            # B = [bids, asks] 
             # print(B)
 
         '''get origin orderBook'''
@@ -206,10 +216,17 @@ def cbRunPart(orderBooks, orderBookA, orderBookB):
             if len(bids) == 0:
                 hasData = False
                 break
-            avgBids = calcMean(bids)
-            avgAsks = calcMean(asks)
 
-            exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bids, asks], [avgBids, avgAsks]
+            bid = bids[0]
+            ask = asks[0]
+            avgBid = bid
+            avgAsk = ask
+
+            # avgBids = calcMean(bids)
+            # avgAsks = calcMean(asks)
+            
+            exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bid, ask], [avgBid, avgAsk]
+            # exchangeState[exchange]['actual'], exchangeState[exchange]['avg'] = [bids, asks], [avgBids, avgAsks]
 
         if hasData:
             state = "WAIT"
@@ -219,18 +236,24 @@ def cbRunPart(orderBooks, orderBookA, orderBookB):
             print('midAmount in virtualOrderBooks:')  
             print(count, virtualOrderBooks[1])
             vBUY, vSELL = range(2)
-            virBids = virtualOrderBooks[0][vBUY]
-            virAsks = virtualOrderBooks[0][vSELL]
+            virBid = virtualOrderBooks[0][vBUY][0]
+            virAsk = virtualOrderBooks[0][vSELL][0]
+            # virBids = virtualOrderBooks[0][vBUY]
+            # virAsks = virtualOrderBooks[0][vSELL]
             # print(len(virBids))
             # print(len(virAsks))
             # print(len(B[0]))
-            avgVirBids = calcMean(virBids)
-            avgVirAsks = calcMean(virAsks)
+            avgVirBid = virBid
+            avgVirAsk = virAsk          
+            # avgVirBids = calcMean(virBids)
+            # avgVirAsks = calcMean(virAsks)
             exchangeState['virtual'] = dict()
-            exchangeState['virtual']['actual'], exchangeState['virtual']['avg'] = [virBids, virAsks], [avgVirBids, avgVirAsks]
+
+            exchangeState['virtual']['actual'], exchangeState['virtual']['avg'] = [virBid, virAsk], [avgVirBid, avgVirAsk]
+            # exchangeState['virtual']['actual'], exchangeState['virtual']['avg'] = [virBids, virAsks], [avgVirBids, avgVirAsks]
             
             '''get validExPairs '''
-            exchangePairs = verifyExchanges(exchangeState,FEE=FEE)
+            exchangePairs = verifyExchangesOne(exchangeState,FEE=FEE)
             print('validExPairs:')
             print(count, exchangePairs)
             
