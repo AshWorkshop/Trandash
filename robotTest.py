@@ -260,18 +260,19 @@ class TestRobot(RobotBase):
         newState['sisty']['orderbook'] = dict()
         newState['sisty']['orderbook']['bids'] = list()
         newState['sisty']['orderbook']['asks'] = list()
-        for order in newState['sisty']['orders']['content']['datas']:
-            if order['status'] == 1 or order['status'] == 2:
-                if order['type'] == 1:
-                    price = order['entrustprice']
-                    amount = order['surplusamount']
-                    orderId = order['id']
-                    newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
-                elif order['type'] == 2:
-                    price = order['entrustprice']
-                    amount = order['surplusamount']
-                    orderId = order['id']
-                    newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
+        if newState['sisty']['orders'] is not None:
+            for order in newState['sisty']['orders']['content']['datas']:
+                if order['status'] == 1 or order['status'] == 2:
+                    if order['type'] == 1:
+                        price = order['entrustprice']
+                        amount = order['surplusamount']
+                        orderId = order['id']
+                        newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
+                    elif order['type'] == 2:
+                        price = order['entrustprice']
+                        amount = order['surplusamount']
+                        orderId = order['id']
+                        newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
         return newState
 
     def tickHandler(self, state, tickEvent):
