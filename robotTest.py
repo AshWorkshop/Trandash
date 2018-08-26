@@ -102,6 +102,10 @@ class TestRobot(RobotBase):
         actions = []
         #print(newState)
 
+        for action in newState['actions']:
+            if action.wait:
+                return []
+
         #订单管理
         if 'sisty' in newState and 'sisty' in oldState:
 
@@ -144,11 +148,11 @@ class TestRobot(RobotBase):
 
                     if exchange is not None and type is not None and price is not None and amount is not None:
                         if type == "buy":
-                            action = Action(reactor,EXCHANGES[exchange].sell,key=exchange+"sell",payload={
+                            action = Action(reactor,EXCHANGES[exchange].sell,key=exchange+"sell", wait=True,payload={
                                 "args":[coinPairs,price,amount]
                             })
                         if type == "sell":
-                            action = Action(reactor,EXCHANGES[exchange].buy,key=exchange+"buy",payload={
+                            action = Action(reactor,EXCHANGES[exchange].buy,key=exchange+"buy", wait=True,payload={
                                 "args":[coinPairs,price,amount]
                             })
                         actions.append(action)
@@ -160,7 +164,7 @@ class TestRobot(RobotBase):
                 for bid in adjustmentDict['bids']:
                     price = bid[PRICE]
                     amount = bid[AMOUNT]
-                    action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"buy",wait=False,payload={
+                    action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"buy",wait=True,payload={
                                         "args":[coinPairs,price,amount,1]
                                     })
                     actions.append(action)
@@ -169,14 +173,14 @@ class TestRobot(RobotBase):
                 for ask in adjustmentDict['asks']:
                     price = ask[PRICE]
                     amount = ask[AMOUNT]
-                    action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"sell",wait=False,payload={
+                    action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"sell",wait=True,payload={
                                         "args":[coinPairs,price,amount,2]
                                     })
                     actions.append(action)
 
             if adjustmentDict['cancle'] is not None:
                 for cancleId in adjustmentDict['cancle']:
-                    action = Action(reactor,EXCHANGES[exchange].cancle,key=exchange+"cancle",wait=False,payload={
+                    action = Action(reactor,EXCHANGES[exchange].cancle,key=exchange+"cancle",wait=True,payload={
                                         "args":[coinPairs,cancleId]
                                     })
                     actions.append(action)

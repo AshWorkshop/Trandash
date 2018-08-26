@@ -100,11 +100,6 @@ class RobotBase(object):
     def dispatch(self, event):
         _handlers = list()
 
-        if event.eventType == 'dataRecivedEvent' or event.eventType == 'dataRecivedFailureEvent':
-            for action in self.state['actions']:
-                if action.wait:
-                    return
-
         for _bind in self.binds:
             if _bind['eventType'] == event.eventType:
                 if _bind['key'] is None or _bind['key'] == event.key:
@@ -141,7 +136,7 @@ class RobotBase(object):
         for action in state['actions']:
             if action != actionDoneEvent.data['action']:
                 newState['actions'].append(action)
-        
+        print('undone actions:', len(newState['actions']))
         return newState
 
     def systemEventHandler(self, state, systemEvent):
@@ -159,7 +154,7 @@ class Event(object):
         self.data = data
 
     def __str__(self):
-        return "Event(eventType: %s, data: %s, key: %s)" % (self.eventType, self.data, self.key)
+        return "Event(eventType: %s, key: %s)" % (self.eventType, self.key)
 
 
 class ISource(object):
