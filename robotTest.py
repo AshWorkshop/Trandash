@@ -365,7 +365,7 @@ class TestRobot(RobotBase):
                         break
                     print(orderB)
                     print(orderA)
-                    staFile = open('sistyTest')
+                    staFile = open('sistyTest,orderManaged')
                     staFile.write("orderA:%d ,\n orderB:%d" % (orderA,orderB))
                     staFile.close()
                     exchange = None
