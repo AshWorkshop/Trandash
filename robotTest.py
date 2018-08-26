@@ -212,10 +212,12 @@ def adjustOrderBook(newState, capacity=1):
     处理撤单
     TO DO: sort cancleBidsList to let it: price from high to low
     """ 
-    mini = 0
+    # mini = 0
     for i in range(len(cancleBidsList)):
         decimal = cancleBidsList[i][AMOUNT] % capacity
         remainAmount = cancleBidsList[i][AMOUNT]
+        print("remainAmount:")
+        print(remainAmount)
         if decimal == 0:
             oBids = oBids 
             """            
@@ -230,18 +232,20 @@ def adjustOrderBook(newState, capacity=1):
             1.price from high to low
             2.amount from low to high
             """
-        for j in range(mini, len(oBids)):
+        for j in range(len(oBids)):
             if oBids[j][PRICE] == cancleBidsList[i][PRICE]:
+                print("inner remainAmount:")
+                print(remainAmount)
                 if remainAmount > 0:
                     orderId = oBids[j][ORDERID] 
                     adjustmentDict['cancle'].append(orderId)
                     remainAmount -= oBids[j][AMOUNT]
                 elif remainAmount == 0:
-                    mini = j
+                    # mini = j
                     break
                 elif remainAmount < 0 and abs(remainAmount) <= capacity:
                     adjustmentDict['bids'].append([oBids[j][PRICE], abs(remainAmount)])
-                    mini = j
+                    # mini = j
                     break
                 else:
                     raise("handle cancleBidsList error")
@@ -290,10 +294,12 @@ def adjustOrderBook(newState, capacity=1):
     处理撤单
     TO DO: sort cancleAsksList to let it: price from low to high
     """ 
-    mini = 0
+    # mini = 0
     for i in range(len(cancleAsksList)):
         decimal = cancleAsksList[i][AMOUNT] % capacity
         remainAmount = cancleAsksList[i][AMOUNT]
+        print("remainAmount:")
+        print(remainAmount)
         if decimal == 0:
             oAsks = oAsks 
             """            
@@ -308,18 +314,20 @@ def adjustOrderBook(newState, capacity=1):
             1.price from low to high
             2.amount from low to high
             """
-        for j in range(mini, len(oAsks)):
+        for j in range(len(oAsks)):            
             if oAsks[j][PRICE] == cancleAsksList[i][PRICE]:
+                print("inner remainAmount:")
+                print(remainAmount)                
                 if remainAmount > 0:
                     orderId = oAsks[j][ORDERID] 
                     adjustmentDict['cancle'].append(orderId)
                     remainAmount -= oAsks[j][AMOUNT]
                 elif remainAmount == 0:
-                    mini = j
+                    # mini = j
                     break
                 elif remainAmount < 0 and abs(remainAmount) <= capacity:
                     adjustmentDict['asks'].append([oAsks[j][PRICE], abs(remainAmount)])
-                    mini = j
+                    # mini = j
                     break
                 else:
                     raise("handle cancleBidsList error")
