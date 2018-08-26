@@ -85,43 +85,44 @@ class TestRobot(RobotBase):
                             })
                         actions.append(action)
         #调整深度
-        adjustmentDict = adjustOrderBook(newState)
-        exchange = 'sisty'
-        if adjustmentDict['bids'] is not None:
-            for bid in adjustmentDict['bids']:
-                price = bid[PRICE]
-                amount = bid[AMOUNT]
-                action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"buy",wait=True,payload={
-                                    "args":[coinPairs,price,amount,1]
-                                })
-                actions.append(action)
+        if 'orderbooks' in newState and 'sisty' in newState :
+            adjustmentDict = adjustOrderBook(newState)
+            exchange = 'sisty'
+            if adjustmentDict['bids'] is not None:
+                for bid in adjustmentDict['bids']:
+                    price = bid[PRICE]
+                    amount = bid[AMOUNT]
+                    action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"buy",wait=True,payload={
+                                        "args":[coinPairs,price,amount,1]
+                                    })
+                    actions.append(action)
 
-        if adjustmentDict['asks'] is not None:
-            for ask in adjustmentDict['asks']:
-                price = ask[PRICE]
-                amount = ask[AMOUNT]
-                action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"sell",wait=True,payload={
-                                    "args":[coinPairs,price,amount,2]
-                                })
-                actions.append(action)
+            if adjustmentDict['asks'] is not None:
+                for ask in adjustmentDict['asks']:
+                    price = ask[PRICE]
+                    amount = ask[AMOUNT]
+                    action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"sell",wait=True,payload={
+                                        "args":[coinPairs,price,amount,2]
+                                    })
+                    actions.append(action)
 
-        if adjustmentDict['cancle'] is not None:
-            for cancleId in adjustmentDict['cancle']:
-                action = Action(reactor,EXCHANGES[exchange].cancle,key=exchange+"cancle",wait=True,payload={
-                                    "args":[coinPairs,cancleId]
-                                })
-                actions.append(action)
+            if adjustmentDict['cancle'] is not None:
+                for cancleId in adjustmentDict['cancle']:
+                    action = Action(reactor,EXCHANGES[exchange].cancle,key=exchange+"cancle",wait=True,payload={
+                                        "args":[coinPairs,cancleId]
+                                    })
+                    actions.append(action)
 
         #print(newState['data']['content']['datas'])
 
         print(newState.get('count'))
-        if newState['count'] == 10 and newState.get('tickSource') is not None:
-            print('STOP LISTEN TICKEVENT')
-            self.stopListen(newState['tickSource'])
-            # newState['tickSource'].stop()
-        if newState['count'] == 15 and newState.get('tickSource') is None:
-            print('START LISTEN TICKEVENT')
-            self.listen(newState['tickBackup'])
+        # if newState['count'] == 10 and newState.get('tickSource') is not None:
+        #     print('STOP LISTEN TICKEVENT')
+        #     self.stopListen(newState['tickSource'])
+        #     # newState['tickSource'].stop()
+        # if newState['count'] == 15 and newState.get('tickSource') is None:
+        #     print('START LISTEN TICKEVENT')
+        #     self.listen(newState['tickBackup'])
         return actions
 
     def gateioOrderBookHandler(self, state, dataRecivedEvent):
@@ -190,17 +191,18 @@ class TestRobot(RobotBase):
         newState['sisty']['orderbook'] = dict()
         newState['sisty']['orderbook']['bids'] = list()
         newState['sisty']['orderbook']['asks'] = list()
-        for order in newState['sisty']['orders']:
-            if order['type'] == 1:
-                price = order['entrustprice']
-                amount = order['surplusamount']
-                orderId = order['id']
-                newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
-            elif order['type'] == 2:
-                price = order['entrustprice']
-                amount = order['surplusamount']
-                orderId = order['id']
-                newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
+        for order in newState['sisty']['orders']['content']['datas']:
+            if order['status'] == 1 or order['status'] == 2:
+                if order['type'] == 1:
+                    price = order['entrustprice']
+                    amount = order['surplusamount']
+                    orderId = order['id']
+                    newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
+                elif order['type'] == 2:
+                    price = order['entrustprice']
+                    amount = order['surplusamount']
+                    orderId = order['id']
+                    newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
         return newState
 
     def tickHandler(self, state, tickEvent):
@@ -213,14 +215,14 @@ class TestRobot(RobotBase):
     def systemEventHandler(self, state, systemEvent):
         newState = dict()
         newState.update(state)
-        if systemEvent.data['type'] == 'LISTEN_STOPPED':
-            if systemEvent.data['info']['source'] == state['tickSource']:
-                newState['tickSource'] = None
-                newState['tickBackup'] = systemEvent.data['info']['source']
-        elif systemEvent.data['type'] == 'LISTEN_STARTED':
-            if systemEvent.data['info']['source'] is not None and systemEvent.data['info']['source'] == state.get('tickBackup'):
-                newState['tickSource'] = systemEvent.data['info']['source']
-                newState['tickBackup'] = None
+        # if systemEvent.data['type'] == 'LISTEN_STOPPED':
+        #     if systemEvent.data['info']['source'] == state['tickSource']:
+        #         newState['tickSource'] = None
+        #         newState['tickBackup'] = systemEvent.data['info']['source']
+        # elif systemEvent.data['type'] == 'LISTEN_STARTED':
+        #     if systemEvent.data['info']['source'] is not None and systemEvent.data['info']['source'] == state.get('tickBackup'):
+        #         newState['tickSource'] = systemEvent.data['info']['source']
+        #         newState['tickBackup'] = None
 
         return newState
 
@@ -290,5 +292,5 @@ class RobotService(service.Service):
         print('stopping robot service...')
         gateioSource.stop()
         huobiproSource.stop()
-        sistyOrderSource.start()
+        sistyOrderSource.stop()
         tickSource.stop()
