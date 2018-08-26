@@ -360,6 +360,9 @@ class TestRobot(RobotBase):
                         break
                     print(orderB)
                     print(orderA)
+                    staFile = open('sistyTest')
+                    staFile.write("orderA:%d ,\n orderB:%d" % (orderA,orderB))
+                    staFile.close()
                     exchange = None
                     type = None
                     price = None
