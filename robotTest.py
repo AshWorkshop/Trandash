@@ -90,7 +90,7 @@ def books(newState,exchange):
     newState['orderbooks']['time'] = time.time()
     return newState
 
-<<<<<<< HEAD
+
 def cutOrderBook(orderBook, capacity=1, hasID=False):
     #orderBook: one of bids or asks (type: list)
     #return: cuttedOrderBook, also one of  bids or asks (list of: [price1, capacity],...,[priceN, remainAmount])
@@ -336,8 +336,7 @@ def adjustOrderBook(newState, capacity=1):
 
     return adjustmentDict
 
-=======
->>>>>>> d135a6554e4d97ac15c518397fb21ae53372e026
+
 {'id': '535e96c6-9385-4b39-be93-05e929140b3d', 'userid': 222, 'coinid': 36, 'type': 1, #买
 'entrustprice': 300.0, 'dealsumprice': 280.32516,
 'amount': 1.0, 'status': 3, 'createtime': 1535247027, 'endtime': 1535247116, 'remark': '添加交易买委托单',
