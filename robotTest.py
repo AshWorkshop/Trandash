@@ -95,7 +95,7 @@ def cutOrderBook(orderBook, capacity=1):
 def adjustOrderBook(oldState, newState, capacity=1):
     #思路1：将目标深度表按照capacity分割成小份的表，(用cutOrderBook()函数)
     #直接拿这份表和old表对比，
-    #存在价格一样就不管，S中没有的价格就添加（挂单），S中有而目标深度小表中没有的价格就撤单
+    #存在价格且数量一样就不管，S中没有的价格就添加（挂单），S中有而目标深度小表中没有的价格就撤单
     #return: adjustmentDict ; eg:
     # { 'bids': [(276, 1), (276, 1), (274, 1), (274, 1), (274,1), ....], 
     #   'asks':[(278, 1), (278, 0.5), ...], 
@@ -108,17 +108,28 @@ def adjustOrderBook(oldState, newState, capacity=1):
     cuttedBids = cutOrderBook(nBids)
     nAsks = newState['orderbooks']['asks']
     cuttedAsks = cutOrderBook(nAsks)
+    ORDERID = 2
+    # n_oList = [i for i in list1 if i not in list2]       
+    # o_nList = [i for i in list1 if i not in list2]   
+    oBids =  list()  
     for bid in oldState['sisty']['orderbook']['bids']:
-        for cBid in cuttedBids:
-            if bid[PRICE] == cBid[PRICE]:
-                pass
-            elif bid[PRICE] > cBid[PRICE]:
-                orderId = 0 # TO DO: how to get orderId?
-                adjustmentDict['cancle'].append(orderId)
-            elif bid[PRICE] < cBid[PRICE]:
-                adjustmentDict['bids'].append([cBid[PRICE], cBid[AMOUNT]])
-
-
+        # for cBid in cuttedBids:
+        #     if bid[PRICE] == cBid[PRICE]:
+        #         pass
+        #     elif bid[PRICE] > cBid[PRICE]:
+        #         orderId = 0 # TO DO: how to get orderId? DONE√
+        #         adjustmentDict['cancle'].append(bid[ORDERID])
+        #         #还要再挂剩下数量的单
+        #     elif bid[PRICE] < cBid[PRICE]:
+        #         adjustmentDict['bids'].append( (cBid[PRICE], cBid[AMOUNT]) )
+        oBids.append([bid[PRICE], bid[AMOUNT]])
+    n_oBidsList = list()  #不需要orderId信息
+    for bid in nBids:
+        if bid not in oBids:
+            if bid[AMOUNT] == capacity:
+                n_oBidsList.append(bid)
+            else:
+                
 
 class TestRobot(RobotBase):
     def launch(self, oldState, newState):
