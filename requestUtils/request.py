@@ -35,6 +35,7 @@ def cbBody(body):
     return body
 
 pool = HTTPConnectionPool(reactor)
+# pool = None
 
 def get(reactor, url, headers={}, body=None):
 

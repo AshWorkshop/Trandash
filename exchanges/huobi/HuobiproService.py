@@ -110,8 +110,12 @@ class Huobipro(ExchangeService):
             asks = data['tick']['asks'] #卖单
             return [bids, asks]
 
+        def ebFailed(failure):
+            print(failure)
+            return failure
+
         d.addCallback(handleBody)
-        d.addErrback(handleBody)
+        d.addErrback(ebFailed)
         #print(b)
         return d
 

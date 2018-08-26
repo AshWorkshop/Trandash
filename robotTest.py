@@ -160,7 +160,7 @@ class TestRobot(RobotBase):
                 for bid in adjustmentDict['bids']:
                     price = bid[PRICE]
                     amount = bid[AMOUNT]
-                    action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"buy",wait=True,payload={
+                    action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"buy",wait=False,payload={
                                         "args":[coinPairs,price,amount,1]
                                     })
                     actions.append(action)
@@ -169,14 +169,14 @@ class TestRobot(RobotBase):
                 for ask in adjustmentDict['asks']:
                     price = ask[PRICE]
                     amount = ask[AMOUNT]
-                    action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"sell",wait=True,payload={
+                    action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"sell",wait=False,payload={
                                         "args":[coinPairs,price,amount,2]
                                     })
                     actions.append(action)
 
             if adjustmentDict['cancle'] is not None:
                 for cancleId in adjustmentDict['cancle']:
-                    action = Action(reactor,EXCHANGES[exchange].cancle,key=exchange+"cancle",wait=True,payload={
+                    action = Action(reactor,EXCHANGES[exchange].cancle,key=exchange+"cancle",wait=False,payload={
                                         "args":[coinPairs,cancleId]
                                     })
                     actions.append(action)
@@ -191,6 +191,7 @@ class TestRobot(RobotBase):
         # if newState['count'] == 15 and newState.get('tickSource') is None:
         #     print('START LISTEN TICKEVENT')
         #     self.listen(newState['tickBackup'])
+        print('actions:', len(actions))
         return actions
 
     def gateioOrderBookHandler(self, state, dataRecivedEvent):
