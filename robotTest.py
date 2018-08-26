@@ -8,10 +8,19 @@ from exchanges.bitfinex.BitfinexService import bitfinex
 
 import time
 
+TIME = 0.0
+
 BIDS,ASKS = range(2)
-PRICE,AMOUNT = range(2)
+PRICE,AMOUNT,EXCHANGE = range(3)
 
 POWER = [0.5,0.5]
+coinPairs = ('eth','usdt')
+
+EXCHANGES = {
+    "huobipro":huobipro,
+    "gateio":gateio,
+    "bitfinex":bitfinex,
+}
 
 def counter():
     print('tick')
@@ -298,12 +307,60 @@ def adjustOrderBook(newState, capacity=1):
 
     return adjustmentDict
 
+{'id': '535e96c6-9385-4b39-be93-05e929140b3d', 'userid': 222, 'coinid': 36, 'type': 1, #买
+'entrustprice': 300.0, 'dealsumprice': 280.32516,
+'amount': 1.0, 'status': 3, 'createtime': 1535247027, 'endtime': 1535247116, 'remark': '添加交易买委托单',
+'alternatefield': 69, 'surplusamount': 0.0, 'entrustsource': 'APP', 'dealstatus': None},
+
 class TestRobot(RobotBase):
     def launch(self, oldState, newState):
+        global TIME
         actions = []
+        print(newState)
 
-        if 'orderbooks' in newState:
-            print(newState['orderbooks'])
+        if 'sisty' in newState and 'sisty' in oldState:
+
+            old = oldState['sisty']['orders']['content']
+            new = newState['sisty']['orders']['content']
+
+            oldOrders = old['datas']
+            newOrders = new['datas']
+
+            for orderA in oldOrders:
+                for orderB in newOrders:
+                    exchange = None
+                    type = None
+                    price = None
+                    amount = None
+                    if orderA['id'] == orderB['id']:
+                        amount = abs(orderA['surplusamount']-orderB['surplusamount'])
+                        if orderA['type'] == 1:
+                            type = "buy"
+                        elif orderA['type'] == 2:
+                            type = "sell"
+                        if "orderbooks" in newState:
+                            if type == "buy":
+                                book = "bids"
+                            elif type == "sell":
+                                book = "asks"
+                            for orderC in newState[book]:
+                                if orderC[PRICE] == orderA['entrustprice']:
+                                    price = orderC[PRICE]
+                                    exchange = orderC[EXCHANGE]
+
+                    if exchange is not None and type is not None and price is not None and amount is not None:
+                        if type == "buy":
+                            action = Action(reactor,EXCHANGES[exchange].sell,key=exchange+"sell",payload={
+                                "args":[coinPairs,price,amount]
+                            })
+                        if type == "sell":
+                            action = Action(reactor,EXCHANGES[exchange].buy,key=exchange+"buy",payload={
+                                "args":[coinPairs,price,amount]
+                            })
+                        actions.append(action)
+
+
+        #print(newState['data']['content']['datas'])
 
         print(newState.get('count'))
         if newState['count'] == 10 and newState.get('tickSource') is not None:
@@ -372,6 +429,15 @@ class TestRobot(RobotBase):
 
         return newState
 
+    def sistyOrderHandler(self,state,dataRecivedEvent):
+        newState = dict()
+        newState.update(state)
+        newState['ststy'] = dict()
+        newState['sisty'] = state.get('sisty',dict())
+        newState['sisty']['orders'] = dataRecivedEvent.data['data']
+
+        return newState
+
 
     def tickHandler(self, state, tickEvent):
         newState = dict()
@@ -403,6 +469,9 @@ huobiproSource = CycleSource(reactor,huobipro.getOrderBook, key='huobipro',paylo
 bitfinexSource = CycleSource(reactor,bitfinex.getOrderBook, key='bitfinex',payload={
     'args': [('eth','usdt')]
 })
+sistyOrderSource = CycleSource(reactor,sisty.getOrders,key='sistyOrder',payload={
+    'args':[('eth','usdt'),-1,[1,2,3,4,5]]
+})
 
 tickSource = LoopSource(
     reactor,
@@ -426,6 +495,11 @@ robot.bind(
     robot.bitfinexOrderBookHandler,
     'bitfinex'
 )
+robot.bind(
+    'dataRecivedEvent',
+    robot.sistyOrderHandler,
+    'sistyOrder'
+)
 
 robot.bind(
     'tickEvent',
@@ -437,16 +511,20 @@ robot.state.update({
 })
 
 class RobotService(service.Service):
-    
+
     def startService(self):
+        global TIME
+        TIME = time.time()
         print('starting robot service...')
-        robot.listen([gateioSource, huobiproSource, tickSource])
+        robot.listen([gateioSource, huobiproSource, sistyOrderSource,tickSource])
         gateioSource.start()
         huobiproSource.start()
+        sistyOrderSource.start()
         tickSource.start()
-    
+
     def stopService(self):
         print('stopping robot service...')
         gateioSource.stop()
         huobiproSource.stop()
+        sistyOrderSource.start()
         tickSource.stop()
