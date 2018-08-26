@@ -193,8 +193,8 @@ def adjustOrderBook(newState, capacity=1):
     nAsks = newState['orderbooks']['asks']
     oBids = newState['sisty']['orderbook']['bids']  #including orderId in each level
     oAsks = newState['sisty']['orderbook']['asks']  #including orderId in each level
-    mergedBids = mergeOrderBook(oBids)  #including orderIdList in each level
-    mergedAsks = mergeOrderBook(oAsks)  #including orderIdList in each level
+    mergedBids = mergeOrderBook(oBids, capacity=capacity)  #including orderIdList in each level
+    mergedAsks = mergeOrderBook(oAsks, capacity=capacity)  #including orderIdList in each level
     # print("mergedBids:")
     # print(mergedBids)
     # print("mergedAsks:")
@@ -283,7 +283,7 @@ def adjustOrderBook(newState, capacity=1):
     # print(notCuttedBids)
     # print("cancleBidsList inner:")
     # print(cancleBidsList)
-    cuttedBids = cutOrderBook(notCuttedBids)
+    cuttedBids = cutOrderBook(notCuttedBids, capacity=capacity)
     adjustmentDict['bids'].extend(cuttedBids)
 
     """ 
@@ -366,7 +366,7 @@ def adjustOrderBook(newState, capacity=1):
     # print(notCuttedAsks)
     # print("cancleAsksList inner:")
     # print(cancleAsksList)
-    cuttedAsks = cutOrderBook(notCuttedAsks)
+    cuttedAsks = cutOrderBook(notCuttedAsks, capacity=capacity)
     adjustmentDict['asks'].extend(cuttedAsks)
 
     return adjustmentDict

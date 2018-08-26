@@ -155,7 +155,7 @@ class TestRobot(RobotBase):
         #调整深度
         if 'orderbooks' in newState and 'sisty' in newState :
             if 'orderbook' in newState['sisty'] and newState['sisty']['orderbook']['bids'] is not None and newState['sisty']['orderbook']['asks'] is not None:
-                adjustmentDict = adjustOrderBook(newState)
+                adjustmentDict = adjustOrderBook(newState, capacity=5)
                 exchange = 'sisty'
                 if adjustmentDict['bids'] is not None:
                     for bid in adjustmentDict['bids']:
