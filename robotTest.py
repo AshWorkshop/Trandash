@@ -259,7 +259,7 @@ class TestRobot(RobotBase):
         newState['sisty']['orderbook'] = dict()
         newState['sisty']['orderbook']['bids'] = list()
         newState['sisty']['orderbook']['asks'] = list()
-        for order in newState['sisty']['orders']:
+        for order in newState['sisty']['orders']['content']['datas']:
             if order['status'] == 1 or order['status'] == 2:
                 if order['type'] == 1:
                     price = order['entrustprice']
