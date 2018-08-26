@@ -22,7 +22,8 @@ pairs = ('ETH', 'USDT')
 start = time.time()
 
 def test():
-    d = sisty.getOrders(pairs, -1, -1)
+    # d = sisty.getOrders(pairs, -1, -1)
+    d = sisty.getOrder(pairs, '535e96c6-9385-4b39-be93-05e929140b3d')
     # d = okexFuture.getKLineLastMin(('eth', 'usdt'), last=30)
     def cbTest(result):
         print(result)

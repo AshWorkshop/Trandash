@@ -159,7 +159,7 @@ class Sisty(ExchangeService):
 
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
-    def getOrder(self, pairs, contractType='quarter', orderId="", status=""):
+    def getOrder(self, pairs, orderId=""):
         URL = "/tradeOpen/v2/selectEntrustById"
         cipherText = getSign(self.__userId, orderId, self.__md5Key)
         params = {
@@ -174,6 +174,7 @@ class Sisty(ExchangeService):
             if data['code'] == 0:
                 return data
             else:
+                print('errorCode:', data['code'])
                 return None
 
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
@@ -200,6 +201,7 @@ class Sisty(ExchangeService):
             if data['code'] == 0:
                 return data
             else:
+                print('errorCode:', data['code'])
                 return None
 
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
