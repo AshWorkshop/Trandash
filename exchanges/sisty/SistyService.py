@@ -151,7 +151,7 @@ class Sisty(ExchangeService):
         def handleBody(body):
             data = json.loads(body)
             assert 'code' in data
-            if data['code']:
+            if data['code'] == 0:
                 return True
             else:
                 print(data)
@@ -160,7 +160,7 @@ class Sisty(ExchangeService):
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
     def getOrder(self, pairs, contractType='quarter', orderId="", status=""):
-        URL = "/tradeOpen/ v2/selectEntrustById"
+        URL = "/tradeOpen/v2/selectEntrustById"
         cipherText = getSign(self.__userId, orderId, self.__md5Key)
         params = {
             'entrustId': orderId,
@@ -171,7 +171,7 @@ class Sisty(ExchangeService):
         def handleBody(body):
             data = json.loads(body)
             assert 'code' in data
-            if data['code']:
+            if data['code'] == 0:
                 return data
             else:
                 return None
@@ -195,8 +195,9 @@ class Sisty(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
+            # print(data)
             assert 'code' in data
-            if data['code']:
+            if data['code'] == 0:
                 return data
             else:
                 return None
@@ -214,7 +215,7 @@ class Sisty(ExchangeService):
         def handleBody(body):
             data = json.loads(body)
             assert 'code' in data
-            if data['code']:
+            if data['code'] == 0:
                 return data
             else:
                 return None
