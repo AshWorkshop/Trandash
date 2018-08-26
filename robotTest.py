@@ -90,6 +90,253 @@ def books(newState,exchange):
     newState['orderbooks']['time'] = time.time()
     return newState
 
+
+def cutOrderBook(orderBook, capacity=1, hasID=False):
+    #orderBook: one of bids or asks (type: list)
+    #return: cuttedOrderBook, also one of  bids or asks (list of: [price1, capacity],...,[priceN, remainAmount])
+    cuttedOrderBook = list()
+
+    ORDERID = 2
+    for data in orderBook:
+        remainAmount = data[AMOUNT]
+        while remainAmount >= capacity:
+            remainAmount -= capacity
+            if hasID:
+                cuttedOrderBook.append([data[PRICE], capacity, data[ORDERID]])
+            else:
+                cuttedOrderBook.append([data[PRICE], capacity])
+        if remainAmount != 0:
+            if hasID:
+                cuttedOrderBook.append([data[PRICE], remainAmount, data[ORDERID]])
+            else:
+                cuttedOrderBook.append([data[PRICE], remainAmount])
+
+    return cuttedOrderBook
+
+def mergeOrderBook(orderBook, capacity=1, hasID=True):
+    #orderBook: one of bids or asks (type: list) ps:including orderId
+    #return: mergedOrderBook, also one of  bids or asks
+    #return: list of: [price1, amount1, [orderIdList1]],...,[priceN, amountN, [orderIdListN]]
+    mergedOrderBook = list()
+
+    ORDERID = 2
+    level = 0
+    count = 0
+    lenth = len(orderBook)
+    while level < lenth:
+        amount = orderBook[level][AMOUNT]
+        if hasID:
+            orderIdList = list()
+            orderIdList.append(orderBook[level][ORDERID])
+            count = level
+            while count+1 < lenth and orderBook[count][PRICE] == orderBook[count+1][PRICE]:
+                amount += orderBook[count+1][AMOUNT]
+                orderIdList.append(orderBook[count+1][ORDERID])
+                count += 1
+            mergedOrderBook.append([orderBook[count][PRICE], amount, orderIdList])
+            level = count+1
+        else:
+            count = level
+            while count+1 < lenth and orderBook[count][PRICE] == orderBook[count+1][PRICE]:
+                amount += orderBook[count+1][AMOUNT]
+                count += 1
+            mergedOrderBook.append([orderBook[count][PRICE], amount])
+            level = count+1
+
+    return mergedOrderBook
+
+def adjustOrderBook(newState, capacity=1):
+    """
+    思路2：将old深度表合并成“价格唯一，数量求和”的合并表，(用mergeOrderBook()函数)
+    直接拿这份表和目标深度n表对比，比较价格：
+    1.若n中有o中没有的价格，则以相应数量和价格挂单；
+    2.若n中有o中有的价格，则比较o总量和n总量，以差量挂撤；
+    3.若n中无o中有的价格，则把全部价格等于此价格的单撤掉。
+    return: adjustmentDict ; eg:
+    { 'bids': [[276, 1], [276, 1], [274, 1], [274, 1], [274,1], ....],
+      'asks':[[278, 1], [278, 0.5], ...],
+      'cancle':[1357684 (# orderId), 1357898, ...]}
+    """
+    adjustmentDict = dict()
+    adjustmentDict['bids'] = list()
+    adjustmentDict['asks'] = list()
+    adjustmentDict['cancle'] = list()
+    ORDERID = 2
+    nBids = newState['orderbooks']['bids']
+    nAsks = newState['orderbooks']['asks']
+    oBids = newState['sisty']['orderbook']['bids']  #including orderId in each level
+    oAsks = newState['sisty']['orderbook']['asks']  #including orderId in each level
+    mergedBids = mergeOrderBook(oBids)  #including orderIdList in each level
+    mergedAsks = mergeOrderBook(oAsks)  #including orderIdList in each level
+    print("mergedBids:")
+    print(mergedBids)
+    print("mergedAsks:")
+    print(mergedAsks)
+    notCuttedBids = list()
+    notCuttedAsks = list()
+    cancleBidsList = list()
+    cancleAsksList = list()
+
+    """
+    bids: price from high to low
+    """
+    oBidPrices = list()
+    for oBid in mergedBids:
+        oBidPrices.append(oBid[PRICE])
+    nBidPrices = list()
+    for nBid in nBids:
+        nBidPrices.append(nBid[PRICE])
+
+    for n in range(len(nBids)):
+        """
+        1.若n中有 o中没有 的价格，则以相应数量和价格挂单；
+        """
+        if nBidPrices[n] not in oBidPrices:
+            notCuttedBids.append([nBids[n][PRICE], nBids[n][AMOUNT]])
+        """
+        2.若n中有 o中有 的价格，则比较o总量和n总量，以差量挂撤；
+        """
+        if nBidPrices[n] in oBidPrices:
+            oIndex = oBidPrices.index(nBidPrices[n])
+            if nBids[n][AMOUNT] > mergedBids[oIndex][AMOUNT]:
+                deltaAmount = nBids[n][AMOUNT] - mergedBids[oIndex][AMOUNT]
+                notCuttedBids.append([nBids[n][PRICE], deltaAmount])
+            elif nBids[n][AMOUNT] < mergedBids[oIndex][AMOUNT]:
+                deltaAmount = mergedBids[oIndex][AMOUNT] - nBids[n][AMOUNT]
+                cancleBidsList.append([nBids[n][PRICE], deltaAmount])
+    """
+    3.若n中无 o中有 的价格，则把全部价格等于此价格的单撤掉。
+    """
+    for o in range(len(mergedBids)):
+        if oBidPrices[o] not in nBidPrices:
+            cancleBidsList.append([mergedBids[o][PRICE], mergedBids[o][AMOUNT]])
+
+    """
+    处理撤单
+    TO DO: sort cancleBidsList to let it: price from high to low
+    """
+    mini = 0
+    for i in range(len(cancleBidsList)):
+        decimal = cancleBidsList[i][AMOUNT] % capacity
+        remainAmount = cancleBidsList[i][AMOUNT]
+        if decimal == 0:
+            oBids = oBids
+            """
+            TO DO: sort oBids to let it:
+            1.price from high to low
+            2.amount from high to low
+            """
+        else:
+            oBids = oBids
+            """
+            TO DO: sort oBids to let it:
+            1.price from high to low
+            2.amount from low to high
+            """
+        for j in range(mini, len(oBids)):
+            if oBids[j][PRICE] == cancleBidsList[i][PRICE]:
+                if remainAmount > 0:
+                    orderId = oBids[j][ORDERID]
+                    adjustmentDict['cancle'].append(orderId)
+                    remainAmount -= oBids[j][AMOUNT]
+                elif remainAmount == 0:
+                    mini = j
+                    break
+                elif remainAmount < 0 and abs(remainAmount) <= capacity:
+                    adjustmentDict['bids'].append([oBids[j][PRICE], abs(remainAmount)])
+                    mini = j
+                    break
+                else:
+                    raise("handle cancleBidsList error")
+    print("notCuttedBids inner:")
+    print(notCuttedBids)
+    print("cancleBidsList inner:")
+    print(cancleBidsList)
+    cuttedBids = cutOrderBook(notCuttedBids)
+    adjustmentDict['bids'].extend(cuttedBids)
+
+    """
+    asks: price from low to high
+    """
+    oAskPrices = list()
+    for oAsk in mergedAsks:
+        oAskPrices.append(oAsk[PRICE])
+    nAskPrices = list()
+    for nAsk in nAsks:
+        nAskPrices.append(nAsk[PRICE])
+
+    for n in range(len(nAsks)):
+        """
+        1.若n中有 o中没有 的价格，则以相应数量和价格挂单；
+        """
+        if nAskPrices[n] not in oAskPrices:
+            notCuttedAsks.append([nAsks[n][PRICE], nAsks[n][AMOUNT]])
+        """
+        2.若n中有 o中有 的价格，则比较o总量和n总量，以差量挂撤；
+        """
+        if nAskPrices[n] in oAskPrices:
+            oIndex = oAskPrices.index(nAskPrices[n])
+            if nAsks[n][AMOUNT] > mergedAsks[oIndex][AMOUNT]:
+                deltaAmount = nAsks[n][AMOUNT] - mergedAsks[oIndex][AMOUNT]
+                notCuttedAsks.append([nAsks[n][PRICE], deltaAmount])
+            elif nAsks[n][AMOUNT] < mergedAsks[oIndex][AMOUNT]:
+                deltaAmount = mergedAsks[oIndex][AMOUNT] - nAsks[n][AMOUNT]
+                cancleAsksList.append([nAsks[n][PRICE], deltaAmount])
+    """
+    3.若n中无 o中有 的价格，则把全部价格等于此价格的单撤掉。
+    """
+    for o in range(len(mergedAsks)):
+        if oAskPrices[o] not in nAskPrices:
+            cancleAsksList.append([mergedAsks[o][PRICE], mergedAsks[o][AMOUNT]])
+
+    """
+    处理撤单
+    TO DO: sort cancleAsksList to let it: price from low to high
+    """
+    mini = 0
+    for i in range(len(cancleAsksList)):
+        decimal = cancleAsksList[i][AMOUNT] % capacity
+        remainAmount = cancleAsksList[i][AMOUNT]
+        if decimal == 0:
+            oAsks = oAsks
+            """
+            TO DO: sort oAsks to let it:
+            1.price from low to high
+            2.amount from high to low
+            """
+        else:
+            oAsks = oAsks
+            """
+            TO DO: sort oAsks to let it:
+            1.price from low to high
+            2.amount from low to high
+            """
+        for j in range(mini, len(oAsks)):
+            if oAsks[j][PRICE] == cancleAsksList[i][PRICE]:
+                if remainAmount > 0:
+                    orderId = oAsks[j][ORDERID]
+                    adjustmentDict['cancle'].append(orderId)
+                    remainAmount -= oAsks[j][AMOUNT]
+                elif remainAmount == 0:
+                    mini = j
+                    break
+                elif remainAmount < 0 and abs(remainAmount) <= capacity:
+                    adjustmentDict['asks'].append([oAsks[j][PRICE], abs(remainAmount)])
+                    mini = j
+                    break
+                else:
+                    raise("handle cancleBidsList error")
+
+    print("notCuttedAsks inner:")
+    print(notCuttedAsks)
+    print("cancleAsksList inner:")
+    print(cancleAsksList)
+    cuttedAsks = cutOrderBook(notCuttedAsks)
+    adjustmentDict['asks'].extend(cuttedAsks)
+
+    return adjustmentDict
+
+
 {'id': '535e96c6-9385-4b39-be93-05e929140b3d', 'userid': 222, 'coinid': 36, 'type': 1, #买
 'entrustprice': 300.0, 'dealsumprice': 280.32516,
 'amount': 1.0, 'status': 3, 'createtime': 1535247027, 'endtime': 1535247116, 'remark': '添加交易买委托单',
@@ -99,8 +346,9 @@ class TestRobot(RobotBase):
     def launch(self, oldState, newState):
         global TIME
         actions = []
-        print(newState)
+        #print(newState)
 
+        #订单管理
         if 'sisty' in newState and 'sisty' in oldState:
 
             old = oldState['sisty']['orders']['content']
@@ -110,7 +358,16 @@ class TestRobot(RobotBase):
             newOrders = new['datas']
 
             for orderA in oldOrders:
+                if orderA['createtime'] < TIME:
+                    break
                 for orderB in newOrders:
+                    if orderB['createtime'] < TIME:
+                        break
+                    print(orderB)
+                    print(orderA)
+                    staFile = open('sistyTest')
+                    staFile.write("orderA:%d ,\n orderB:%d" % (orderA,orderB))
+                    staFile.close()
                     exchange = None
                     type = None
                     price = None
@@ -126,7 +383,7 @@ class TestRobot(RobotBase):
                                 book = "bids"
                             elif type == "sell":
                                 book = "asks"
-                            for orderC in newState[book]:
+                            for orderC in newState['orderbooks'][book]:
                                 if orderC[PRICE] == orderA['entrustprice']:
                                     price = orderC[PRICE]
                                     exchange = orderC[EXCHANGE]
@@ -257,7 +514,7 @@ class TestRobot(RobotBase):
                 price = order['entrustprice']
                 amount = order['surplusamount']
                 orderId = order['id']
-                newState['sisty']['orderbook']['bids'].append([price, amount, orderId])            
+                newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
         return newState
 
     def tickHandler(self, state, tickEvent):
