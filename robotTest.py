@@ -5,6 +5,7 @@ from exchanges.gateio.GateIOService import gateio
 from exchanges.huobi.HuobiproService import huobipro
 from exchanges.sisty.SistyService import sisty
 from exchanges.bitfinex.BitfinexService import bitfinex
+from utils import adjustOrderBook
 
 import time
 
@@ -21,6 +22,7 @@ EXCHANGES = {
     "huobipro":huobipro,
     "gateio":gateio,
     "bitfinex":bitfinex,
+    "sisty":sisty
 }
 
 def counter():
@@ -88,6 +90,7 @@ def books(newState,exchange):
     newState['orderbooks']['time'] = time.time()
     return newState
 
+<<<<<<< HEAD
 def cutOrderBook(orderBook, capacity=1, hasID=False):
     #orderBook: one of bids or asks (type: list)
     #return: cuttedOrderBook, also one of  bids or asks (list of: [price1, capacity],...,[priceN, remainAmount])
@@ -333,6 +336,8 @@ def adjustOrderBook(newState, capacity=1):
 
     return adjustmentDict
 
+=======
+>>>>>>> d135a6554e4d97ac15c518397fb21ae53372e026
 {'id': '535e96c6-9385-4b39-be93-05e929140b3d', 'userid': 222, 'coinid': 36, 'type': 1, #买
 'entrustprice': 300.0, 'dealsumprice': 280.32516,
 'amount': 1.0, 'status': 3, 'createtime': 1535247027, 'endtime': 1535247116, 'remark': '添加交易买委托单',
@@ -393,7 +398,33 @@ class TestRobot(RobotBase):
                                 "args":[coinPairs,price,amount]
                             })
                         actions.append(action)
+        #调整深度
+        adjustmentDict = adjustOrderBook(newState)
+        exchange = 'sisty'
+        if adjustmentDict['bids'] is not None:
+            for bid in adjustmentDict['bids']:
+                price = bid[PRICE]
+                amount = bid[AMOUNT]
+                action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"buy",payload={
+                                    "args":[coinPairs,price,amount,1]
+                                })
+                actions.append(action)
 
+        if adjustmentDict['asks'] is not None:
+            for ask in adjustmentDict['asks']:
+                price = ask[PRICE]
+                amount = ask[AMOUNT]
+                action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"sell",payload={
+                                    "args":[coinPairs,price,amount,2]
+                                })
+                actions.append(action)
+
+        if adjustmentDict['cancle'] is not None:
+            for cancleId in adjustmentDict['cancle']:
+                action = Action(reactor,EXCHANGES[exchange].cancle,key=exchange+"cancle",payload={
+                                    "args":[coinPairs,cancleId]
+                                })
+                actions.append(action)
 
         #print(newState['data']['content']['datas'])
 
@@ -470,9 +501,21 @@ class TestRobot(RobotBase):
         newState['ststy'] = dict()
         newState['sisty'] = state.get('sisty',dict())
         newState['sisty']['orders'] = dataRecivedEvent.data['data']
-
+        newState['sisty']['orderbook'] = dict()
+        newState['sisty']['orderbook']['bids'] = list()
+        newState['sisty']['orderbook']['asks'] = list()
+        for order in newState['sisty']['orders']:
+            if order['type'] == 1:
+                price = order['entrustprice']
+                amount = order['surplusamount']
+                orderId = order['id']
+                newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
+            elif order['type'] == 2:
+                price = order['entrustprice']
+                amount = order['surplusamount']
+                orderId = order['id']
+                newState['sisty']['orderbook']['bids'].append([price, amount, orderId])            
         return newState
-
 
     def tickHandler(self, state, tickEvent):
         newState = dict()
@@ -551,7 +594,7 @@ class RobotService(service.Service):
         global TIME
         TIME = time.time()
         print('starting robot service...')
-        robot.listen([gateioSource, huobiproSource, sistyOrderSource,tickSource])
+        robot.listen([gateioSource, huobiproSource, sistyOrderSource, tickSource])
         gateioSource.start()
         huobiproSource.start()
         sistyOrderSource.start()
