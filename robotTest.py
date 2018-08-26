@@ -1,5 +1,6 @@
 from robots.base import RobotBase, CycleSource, Action, LoopSource
 from twisted.internet import reactor, task
+from twisted.application import service
 from exchanges.gateio.GateIOService import gateio
 from exchanges.huobi.HuobiproService import huobipro
 from exchanges.sisty.SistyService import sisty
@@ -243,7 +244,7 @@ tickSource = LoopSource(
 )
 
 robot = TestRobot()
-robot.listen([gateioSource,huobiproSource, tickSource])
+
 robot.bind(
     'dataRecivedEvent',
     robot.gateioOrderBookHandler,
@@ -269,7 +270,17 @@ robot.state.update({
     'tickSource': tickSource,
 })
 
-gateioSource.start()
-huobiproSource.start()
-tickSource.start()
-reactor.run()
+class RobotService(service.Service):
+    
+    def startService(self):
+        print('starting robot service...')
+        robot.listen([gateioSource, huobiproSource, tickSource])
+        gateioSource.start()
+        huobiproSource.start()
+        tickSource.start()
+    
+    def stopService(self):
+        print('stopping robot service...')
+        gateioSource.stop()
+        huobiproSource.stop()
+        tickSource.stop()

@@ -17,13 +17,13 @@ import hashlib
 import time
 import json
 
-pairs = ('eth', 'usdt')
+pairs = ('ETH', 'USDT')
 
 start = time.time()
 
 def test():
-    # d = sisty.trade(pairs, 265.46, 1, 2)
-    d = okexFuture.getKLineLastMin(('eth', 'usdt'), last=30)
+    d = sisty.trade(pairs, 265.46, 1, 2)
+    # d = okexFuture.getKLineLastMin(('eth', 'usdt'), last=30)
     def cbTest(result):
         print(result)
         return result
