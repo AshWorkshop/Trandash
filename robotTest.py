@@ -360,5 +360,5 @@ class RobotService(service.Service):
         print('stopping robot service...')
         gateioSource.stop()
         huobiproSource.stop()
-        sistyOrderSource.start()
+        sistyOrderSource.stop()
         tickSource.stop()
