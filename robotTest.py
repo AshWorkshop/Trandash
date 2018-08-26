@@ -184,13 +184,13 @@ class TestRobot(RobotBase):
         #print(newState['data']['content']['datas'])
 
         print(newState.get('count'))
-        if newState['count'] == 10 and newState.get('tickSource') is not None:
-            print('STOP LISTEN TICKEVENT')
-            self.stopListen(newState['tickSource'])
-            # newState['tickSource'].stop()
-        if newState['count'] == 15 and newState.get('tickSource') is None:
-            print('START LISTEN TICKEVENT')
-            self.listen(newState['tickBackup'])
+        # if newState['count'] == 10 and newState.get('tickSource') is not None:
+        #     print('STOP LISTEN TICKEVENT')
+        #     self.stopListen(newState['tickSource'])
+        #     # newState['tickSource'].stop()
+        # if newState['count'] == 15 and newState.get('tickSource') is None:
+        #     print('START LISTEN TICKEVENT')
+        #     self.listen(newState['tickBackup'])
         return actions
 
     def gateioOrderBookHandler(self, state, dataRecivedEvent):
@@ -283,14 +283,14 @@ class TestRobot(RobotBase):
     def systemEventHandler(self, state, systemEvent):
         newState = dict()
         newState.update(state)
-        if systemEvent.data['type'] == 'LISTEN_STOPPED':
-            if systemEvent.data['info']['source'] == state['tickSource']:
-                newState['tickSource'] = None
-                newState['tickBackup'] = systemEvent.data['info']['source']
-        elif systemEvent.data['type'] == 'LISTEN_STARTED':
-            if systemEvent.data['info']['source'] is not None and systemEvent.data['info']['source'] == state.get('tickBackup'):
-                newState['tickSource'] = systemEvent.data['info']['source']
-                newState['tickBackup'] = None
+        # if systemEvent.data['type'] == 'LISTEN_STOPPED':
+        #     if systemEvent.data['info']['source'] == state['tickSource']:
+        #         newState['tickSource'] = None
+        #         newState['tickBackup'] = systemEvent.data['info']['source']
+        # elif systemEvent.data['type'] == 'LISTEN_STARTED':
+        #     if systemEvent.data['info']['source'] is not None and systemEvent.data['info']['source'] == state.get('tickBackup'):
+        #         newState['tickSource'] = systemEvent.data['info']['source']
+        #         newState['tickBackup'] = None
 
         return newState
 
