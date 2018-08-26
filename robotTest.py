@@ -153,32 +153,33 @@ class TestRobot(RobotBase):
                             })
                         actions.append(action)
         #调整深度
-        adjustmentDict = adjustOrderBook(newState)
-        exchange = 'sisty'
-        if adjustmentDict['bids'] is not None:
-            for bid in adjustmentDict['bids']:
-                price = bid[PRICE]
-                amount = bid[AMOUNT]
-                action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"buy",wait=True,payload={
-                                    "args":[coinPairs,price,amount,1]
-                                })
-                actions.append(action)
+        if 'orderbooks' in newState and 'sisty' in newState :
+            adjustmentDict = adjustOrderBook(newState)
+            exchange = 'sisty'
+            if adjustmentDict['bids'] is not None:
+                for bid in adjustmentDict['bids']:
+                    price = bid[PRICE]
+                    amount = bid[AMOUNT]
+                    action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"buy",wait=True,payload={
+                                        "args":[coinPairs,price,amount,1]
+                                    })
+                    actions.append(action)
 
-        if adjustmentDict['asks'] is not None:
-            for ask in adjustmentDict['asks']:
-                price = ask[PRICE]
-                amount = ask[AMOUNT]
-                action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"sell",wait=True,payload={
-                                    "args":[coinPairs,price,amount,2]
-                                })
-                actions.append(action)
+            if adjustmentDict['asks'] is not None:
+                for ask in adjustmentDict['asks']:
+                    price = ask[PRICE]
+                    amount = ask[AMOUNT]
+                    action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"sell",wait=True,payload={
+                                        "args":[coinPairs,price,amount,2]
+                                    })
+                    actions.append(action)
 
-        if adjustmentDict['cancle'] is not None:
-            for cancleId in adjustmentDict['cancle']:
-                action = Action(reactor,EXCHANGES[exchange].cancle,key=exchange+"cancle",wait=True,payload={
-                                    "args":[coinPairs,cancleId]
-                                })
-                actions.append(action)
+            if adjustmentDict['cancle'] is not None:
+                for cancleId in adjustmentDict['cancle']:
+                    action = Action(reactor,EXCHANGES[exchange].cancle,key=exchange+"cancle",wait=True,payload={
+                                        "args":[coinPairs,cancleId]
+                                    })
+                    actions.append(action)
 
         #print(newState['data']['content']['datas'])
 
@@ -259,16 +260,17 @@ class TestRobot(RobotBase):
         newState['sisty']['orderbook']['bids'] = list()
         newState['sisty']['orderbook']['asks'] = list()
         for order in newState['sisty']['orders']:
-            if order['type'] == 1:
-                price = order['entrustprice']
-                amount = order['surplusamount']
-                orderId = order['id']
-                newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
-            elif order['type'] == 2:
-                price = order['entrustprice']
-                amount = order['surplusamount']
-                orderId = order['id']
-                newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
+            if order['status'] == 1 or order['status'] == 2:
+                if order['type'] == 1:
+                    price = order['entrustprice']
+                    amount = order['surplusamount']
+                    orderId = order['id']
+                    newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
+                elif order['type'] == 2:
+                    price = order['entrustprice']
+                    amount = order['surplusamount']
+                    orderId = order['id']
+                    newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
         return newState
 
     def tickHandler(self, state, tickEvent):
