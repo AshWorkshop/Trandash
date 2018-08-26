@@ -165,6 +165,10 @@ def adjustOrderBook(newState, capacity=1):
     oAsks = newState['sisty']['orderbook']['asks']  #including orderId in each level
     mergedBids = mergeOrderBook(oBids)  #including orderIdList in each level
     mergedAsks = mergeOrderBook(oAsks)  #including orderIdList in each level
+    print("mergedBids:")
+    print(mergedBids)
+    print("mergedAsks:")
+    print(mergedAsks)
     notCuttedBids = list()
     notCuttedAsks = list()
     cancleBidsList = list()
@@ -175,7 +179,7 @@ def adjustOrderBook(newState, capacity=1):
     """
     oBidPrices = list()
     for oBid in mergedBids:
-        oBidPrices.append(mergedBids[PRICE])
+        oBidPrices.append(oBid[PRICE])
     nBidPrices = list()
     for nBid in nBids:
         nBidPrices.append(nBid[PRICE])    
@@ -203,7 +207,6 @@ def adjustOrderBook(newState, capacity=1):
     for o in range(len(mergedBids)):
         if oBidPrices[o] not in nBidPrices:
             cancleBidsList.append([mergedBids[o][PRICE], mergedBids[o][AMOUNT]])
-    print(cancleBidsList)
    
     """
     处理撤单
@@ -242,10 +245,10 @@ def adjustOrderBook(newState, capacity=1):
                     break
                 else:
                     raise("handle cancleBidsList error")
-    # print("notCuttedBids inner:")
-    # print(notCuttedBids)
-    # print("cancleBidsList inner:")
-    # print(cancleBidsList)
+    print("notCuttedBids inner:")
+    print(notCuttedBids)
+    print("cancleBidsList inner:")
+    print(cancleBidsList)
     cuttedBids = cutOrderBook(notCuttedBids)
     adjustmentDict['bids'].extend(cuttedBids)
 
@@ -254,7 +257,7 @@ def adjustOrderBook(newState, capacity=1):
     """
     oAskPrices = list()
     for oAsk in mergedAsks:
-        oAskPrices.append(mergedAsks[PRICE])
+        oAskPrices.append(oAsk[PRICE])
     nAskPrices = list()
     for nAsk in nAsks:
         nAskPrices.append(nAsk[PRICE])
@@ -282,7 +285,6 @@ def adjustOrderBook(newState, capacity=1):
     for o in range(len(mergedAsks)):
         if oAskPrices[o] not in nAskPrices:
             cancleAsksList.append([mergedAsks[o][PRICE], mergedAsks[o][AMOUNT]])
-    print(cancleAsksList)
    
     """
     处理撤单
@@ -322,10 +324,10 @@ def adjustOrderBook(newState, capacity=1):
                 else:
                     raise("handle cancleBidsList error")
 
-    # print("notCuttedAsks inner:")
-    # print(notCuttedAsks)
-    # print("cancleAsksList inner:")
-    # print(cancleAsksList)
+    print("notCuttedAsks inner:")
+    print(notCuttedAsks)
+    print("cancleAsksList inner:")
+    print(cancleAsksList)
     cuttedAsks = cutOrderBook(notCuttedAsks)
     adjustmentDict['asks'].extend(cuttedAsks)
 
