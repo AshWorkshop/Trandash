@@ -139,7 +139,7 @@ class TestRobot(RobotBase):
     def launch(self, oldState, newState):
         global TIME
         actions = []
-        print(newState)
+        #print(newState)
 
         if 'sisty' in newState and 'sisty' in oldState:
 
@@ -150,7 +150,11 @@ class TestRobot(RobotBase):
             newOrders = new['datas']
 
             for orderA in oldOrders:
+                if orderA['createtime'] < TIME:
+                    break
                 for orderB in newOrders:
+                    if orderB['createtime'] < TIME:
+                        break
                     exchange = None
                     type = None
                     price = None
@@ -166,7 +170,7 @@ class TestRobot(RobotBase):
                                 book = "bids"
                             elif type == "sell":
                                 book = "asks"
-                            for orderC in newState[book]:
+                            for orderC in newState['orderbooks'][book]:
                                 if orderC[PRICE] == orderA['entrustprice']:
                                     price = orderC[PRICE]
                                     exchange = orderC[EXCHANGE]
