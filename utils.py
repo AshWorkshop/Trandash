@@ -109,7 +109,7 @@ def calcBoll(KLines):
 
     up = mid + 2 * sigma
     down = mid - 2 * sigma
-    
+
     return (timestamp, up, mid, down)
 
 def calcBolls(KLines, ma=20):
@@ -119,7 +119,7 @@ def calcBolls(KLines, ma=20):
     return result
 
 
-PRICE, AMOUNT, ORDERID = range(3)        
+PRICE, AMOUNT, ORDERID = range(3)
 def cutOrderBook(orderBook, capacity=1, hasID=False):
     #orderBook: one of bids or asks (type: list)
     #return: cuttedOrderBook, also one of  bids or asks (list of: [price1, capacity],...,[priceN, remainAmount])
@@ -143,10 +143,10 @@ def cutOrderBook(orderBook, capacity=1, hasID=False):
 
 def mergeOrderBook(orderBook, capacity=1, hasID=True):
     #orderBook: one of bids or asks (type: list) ps:including orderId
-    #return: mergedOrderBook, also one of  bids or asks 
+    #return: mergedOrderBook, also one of  bids or asks
     #return: list of: [price1, amount1, [orderIdList1]],...,[priceN, amountN, [orderIdListN]]
     mergedOrderBook = list()
-    
+
     level = 0
     count = 0
     lenth = len(orderBook)
@@ -168,20 +168,20 @@ def mergeOrderBook(orderBook, capacity=1, hasID=True):
                 amount += orderBook[count+1][AMOUNT]
                 count += 1
             mergedOrderBook.append([orderBook[count][PRICE], amount])
-            level = count+1            
+            level = count+1
 
     return mergedOrderBook
 
 def adjustOrderBook(newState, capacity=1):
-    """    
+    """
     思路2：将old深度表合并成“价格唯一，数量求和”的合并表，(用mergeOrderBook()函数)
     直接拿这份表和目标深度n表对比，比较价格：
     1.若n中有o中没有的价格，则以相应数量和价格挂单；
     2.若n中有o中有的价格，则比较o总量和n总量，以差量挂撤；
     3.若n中无o中有的价格，则把全部价格等于此价格的单撤掉。
     return: adjustmentDict ; eg:
-    { 'bids': [[276, 1], [276, 1], [274, 1], [274, 1], [274,1], ....], 
-      'asks':[[278, 1], [278, 0.5], ...], 
+    { 'bids': [[276, 1], [276, 1], [274, 1], [274, 1], [274,1], ....],
+      'asks':[[278, 1], [278, 0.5], ...],
       'cancle':[1357684 (# orderId), 1357898, ...]}
     """
     adjustmentDict = dict()
@@ -212,7 +212,7 @@ def adjustOrderBook(newState, capacity=1):
         oBidPrices.append(oBid[PRICE])
     nBidPrices = list()
     for nBid in nBids:
-        nBidPrices.append(nBid[PRICE])    
+        nBidPrices.append(nBid[PRICE])
 
     for n in range(len(nBids)):
         """
@@ -233,15 +233,15 @@ def adjustOrderBook(newState, capacity=1):
                 cancleBidsList.append([nBids[n][PRICE], deltaAmount])
     """
     3.若n中无 o中有 的价格，则把全部价格等于此价格的单撤掉。
-    """            
+    """
     for o in range(len(mergedBids)):
         if oBidPrices[o] not in nBidPrices:
             cancleBidsList.append([mergedBids[o][PRICE], mergedBids[o][AMOUNT]])
-   
+
     """
     处理撤单
     TO DO: sort cancleBidsList to let it: price from high to low
-    """ 
+    """
     # mini = 0
     for i in range(len(cancleBidsList)):
         decimal = cancleBidsList[i][AMOUNT] % capacity
@@ -249,15 +249,15 @@ def adjustOrderBook(newState, capacity=1):
         # print("remainAmount:")
         # print(remainAmount)
         if decimal == 0:
-            oBids = oBids 
-            """            
+            oBids = oBids
+            """
             TO DO: sort oBids to let it:
             1.price from high to low
             2.amount from high to low
             """
-        else: 
-            oBids = oBids 
-            """            
+        else:
+            oBids = oBids
+            """
             TO DO: sort oBids to let it:
             1.price from high to low
             2.amount from low to high
@@ -267,7 +267,7 @@ def adjustOrderBook(newState, capacity=1):
                 # print("inner remainAmount:")
                 # print(remainAmount)
                 if remainAmount > 0:
-                    orderId = oBids[j][ORDERID] 
+                    orderId = oBids[j][ORDERID]
                     adjustmentDict['cancle'].append(orderId)
                     remainAmount -= oBids[j][AMOUNT]
                 elif remainAmount == 0:
@@ -286,7 +286,7 @@ def adjustOrderBook(newState, capacity=1):
     cuttedBids = cutOrderBook(notCuttedBids)
     adjustmentDict['bids'].extend(cuttedBids)
 
-    """ 
+    """
     asks: price from low to high
     """
     oAskPrices = list()
@@ -315,15 +315,15 @@ def adjustOrderBook(newState, capacity=1):
                 cancleAsksList.append([nAsks[n][PRICE], deltaAmount])
     """
     3.若n中无 o中有 的价格，则把全部价格等于此价格的单撤掉。
-    """            
+    """
     for o in range(len(mergedAsks)):
         if oAskPrices[o] not in nAskPrices:
             cancleAsksList.append([mergedAsks[o][PRICE], mergedAsks[o][AMOUNT]])
-   
+
     """
     处理撤单
     TO DO: sort cancleAsksList to let it: price from low to high
-    """ 
+    """
     # mini = 0
     for i in range(len(cancleAsksList)):
         decimal = cancleAsksList[i][AMOUNT] % capacity
@@ -331,25 +331,25 @@ def adjustOrderBook(newState, capacity=1):
         print("remainAmount:")
         print(remainAmount)
         if decimal == 0:
-            oAsks = oAsks 
-            """            
+            oAsks = oAsks
+            """
             TO DO: sort oAsks to let it:
             1.price from low to high
             2.amount from high to low
             """
-        else: 
-            oAsks = oAsks 
-            """            
+        else:
+            oAsks = oAsks
+            """
             TO DO: sort oAsks to let it:
             1.price from low to high
             2.amount from low to high
             """
-        for j in range(len(oAsks)):            
+        for j in range(len(oAsks)):
             if oAsks[j][PRICE] == cancleAsksList[i][PRICE]:
                 print("inner remainAmount:")
-                print(remainAmount)                
+                print(remainAmount)
                 if remainAmount > 0:
-                    orderId = oAsks[j][ORDERID] 
+                    orderId = oAsks[j][ORDERID]
                     adjustmentDict['cancle'].append(orderId)
                     remainAmount -= oAsks[j][AMOUNT]
                 elif remainAmount == 0:
@@ -370,3 +370,68 @@ def adjustOrderBook(newState, capacity=1):
     adjustmentDict['asks'].extend(cuttedAsks)
 
     return adjustmentDict
+
+def commitOrderBook(newState,exchange):
+    BIDS,ASKS = range(2)
+    PRICE,AMOUNT,EXCHANGE = range(3)
+    POWER = [0.5,0.5]
+
+    newState['orderbooks'] = {'bids':[],'asks':[]}
+    A,B = 0,0
+    maxLevelA = len(newState[exchange[0]]['orderbook'][BIDS])
+    maxLevelB = len(newState[exchange[1]]['orderbook'][BIDS])
+    while A < maxLevelA and B < maxLevelB:
+        orderA = newState[exchange[0]]['orderbook'][BIDS][A]
+        orderB = newState[exchange[1]]['orderbook'][BIDS][B]
+        if orderA[PRICE] == orderB[PRICE]:
+            orderA[AMOUNT] = orderA[AMOUNT]*POWER[0] + orderB[AMOUNT]*POWER[1]
+            newState['orderbooks']['bids'].append(orderA)
+            A += 1
+            B += 1
+        elif orderA[PRICE] > orderB[PRICE]:
+            newState['orderbooks']['bids'].append(orderA)
+            A += 1
+        else:
+            newState['orderbooks']['bids'].append(orderB)
+            B += 1
+    if maxLevelA >= maxLevelB:
+        while A < maxLevelA:
+            orderA = newState[exchange[0]]['orderbook'][BIDS][A]
+            newState['orderbooks']['bids'].append(orderA)
+            A += 1
+    elif maxLevelA < maxLevelB:
+        while B < maxLevelB:
+            orderB = newState[exchange[1]]['orderbook'][BIDS][B]
+            newState['orderbooks']['bids'].append(orderB)
+            B += 1
+
+    A,B = 0,0
+    maxLevelA = len(newState[exchange[0]]['orderbook'][ASKS])
+    maxLevelB = len(newState[exchange[1]]['orderbook'][ASKS])
+    while A < maxLevelA and B < maxLevelB:
+        orderA = newState[exchange[0]]['orderbook'][ASKS][A]
+        orderB = newState[exchange[1]]['orderbook'][ASKS][B]
+        if orderA[PRICE] == orderB[PRICE]:
+            orderA[AMOUNT] = orderA[AMOUNT]*POWER[0] + orderB[AMOUNT]*POWER[1]
+            newState['orderbooks']['asks'].append(orderA)
+            A += 1
+            B += 1
+        elif orderA[PRICE] < orderB[PRICE]:
+            newState['orderbooks']['asks'].append(orderA)
+            A += 1
+        else:
+            newState['orderbooks']['asks'].append(orderB)
+            B += 1
+    if maxLevelA >= maxLevelB:
+        while A < maxLevelA:
+            orderA = newState[exchange[0]]['orderbook'][BIDS][A]
+            newState['orderbooks']['asks'].append(orderA)
+            A += 1
+    elif maxLevelA < maxLevelB:
+        while B < maxLevelB:
+            orderB = newState[exchange[1]]['orderbook'][BIDS][B]
+            newState['orderbooks']['asks'].append(orderB)
+            B += 1
+
+    newState['orderbooks']['time'] = time.time()
+    return newState

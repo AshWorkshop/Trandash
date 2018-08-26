@@ -5,7 +5,7 @@ from exchanges.gateio.GateIOService import gateio
 from exchanges.huobi.HuobiproService import huobipro
 from exchanges.sisty.SistyService import sisty
 from exchanges.bitfinex.BitfinexService import bitfinex
-from utils import adjustOrderBook
+from utils import adjustOrderBook,commitOrderBook
 
 import time
 
@@ -27,74 +27,6 @@ EXCHANGES = {
 
 def counter():
     print('tick')
-
-def books(newState,exchange):
-
-    newState['orderbooks'] = {'bids':[],'asks':[]}
-    A,B = 0,0
-    maxLevelA = len(newState[exchange[0]]['orderbook'][BIDS])
-    maxLevelB = len(newState[exchange[1]]['orderbook'][BIDS])
-    while A < maxLevelA and B < maxLevelB:
-        orderA = newState[exchange[0]]['orderbook'][BIDS][A]
-        orderB = newState[exchange[1]]['orderbook'][BIDS][B]
-        if orderA[PRICE] == orderB[PRICE]:
-            orderA[AMOUNT] = orderA[AMOUNT]*POWER[0] + orderB[AMOUNT]*POWER[1]
-            newState['orderbooks']['bids'].append(orderA)
-            A += 1
-            B += 1
-        elif orderA[PRICE] > orderB[PRICE]:
-            newState['orderbooks']['bids'].append(orderA)
-            A += 1
-        else:
-            newState['orderbooks']['bids'].append(orderB)
-            B += 1
-    if maxLevelA >= maxLevelB:
-        while A < maxLevelA:
-            orderA = newState[exchange[0]]['orderbook'][BIDS][A]
-            newState['orderbooks']['bids'].append(orderA)
-            A += 1
-    elif maxLevelA < maxLevelB:
-        while B < maxLevelB:
-            orderB = newState[exchange[1]]['orderbook'][BIDS][B]
-            newState['orderbooks']['bids'].append(orderB)
-            B += 1
-
-    A,B = 0,0
-    maxLevelA = len(newState[exchange[0]]['orderbook'][ASKS])
-    maxLevelB = len(newState[exchange[1]]['orderbook'][ASKS])
-    while A < maxLevelA and B < maxLevelB:
-        orderA = newState[exchange[0]]['orderbook'][ASKS][A]
-        orderB = newState[exchange[1]]['orderbook'][ASKS][B]
-        if orderA[PRICE] == orderB[PRICE]:
-            orderA[AMOUNT] = orderA[AMOUNT]*POWER[0] + orderB[AMOUNT]*POWER[1]
-            newState['orderbooks']['asks'].append(orderA)
-            A += 1
-            B += 1
-        elif orderA[PRICE] < orderB[PRICE]:
-            newState['orderbooks']['asks'].append(orderA)
-            A += 1
-        else:
-            newState['orderbooks']['asks'].append(orderB)
-            B += 1
-    if maxLevelA >= maxLevelB:
-        while A < maxLevelA:
-            orderA = newState[exchange[0]]['orderbook'][BIDS][A]
-            newState['orderbooks']['asks'].append(orderA)
-            A += 1
-    elif maxLevelA < maxLevelB:
-        while B < maxLevelB:
-            orderB = newState[exchange[1]]['orderbook'][BIDS][B]
-            newState['orderbooks']['asks'].append(orderB)
-            B += 1
-
-    newState['orderbooks']['time'] = time.time()
-    return newState
-
-
-{'id': '535e96c6-9385-4b39-be93-05e929140b3d', 'userid': 222, 'coinid': 36, 'type': 1, #买
-'entrustprice': 300.0, 'dealsumprice': 280.32516,
-'amount': 1.0, 'status': 3, 'createtime': 1535247027, 'endtime': 1535247116, 'remark': '添加交易买委托单',
-'alternatefield': 69, 'surplusamount': 0.0, 'entrustsource': 'APP', 'dealstatus': None},
 
 class TestRobot(RobotBase):
     def launch(self, oldState, newState):
@@ -208,7 +140,7 @@ class TestRobot(RobotBase):
 
             if 'huobipro' in newState:
                 if (time.time()-newState['huobipro']['time']) <= 300 and newState['huobipro']['orderbook'] is not None:
-                    newState = books(newState,['gateio','huobipro'])
+                    newState = commitOrderBook(newState,['gateio','huobipro'])
 
         return newState
 
@@ -227,7 +159,7 @@ class TestRobot(RobotBase):
 
             if 'gateio' in newState:
                 if (time.time()-newState['gateio']['time']) <= 300 and newState['gateio']['orderbook'] is not None:
-                    newState = books(newState,['huobipro','gateio'])
+                    newState = commitOrderBook(newState,['huobipro','gateio'])
 
         return newState
 
@@ -245,7 +177,7 @@ class TestRobot(RobotBase):
 
             newState['orderbooks'] = state.get('orderbooks',dict())
             #print(newState)
-            newState = books(newState,'bitfinex')
+            newState = commitOrderBook(newState,'bitfinex')
 
         return newState
 
