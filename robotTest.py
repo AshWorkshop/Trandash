@@ -12,6 +12,7 @@ TIME = 0.0
 
 BIDS,ASKS = range(2)
 PRICE,AMOUNT,EXCHANGE = range(3)
+ORDERID = 2
 
 POWER = [0.5,0.5]
 coinPairs = ('eth','usdt')
@@ -87,22 +88,29 @@ def books(newState,exchange):
     newState['orderbooks']['time'] = time.time()
     return newState
 
-def cutOrderBook(orderBook, capacity=1):
+def cutOrderBook(orderBook, capacity=1, hasID=False):
     #orderBook: one of bids or asks (type: list)
     #return: cuttedOrderBook, also one of  bids or asks (list of: [price1, capacity],...,[priceN, remainAmount])
     cuttedOrderBook = list()
 
+    ORDERID = 2
     for data in orderBook:
         remainAmount = data[AMOUNT]
         while remainAmount >= capacity:
             remainAmount -= capacity
-            cuttedOrderBook.append([data[PRICE], capacity])
+            if hasID:
+                cuttedOrderBook.append([data[PRICE], capacity, data[ORDERID]])
+            else:
+                cuttedOrderBook.append([data[PRICE], capacity])
         if remainAmount != 0:
-            cuttedOrderBook.append([data[PRICE], remainAmount])
+            if hasID:
+                cuttedOrderBook.append([data[PRICE], remainAmount, data[ORDERID]])
+            else:
+                cuttedOrderBook.append([data[PRICE], remainAmount])
 
     return cuttedOrderBook
 
-def mergeOrderBook(orderBook, capacity=1):
+def mergeOrderBook(orderBook, capacity=1, hasID=True):
     #orderBook: one of bids or asks (type: list) ps:including orderId
     #return: mergedOrderBook, also one of  bids or asks 
     #return: list of: [price1, amount1, [orderIdList1]],...,[priceN, amountN, [orderIdListN]]
@@ -114,14 +122,23 @@ def mergeOrderBook(orderBook, capacity=1):
     lenth = len(orderBook)
     while level < lenth:
         amount = orderBook[level][AMOUNT]
-        orderIdList = [orderBook[level][ORDERID]]
-        count = level
-        while count+1 < lenth and orderBook[count][PRICE] == orderBook[count+1][PRICE]:
-            amount += orderBook[count+1][AMOUNT]
-            orderIdList.append(orderBook[count+1][ORDERID])
-            count += 1
-        mergedOrderBook.append([orderBook[count][PRICE], amount, orderIdList])
-        level = count+1
+        if hasID:
+            orderIdList = list()
+            orderIdList.append(orderBook[level][ORDERID])
+            count = level
+            while count+1 < lenth and orderBook[count][PRICE] == orderBook[count+1][PRICE]:
+                amount += orderBook[count+1][AMOUNT]
+                orderIdList.append(orderBook[count+1][ORDERID])
+                count += 1
+            mergedOrderBook.append([orderBook[count][PRICE], amount, orderIdList])
+            level = count+1
+        else:
+            count = level
+            while count+1 < lenth and orderBook[count][PRICE] == orderBook[count+1][PRICE]:
+                amount += orderBook[count+1][AMOUNT]
+                count += 1
+            mergedOrderBook.append([orderBook[count][PRICE], amount])
+            level = count+1            
 
     return mergedOrderBook
 
@@ -210,12 +227,12 @@ def adjustOrderBook(newState, capacity=1):
             1.price from high to low
             2.amount from low to high
             """
-        for j in range(len(oBids))[mini:]:
+        for j in range(mini, len(oBids)):
             if oBids[j][PRICE] == cancleBidsList[i][PRICE]:
                 if remainAmount > 0:
-                orderId = oBids[j][ORDERID] 
-                adjustmentDict['cancle'].append(orderId)
-                remainAmount -= oBids[j][AMOUNT]
+                    orderId = oBids[j][ORDERID] 
+                    adjustmentDict['cancle'].append(orderId)
+                    remainAmount -= oBids[j][AMOUNT]
                 elif remainAmount == 0:
                     mini = j
                     break
@@ -225,7 +242,10 @@ def adjustOrderBook(newState, capacity=1):
                     break
                 else:
                     raise("handle cancleBidsList error")
-
+    # print("notCuttedBids inner:")
+    # print(notCuttedBids)
+    # print("cancleBidsList inner:")
+    # print(cancleBidsList)
     cuttedBids = cutOrderBook(notCuttedBids)
     adjustmentDict['bids'].extend(cuttedBids)
 
@@ -286,12 +306,12 @@ def adjustOrderBook(newState, capacity=1):
             1.price from low to high
             2.amount from low to high
             """
-        for j in range(len(oAsks))[mini:]:
+        for j in range(mini, len(oAsks)):
             if oAsks[j][PRICE] == cancleAsksList[i][PRICE]:
                 if remainAmount > 0:
-                orderId = oAsks[j][ORDERID] 
-                adjustmentDict['cancle'].append(orderId)
-                remainAmount -= oAsks[j][AMOUNT]
+                    orderId = oAsks[j][ORDERID] 
+                    adjustmentDict['cancle'].append(orderId)
+                    remainAmount -= oAsks[j][AMOUNT]
                 elif remainAmount == 0:
                     mini = j
                     break
@@ -302,6 +322,10 @@ def adjustOrderBook(newState, capacity=1):
                 else:
                     raise("handle cancleBidsList error")
 
+    # print("notCuttedAsks inner:")
+    # print(notCuttedAsks)
+    # print("cancleAsksList inner:")
+    # print(cancleAsksList)
     cuttedAsks = cutOrderBook(notCuttedAsks)
     adjustmentDict['asks'].extend(cuttedAsks)
 
