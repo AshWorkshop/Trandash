@@ -349,6 +349,7 @@ class TestRobot(RobotBase):
         actions = []
         #print(newState)
 
+        #订单管理
         if 'sisty' in newState and 'sisty' in oldState:
 
             old = oldState['sisty']['orders']['content']
@@ -514,7 +515,7 @@ class TestRobot(RobotBase):
                 price = order['entrustprice']
                 amount = order['surplusamount']
                 orderId = order['id']
-                newState['sisty']['orderbook']['bids'].append([price, amount, orderId])            
+                newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
         return newState
 
     def tickHandler(self, state, tickEvent):
