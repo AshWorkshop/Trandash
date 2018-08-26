@@ -9,6 +9,7 @@ class RobotBase(object):
         self.state['actions'] = list() # 机器人动作执行列表
         self.binds = list()  # 事件绑定列表
         self.bind('actionDoneEvent', self._actionDoneHandler)
+        self.bind('actionFailureEvent', self._actionFailureHandler)
         self.bind('systemEvent', self.systemEventHandler)
         self.doLastWork = False
         self.lastWork = None
@@ -122,9 +123,12 @@ class RobotBase(object):
         actions = self.launch(self.state, newState)
         self.state.update(newState)
         for action in actions:
+            self.state['actions'].append(action)
+        for action in actions:
             action.addListener(self)
             action.start()
-            self.state['actions'].append(action)
+
+        self.state['failedActions'] = list()
 
         self._doLastWork()
         
@@ -136,7 +140,22 @@ class RobotBase(object):
         for action in state['actions']:
             if action != actionDoneEvent.data['action']:
                 newState['actions'].append(action)
-        print('undone actions:', len(newState['actions']))
+        # print('undone actions:', len(newState['actions']))
+        return newState
+
+    def _actionFailureHandler(self, state, actionFailureEvent):
+        newState = dict()
+        newState.update(state)
+        newState['actions'] = list()
+        newState['failedActions'] = list()
+        for action in state['actions']:
+            if action != actionFailureEvent.data['action']:
+                newState['actions'].append(action)
+
+        for action in state['failedActions']:
+            newState['failedActions'].append(action)
+
+        newState['failedActions'].append(actionFailureEvent.data['action'])
         return newState
 
     def systemEventHandler(self, state, systemEvent):

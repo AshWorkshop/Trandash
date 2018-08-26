@@ -102,6 +102,9 @@ class TestRobot(RobotBase):
         actions = []
         #print(newState)
 
+        print('failedActions:', len(newState.get('failedActions', [])))
+        print('undoneActions:', len(newState.get('actions', [])))
+
         for action in newState['actions']:
             if action.wait:
                 return []
@@ -123,8 +126,8 @@ class TestRobot(RobotBase):
                         break
                     print(orderB)
                     print(orderA)
-                    staFile = open('sistyTest')
-                    staFile.write("orderA:%d ,\n orderB:%d" % (orderA,orderB))
+                    staFile = open('sistyTest', 'w+')
+                    staFile.write("orderA:%s ,\n orderB:%s" % (orderA,orderB))
                     staFile.close()
                     exchange = None
                     type = None
@@ -195,7 +198,7 @@ class TestRobot(RobotBase):
         # if newState['count'] == 15 and newState.get('tickSource') is None:
         #     print('START LISTEN TICKEVENT')
         #     self.listen(newState['tickBackup'])
-        print('actions:', len(actions))
+        print('newActions:', len(actions))
         return actions
 
     def gateioOrderBookHandler(self, state, dataRecivedEvent):
