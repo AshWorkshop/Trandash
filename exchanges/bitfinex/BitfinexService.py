@@ -5,23 +5,25 @@ from .HttpUtil import getPostHeaders
 from utils import Order
 
 from twisted.internet import reactor
+from twisted.logger import Logger
 from twisted.python.failure import Failure
 
 import json
 import time
 import urllib
 
-def defaultErrhandler(failure):
-    print(failure)
-    # time.sleep(1)
-    return None
-
-def ratelimitErrhandler(failure):
-    print(failure)
-    time.sleep(1)
-    return None
-
 class Bitfinex(ExchangeService):
+    log = Logger()
+
+    def defaultErrhandler(self, failure):
+        self.log.error(failure)
+        # time.sleep(1)
+        return None
+
+    def ratelimitErrhandler(self, failure):
+        self.log.error(failure)
+        time.sleep(1)
+        return None
 
     def __init__(self, url, accessKey, secretKey):
         self.__url = url
@@ -37,16 +39,16 @@ class Bitfinex(ExchangeService):
     def getOrderBook(self, pairs):
         #ratelimit: 60 req/min
         URL = "/v1/book/"
-        # print(self.__url)
+        # self.log.debug("{url}", url=self.__url)
         url = self.__url + URL + self.getSymbol(pairs)
-        # print(url)
+        # self.log.debug("{url}", url=url)
         headers = {'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36']}
         d = get(reactor, url, headers=headers)
 
         def handleBody(body):
-            # print(body)
+            # self.log.debug("{body}", body=body)
             data = json.loads(body)
-            # print(data)
+            # self.log.debug("{data}", data=data)
 
             assert 'bids' in data, str(data)
             rawBids = data['bids']
@@ -56,7 +58,7 @@ class Bitfinex(ExchangeService):
             #     rawAsks = []
             #     if 'error' in data:
             #         err = data['error']
-            #         print(err, ' from getOrderBook()')
+            #         self.log.error('{err} from getOrderBook()', err=err)
             #         if err == 'ERR_RATE_LIMIT':
             #             time.sleep(1)
 
@@ -72,25 +74,25 @@ class Bitfinex(ExchangeService):
             return [bids, asks]
 
         d.addCallback(handleBody)
-        d.addErrback(ratelimitErrhandler)
+        d.addErrback(self.ratelimitErrhandler)
 
         return d
 
     def getBalance(self, coin):
         #ratelimit: 20 req/min
         URL = "/v1/balances"
-        # print(self.__url)
+        # self.log.debug("{url}", url=self.__url)
         url = self.__url + URL
-        # print(url)
+        # self.log.debug("{url}", url=url)
         headers = getPostHeaders(url, URL)
         d = post(reactor, url, headers=headers)
         if coin == 'usdt':
             coin = 'usd'
 
         def handleBody(body):
-            # print(body)
+            # self.log.debug("{body}", body=body)
             data = json.loads(body)
-            print(data)
+            self.log.debug("{data}", data=data)
             balance = 0.0
             assert isinstance(data, list), str(data)
 
@@ -104,28 +106,28 @@ class Bitfinex(ExchangeService):
                 #     b_available = 0.0
                 #     if 'error' in data:
                 #         err = data['error']
-                #         print(err, ' from getBalance()')
+                #         self.log.error('{err} from getBalance()', err=err)
                 #         if err == 'ERR_RATE_LIMIT':
                 #             time.sleep(1)
                 if b_type == 'exchange':
-                    # print(b)
+                    # self.log.debug("{b}", b=b)
                     if b_currency == coin:
-                        # print(b['currency'])
+                        # self.log.debug("{currency}", currency=b['currency'])
                         balance = float(b_available)  #balance that is available to trade
                         break
             return balance
 
         d.addCallback(handleBody)
-        d.addErrback(ratelimitErrhandler)
+        d.addErrback(self.ratelimitErrhandler)
 
         return d
 
     def getBalances(self, coins):
         #ratelimit: 20 req/min
         URL = "/v1/balances"
-        # print(self.__url)
+        # self.log.debug("{url}", url=self.__url)
         url = self.__url + URL
-        # print(url)
+        # self.log.debug("{url}", url=url)
         headers = getPostHeaders(url, URL)
         d = post(reactor, url, headers=headers)
         for i in range(len(coins)):
@@ -133,9 +135,9 @@ class Bitfinex(ExchangeService):
                 coins[i] = 'usd'
 
         def handleBody(body):
-            # print(body)
+            # self.log.debug("{body}", body=body)
             data = json.loads(body)
-            # print(data)
+            # self.log.debug("{data}", data=data)
             balances = dict()
             assert isinstance(data, list), str(data)
             
@@ -149,13 +151,13 @@ class Bitfinex(ExchangeService):
                 #     b_available = 0.0
                 #     if 'error' in data:
                 #         err = data['error']
-                #         print(err, ' from getBalances()')
+                #         self.log.debug('{err} from getBalances()', err=err)
                 #         if err == 'ERR_RATE_LIMIT':
                 #             time.sleep(1)
                 if b_type == 'exchange':
-                    # print(b)
+                    # self.log.debug("{b}", b=b)
                     if b_currency in coins:
-                        # print(b['currency'])
+                        # self.log.debug("{currency}", currency=b['currency'])
                         balances[b_currency] = float(b_available)  #balance that is available to trade
 
             if balances == {}:
@@ -163,15 +165,15 @@ class Bitfinex(ExchangeService):
             return balances
 
         d.addCallback(handleBody)
-        d.addErrback(ratelimitErrhandler)
+        d.addErrback(self.ratelimitErrhandler)
 
         return d
 
     def buy(self, pairs, price, amount):
         URL = "/v1/order/new"
-        # print(self.__url)
+        # self.log.debug("{url}", url=self.__url)
         url = self.__url + URL
-        # print(url)
+        # self.log.debug("{url}", url=url)
         symbol = self.getSymbol(pairs)
         params = {
             'symbol': symbol,
@@ -185,33 +187,33 @@ class Bitfinex(ExchangeService):
         d = post(reactor, url, headers=headers)
 
         def handleBody(body):
-            # print(body)
+            # self.log.debug("{body}", body=body)
             data = json.loads(body)
-            # print(data)
+            # self.log.debug("{data}", data=data)
 
             assert 'order_id' in data, str(data)
             order_id = data['order_id']
             return int(order_id)
             # except KeyError:
-            #     print(data)
+            #     self.log.debug("{data}", data=data)
             #     order_id = '0'
             #     if 'error' in data:
             #         err = data['error']
-            #         print(err)
+            #         self.log.debug("{err}", err=err)
             #         if err == 'ERR_RATE_LIMIT':
             #             time.sleep(1)
             #     return (False, data)
 
         d.addCallback(handleBody)
-        d.addErrback(defaultErrhandler)
+        d.addErrback(self.defaultErrhandler)
 
         return d
 
     def sell(self, pairs, price, amount):
         URL = "/v1/order/new"
-        # print(self.__url)
+        # self.log.debug("{url}", url=self.__url)
         url = self.__url + URL
-        # print(url)
+        # self.log.debug("{url}", url=url)
         symbol = self.getSymbol(pairs)
         params = {
             'symbol': symbol,
@@ -225,9 +227,9 @@ class Bitfinex(ExchangeService):
         d = post(reactor, url, headers=headers)
 
         def handleBody(body):
-            # print(body)
+            # self.log.debug("{body}", body=body)
             data = json.loads(body)
-            # print(data)
+            # self.log.debug("{data}", data=data)
 
             assert 'order_id' in data, str(data)
             order_id = data['order_id']
@@ -236,25 +238,25 @@ class Bitfinex(ExchangeService):
             #     order_id = data['order_id']
             #     return (True, int(order_id))
             # except KeyError:
-            #     print(data)
+            #     self.log.debug("{data}", data=data)
             #     order_id = '0'
             #     if 'error' in data:
             #         err = data['error']
-            #         print(err)
+            #         self.log.debug("{err}", err=err)
             #         if err == 'ERR_RATE_LIMIT':
             #             time.sleep(1)
             #     return (False, data)
 
         d.addCallback(handleBody)
-        d.addErrback(defaultErrhandler)
+        d.addErrback(self.defaultErrhandler)
 
         return d
 
     def getOrder(self, pairs, orderId):
         URL = "/v1/order/status"
-        # print(self.__url)
+        # self.log.debug("{url}", url=self.__url)
         url = self.__url + URL
-        # print(url)
+        # self.log.debug("{url}", url=url)
         symbol = self.getSymbol(pairs)
         params = {}
         params['order_id'] = orderId
@@ -262,9 +264,9 @@ class Bitfinex(ExchangeService):
         d = post(reactor, url, headers=headers)
 
         def handleBody(body):
-            # print(body)
+            # self.log.debug("{body}", body=body)
             data = json.loads(body)
-            # print(data)
+            # self.log.debug("{data}", data=data)
 
             assert 'side' in data, str(data)
             side = data['side']
@@ -281,7 +283,7 @@ class Bitfinex(ExchangeService):
             #     is_live = False
             #     if 'error' in data:
             #         err = data['error']
-            #         print(err)
+            #         self.log.debug("{err}", err=err)
             #         if err == 'ERR_RATE_LIMIT':
             #             time.sleep(1)
 
@@ -305,15 +307,15 @@ class Bitfinex(ExchangeService):
             return order_data
 
         d.addCallback(handleBody)
-        d.addErrback(defaultErrhandler)
+        d.addErrback(self.defaultErrhandler)
 
         return d
 
     def cancel(self, pairs, orderId):
         URL = "/v1/order/cancel"
-        # print(self.__url)
+        # self.log.debug("{url}", url=self.__url)
         url = self.__url + URL
-        # print(url)
+        # self.log.debug("{url}", url=url)
         symbol = self.getSymbol(pairs)
         params = {}
         params['order_id'] = orderId
@@ -321,9 +323,9 @@ class Bitfinex(ExchangeService):
         d = post(reactor, url, headers=headers)
 
         def handleBody(body):
-            # print(body)
+            # self.log.debug("{body}", body=body)
             data = json.loads(body)
-            # print(data)
+            # self.log.debug("{data}", data=data)
 
             assert 'is_cancelled' in data, str(data)
             is_cancelled = data['is_cancelled']
@@ -331,7 +333,7 @@ class Bitfinex(ExchangeService):
             #     is_cancelled = False
             #     if 'error' in data:
             #         err = data['error']
-            #         print(err)
+            #         self.log.debug("{err}", err=err)
             #         if err == 'ERR_RATE_LIMIT':
             #             time.sleep(1)
             #     return (False, data)
@@ -341,7 +343,7 @@ class Bitfinex(ExchangeService):
                 return False
 
         d.addCallback(handleBody)
-        d.addErrback(defaultErrhandler)
+        d.addErrback(self.defaultErrhandler)
 
         return d
 
@@ -350,17 +352,17 @@ class Bitfinex(ExchangeService):
         #All times are UTC timestamps expressed as seconds (eg 1477409622)
         #default givenTime:3 days ago
         URL = "/v1/orders/hist"
-        # print(self.__url)
+        # self.log.debug("{url}", url=self.__url)
         url = self.__url + URL
-        # print(url)
+        # self.log.debug("{url}", url=url)
         symbol = self.getSymbol(pairs)
         headers = getPostHeaders(url, URL)
         d = post(reactor, url, headers=headers)
 
         def handleBody(body):
-            # print(body)
+            # self.log.debug("{body}", body=body)
             data = json.loads(body)
-            # print(data)
+            # self.log.debug("{data}", data=data)
             orderList = []
 
             assert isinstance(data, list), str(data)
@@ -368,7 +370,7 @@ class Bitfinex(ExchangeService):
                 assert 'price' in order, str(order)
                 timestamp = order['timestamp']
                 symbolGet = order['symbol'].upper()
-                # print(symbolGet,symbol)
+                # self.log.debug("{symbolGet}{symbol}", symbolGet=symbolGet, symbol=symbol)
                 if float(timestamp) >= givenTime and symbol==symbolGet:
                     status = 'open'
                     if order['is_cancelled']:
@@ -387,14 +389,14 @@ class Bitfinex(ExchangeService):
                 # except KeyError:
                 #     if 'error' in data:
                 #         err = data['error']
-                #         print(err)
+                #         self.log.debug("{err}", err=err)
                 #         if err == 'ERR_RATE_LIMIT':
                 #             time.sleep(1)
 
             return orderList
 
         d.addCallback(handleBody)
-        d.addErrback(ratelimitErrhandler)
+        d.addErrback(self.ratelimitErrhandler)
 
         return d
 
@@ -413,11 +415,11 @@ class Bitfinex(ExchangeService):
             if isinstance(data, list) and len(data) == 10:
                 return data
             else:
-                print(data)
+                self.log.info("{data}", data=data)
                 return None
 
         d.addCallback(handleBody)
-        d.addErrback(defaultErrhandler)
+        d.addErrback(self.defaultErrhandler)
 
         return d
 
@@ -449,11 +451,11 @@ class Bitfinex(ExchangeService):
                         t, o, c, h, l, v = kline
                         result.append([t, o, h, l, c, v, 0])
                     except Exception as err:
-                        print(err)
-                        print(kline)
+                        self.log.error("{err}", err=err)
+                        self.log.error("{kline}", kline=kline)
             return result
         d.addCallback(handleBody)
-        d.addErrback(defaultErrhandler)
+        d.addErrback(self.defaultErrhandler)
 
         return d
 
@@ -469,11 +471,11 @@ class Bitfinex(ExchangeService):
             try:
                 result = KLines[-last:]
             except Exception as err:
-                print(err)
+                self.log.error("{err}", err=err)
                 return None
             return result
         d.addCallback(handleList)
-        d.addErrback(defaultErrhandler)
+        d.addErrback(self.defaultErrhandler)
 
         return d
 

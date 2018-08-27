@@ -7,13 +7,15 @@ import hmac
 
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
+from twisted.logger import Logger
 
 import json
 
-def defaultErrhandler(failure):
-    print(failure)
-
 class GateIO(ExchangeService):
+    log = Logger
+
+    def defaultErrhandler(self, failure):
+        self.log.error(failure)
 
     def __init__(self, url, accessKey, secretKey):
         self.__url = url
@@ -58,16 +60,16 @@ class GateIO(ExchangeService):
 
     def getOrderBook(self, pairs):
         URL = "/api2/1/orderBook/"
-        # print(self.__url)
+        # self.log.debug("{url}", url=self.__url)
         url = self.__url['data'] + URL + self.getSymbol(pairs)
 
         d = get(reactor, url, headers = self.getGetHeader())
 
         def handleBody(body):
-            # print(body)
+            # self.log.debug("{body}", body=body)
             data = json.loads(body)
 
-            # print(data)
+            # self.log.debug("{data}", data=data)
 
             flag = data['result']
             if isinstance(flag, str):
@@ -80,7 +82,7 @@ class GateIO(ExchangeService):
             return [bids, asks]
 
         d.addCallback(handleBody)
-        d.addErrback(defaultErrhandler)
+        d.addErrback(self.defaultErrhandler)
 
         return d
 
@@ -88,20 +90,20 @@ class GateIO(ExchangeService):
         URL = "/api2/1/private/depositAddress/"
 
         url = self.__url['balance'] + URL
-        # print(url)
+        # self.log.debug("{url}", url=url)
 
         prams = {'currency': coin.upper()}
 
         body = self.getPostBodyStr(prams)
         header = self.getPostHeader(body)
-        # print(header)
-        # print(prams)
+        # self.log.debug("{header}", header=header)
+        # self.log.debug("{prams}", prams=prams)
 
         d = post(reactor, url, headers = header, body = body)
 
         def handleBody(body):
             data = json.loads(body)
-            # print(data)
+            # self.log.debug("{data}", data=data)
 
             flag = data['result']
             if isinstance(flag, str):
@@ -112,7 +114,7 @@ class GateIO(ExchangeService):
             return addr
 
         d.addCallback(handleBody)
-        d.addErrback(defaultErrhandler)
+        d.addErrback(self.defaultErrhandler)
 
         return d
 
@@ -133,20 +135,20 @@ class GateIO(ExchangeService):
         assert coins is None or isinstance(coins, (list, tuple) ), "type of 'coins' must be 'list' or 'tuple'"
         URL = "/api2/1/private/balances/"
         url = self.__url['balance'] + URL
-        # print(url)
+        # self.log.debug("{url}", url=url)
 
         prams = {}
 
         body = self.getPostBodyStr(prams)
         header = self.getPostHeader(body)
-        # print(header)
-        # print(prams)
+        # self.log.debug("{header}", header=header)
+        # self.log.debug("{prams}", prams=prams)
 
         d = post(reactor, url, headers = header, body = body)
 
         def handleBody(body):
             data = json.loads(body)
-            # print(data)
+            # self.log.debug("{data}", data=data)
 
             flag = data['result']
             if isinstance(flag, str):
@@ -163,7 +165,7 @@ class GateIO(ExchangeService):
                 return {coin: balances.get(coin.upper(), 0) for coin in coins}
 
         d.addCallback(handleBody)
-        d.addErrback(defaultErrhandler)
+        d.addErrback(self.defaultErrhandler)
 
         return d
 
@@ -171,7 +173,7 @@ class GateIO(ExchangeService):
         URL = "/api2/1/private/buy/"
 
         url = self.__url['balance'] + URL
-        # print(url)
+        # self.log.debug("{url}", url=url)
 
         prams = {
             'currencyPair': self.getSymbol(coinPair),
@@ -181,15 +183,15 @@ class GateIO(ExchangeService):
 
         body = self.getPostBodyStr(prams)
         header = self.getPostHeader(body)
-        # print(header)
-        # print(prams)
+        # self.log.debug("{header}", header=header)
+        # self.log.debug("{prams}", prams=prams)
 
         d = post(reactor, url, headers = header, body = body)
 
         def handleBody(body):
-            # print(body)
+            # self.log.debug("{body}", body=body)
             data = json.loads(body)
-            # print(data)
+            # self.log.debug("{data}", data=data)
 
             flag = data['result']
             if isinstance(flag, str):
@@ -200,7 +202,7 @@ class GateIO(ExchangeService):
             return orederId
 
         d.addCallback(handleBody)
-        d.addErrback(defaultErrhandler)
+        d.addErrback(self.defaultErrhandler)
 
         return d
 
@@ -208,7 +210,7 @@ class GateIO(ExchangeService):
         URL = "/api2/1/private/sell/"
 
         url = self.__url['balance'] + URL
-        # print(url)
+        # self.log.debug("{url}", url=url)
 
         prams = {
             'currencyPair': self.getSymbol(coinPair),
@@ -217,15 +219,15 @@ class GateIO(ExchangeService):
         }
         body = self.getPostBodyStr(prams)
         header = self.getPostHeader(body)
-        # print(header)
-        # print(prams)
+        # self.log.debug("{header}", header=header)
+        # self.log.debug("{prams}", prams=prams)
 
         d = post(reactor, url, headers = header, body = body)
 
         def handleBody(body):
-            # print(body)
+            # self.log.debug("{body}", body=body)
             data = json.loads(body)
-            # print(data)
+            # self.log.debug("{data}", data=data)
 
             flag = data['result']
             if isinstance(flag, str):
@@ -236,7 +238,7 @@ class GateIO(ExchangeService):
             return orederId
 
         d.addCallback(handleBody)
-        d.addErrback(defaultErrhandler)
+        d.addErrback(self.defaultErrhandler)
 
         return d
 
@@ -244,7 +246,7 @@ class GateIO(ExchangeService):
         URL = "/api2/1/private/getOrder/"
 
         url = self.__url['balance'] + URL
-        # print(url)
+        # self.log.debug("{url}", url=url)
 
         prams = {
             'orderNumber': orderId,
@@ -253,16 +255,16 @@ class GateIO(ExchangeService):
 
         body = self.getPostBodyStr(prams)
         header = self.getPostHeader(body)
-        # print(header)
-        # print(prams)
+        # self.log.debug("{header}", header=header)
+        # self.log.debug("{prams}", prams=prams)
 
         d = post(reactor, url, headers = header, body = body)
 
         def handleBody(body):
-            # print(body)
+            # self.log.debug("{body}", body=body)
             data = json.loads(body)
 
-            # print(data)
+            # self.log.debug("{data}", data=data)
 
             flag = data['result']
             if isinstance(flag, str):
@@ -281,12 +283,12 @@ class GateIO(ExchangeService):
                 'coinPair': coinPair,
                 'status': status
             }
-            # print(str(order))
+            # self.log.debug("{order!s}", order=order)
 
             return order
 
         d.addCallback(handleBody)
-        d.addErrback(defaultErrhandler)
+        d.addErrback(self.defaultErrhandler)
 
         return d
 
@@ -296,7 +298,7 @@ class GateIO(ExchangeService):
 
         urlDone = self.__url['balance'] + URLdone
         urlOpen = self.__url['balance'] + URLopen
-        # print(url)
+        # self.log.debug("{url}", url=url)
 
         if coinPair:
             currencyPair = self.getSymbol(coinPair)
@@ -309,8 +311,8 @@ class GateIO(ExchangeService):
 
         body = self.getPostBodyStr(prams)
         header = self.getPostHeader(body)
-        # print(header)
-        # print(prams)
+        # self.log.debug("{header}", header=header)
+        # self.log.debug("{prams}", prams=prams)
 
         dDone = post(reactor, urlDone, headers = header, body = body)
         dOpen = post(reactor, urlOpen, headers = header, body = body)
@@ -318,14 +320,14 @@ class GateIO(ExchangeService):
         d = defer.DeferredList([dDone, dOpen], consumeErrors=True)
 
         def handleBody(res):
-            # print(res)
+            # self.log.debug("{res}", res=res)
             for state, err in res:
                 if not state:
                     raise err
             
             (_, dataDone), (_, dataOpen) = res
             dataDone, dataOpen = json.loads(dataDone), json.loads(dataOpen)
-            # print(dataDone, dataOpen)
+            # self.log.debug("{dataDone}{dataOpen}", dataDone=dataDone, dataOpen=dataOpen)
 
             for data in [dataDone, dataOpen]:
                 flag = data['result']
@@ -343,7 +345,7 @@ class GateIO(ExchangeService):
                     'coinPair': tuple(orderData['currencyPair'].split('_')),
                     'status': 'open'
                 }
-                # print(str(order))
+                # self.log.debug("{order!s}", order=order)
                 orders.append(order)
             for orderData in dataDone['trades']:
                 order = {
@@ -354,12 +356,12 @@ class GateIO(ExchangeService):
                     'coinPair': tuple(orderData['pair'].split('_')),
                     'status': 'done'
                 }
-                # print(str(order))
+                # self.log.debug("{order!s}", order=order)
                 orders.append(order)
             return orders
 
         d.addCallback(handleBody)
-        d.addErrback(defaultErrhandler)
+        d.addErrback(self.defaultErrhandler)
 
         return d
 
@@ -367,7 +369,7 @@ class GateIO(ExchangeService):
         URL = "/api2/1/private/cancelOrder/"
 
         url = self.__url['balance'] + URL
-        # print(url)
+        # self.log.debug("{url}", url=url)
 
         prams = {
             'orderNumber': orderId,
@@ -375,15 +377,15 @@ class GateIO(ExchangeService):
         }
         body = self.getPostBodyStr(prams)
         header = self.getPostHeader(body)
-        # print(header)
-        # print(prams)
+        # self.log.debug("{header}", header=header)
+        # self.log.debug("{prams}", prams=prams)
 
         d = post(reactor, url, headers = header, body = body)
 
         def handleBody(body):
-            # print(body)
+            # self.log.debug("{body}", body=body)
             data = json.loads(body)
-            # print(data)
+            # self.log.debug("{data}", data=data)
 
             flag = data['result']
             if isinstance(flag, str):
@@ -393,7 +395,7 @@ class GateIO(ExchangeService):
             return True
             
         def errhandler(failure):
-            print(failure)
+            self.log.error("{failure}", failure=failure)
             return False
 
         d.addCallback(handleBody)
