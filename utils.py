@@ -1,5 +1,6 @@
 import six
 import math
+import time
 
 class Order:
     orderId = 0
@@ -376,7 +377,7 @@ def commitOrderBook(newState,exchange):
     PRICE,AMOUNT,EXCHANGE = range(3)
     POWER = [0.5,0.5]
 
-    newState['orderbooks'] = {'bids':[],'asks':[]}
+    newState['orderbooks'] = {'bids':[],'asks':[],"time":0}
     A,B = 0,0
     maxLevelA = len(newState[exchange[0]]['orderbook'][BIDS])
     maxLevelB = len(newState[exchange[1]]['orderbook'][BIDS])
