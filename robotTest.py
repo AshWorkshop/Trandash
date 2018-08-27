@@ -161,32 +161,40 @@ class TestRobot(RobotBase):
                         actions.append(action)
         #调整深度
         if 'orderbooks' in newState and 'sisty' in newState :
-            adjustmentDict = adjustOrderBook(newState)
-            exchange = 'sisty'
-            if adjustmentDict['bids'] is not None:
-                for bid in adjustmentDict['bids']:
-                    price = bid[PRICE]
-                    amount = bid[AMOUNT]
-                    action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"buy",wait=True,payload={
-                                        "args":[coinPairs,price,amount,1]
-                                    })
-                    actions.append(action)
+            if 'orderbook' in newState['sisty'] and newState['sisty']['orderbook']['bids'] is not None and newState['sisty']['orderbook']['asks'] is not None:
+                adjustmentDict = adjustOrderBook(newState, capacity=100)
+                print(adjustmentDict)
+                adjustmentDictStr = str(adjustmentDict)
+                currentTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')#现在
+                countStr = newState.get('count')
+                staFile = open('sisty_' + '_AdjustTest_' + str(TIME), 'a+')
+                staFile.write("%s, %s,\n adjustmentDict:\n %s" % (countStr,currentTime,adjustmentDictStr))
+                staFile.close()
+                exchange = 'sisty'
+                if adjustmentDict['bids'] is not None:
+                    for bid in adjustmentDict['bids']:
+                        price = bid[PRICE]
+                        amount = bid[AMOUNT]
+                        action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"buy",wait=True,payload={
+                                            "args":[coinPairs,price,amount,1]
+                                        })
+                        actions.append(action)
 
-            if adjustmentDict['asks'] is not None:
-                for ask in adjustmentDict['asks']:
-                    price = ask[PRICE]
-                    amount = ask[AMOUNT]
-                    action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"sell",wait=True,payload={
-                                        "args":[coinPairs,price,amount,2]
-                                    })
-                    actions.append(action)
+                if adjustmentDict['asks'] is not None:
+                    for ask in adjustmentDict['asks']:
+                        price = ask[PRICE]
+                        amount = ask[AMOUNT]
+                        action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"sell",wait=True,payload={
+                                            "args":[coinPairs,price,amount,2]
+                                        })
+                        actions.append(action)
 
-            if adjustmentDict['cancle'] is not None:
-                for cancleId in adjustmentDict['cancle']:
-                    action = Action(reactor,EXCHANGES[exchange].cancle,key=exchange+"cancle",wait=True,payload={
-                                        "args":[coinPairs,cancleId]
-                                    })
-                    actions.append(action)
+                if adjustmentDict['cancle'] is not None:
+                    for cancleId in adjustmentDict['cancle']:
+                        action = Action(reactor,EXCHANGES[exchange].cancle,key=exchange+"cancle",wait=True,payload={
+                                            "args":[coinPairs,cancleId]
+                                        })
+                        actions.append(action)
 
         #print(newState['data']['content']['datas'])
 
