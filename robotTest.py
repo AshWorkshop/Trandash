@@ -119,7 +119,7 @@ class TestRobot(RobotBase):
                         break
                     print(orderB)
                     print(orderA)
-                    staFile = open('sistyTest')
+                    staFile = open('sistyTest', 'a+')
                     staFile.write("orderA:%d ,\n orderB:%d" % (orderA,orderB))
                     staFile.close()
                     exchange = None
@@ -156,6 +156,11 @@ class TestRobot(RobotBase):
         if 'orderbooks' in newState and 'sisty' in newState :
             if 'orderbook' in newState['sisty'] and newState['sisty']['orderbook']['bids'] is not None and newState['sisty']['orderbook']['asks'] is not None:
                 adjustmentDict = adjustOrderBook(newState, capacity=5)
+                print(adjustmentDict)
+                adjustmentDictStr = str(adjustmentDict)
+                staFile = open('sistyAdjustTest', 'a+')
+                staFile.write("adjustmentDict:%s" % (adjustmentDictStr))
+                staFile.close()
                 exchange = 'sisty'
                 if adjustmentDict['bids'] is not None:
                     for bid in adjustmentDict['bids']:
