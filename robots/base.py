@@ -9,6 +9,7 @@ class RobotBase(object):
         self.state['actions'] = list() # 机器人动作执行列表
         self.binds = list()  # 事件绑定列表
         self.bind('actionDoneEvent', self._actionDoneHandler)
+        self.bind('actionFailureEvent', self._actionFailureHandler)
         self.bind('systemEvent', self.systemEventHandler)
         self.doLastWork = False
         self.lastWork = None
@@ -100,11 +101,6 @@ class RobotBase(object):
     def dispatch(self, event):
         _handlers = list()
 
-        if event.eventType == 'dataRecivedEvent' or event.eventType == 'dataRecivedFailureEvent':
-            for action in self.state['actions']:
-                if action.wait:
-                    return
-
         for _bind in self.binds:
             if _bind['eventType'] == event.eventType:
                 if _bind['key'] is None or _bind['key'] == event.key:
@@ -127,9 +123,12 @@ class RobotBase(object):
         actions = self.launch(self.state, newState)
         self.state.update(newState)
         for action in actions:
+            self.state['actions'].append(action)
+        for action in actions:
             action.addListener(self)
             action.start()
-            self.state['actions'].append(action)
+
+        self.state['failedActions'] = list()
 
         self._doLastWork()
         
@@ -141,7 +140,22 @@ class RobotBase(object):
         for action in state['actions']:
             if action != actionDoneEvent.data['action']:
                 newState['actions'].append(action)
-        
+        # print('undone actions:', len(newState['actions']))
+        return newState
+
+    def _actionFailureHandler(self, state, actionFailureEvent):
+        newState = dict()
+        newState.update(state)
+        newState['actions'] = list()
+        newState['failedActions'] = list()
+        for action in state['actions']:
+            if action != actionFailureEvent.data['action']:
+                newState['actions'].append(action)
+
+        for action in state['failedActions']:
+            newState['failedActions'].append(action)
+
+        newState['failedActions'].append(actionFailureEvent.data['action'])
         return newState
 
     def systemEventHandler(self, state, systemEvent):
@@ -159,7 +173,7 @@ class Event(object):
         self.data = data
 
     def __str__(self):
-        return "Event(eventType: %s, data: %s, key: %s)" % (self.eventType, self.data, self.key)
+        return "Event(eventType: %s, key: %s)" % (self.eventType, self.key)
 
 
 class ISource(object):

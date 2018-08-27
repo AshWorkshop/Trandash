@@ -120,7 +120,7 @@ def calcBolls(KLines, ma=20):
 
 
 PRICE, AMOUNT, ORDERID = range(3)        
-def cutOrderBook(orderBook, capacity=1, hasID=False):
+def cutOrderBook(orderBook, capacity=100, hasID=False):
     #orderBook: one of bids or asks (type: list)
     #return: cuttedOrderBook, also one of  bids or asks (list of: [price1, capacity],...,[priceN, remainAmount])
     cuttedOrderBook = list()
@@ -141,7 +141,7 @@ def cutOrderBook(orderBook, capacity=1, hasID=False):
 
     return cuttedOrderBook
 
-def mergeOrderBook(orderBook, capacity=1, hasID=True):
+def mergeOrderBook(orderBook, capacity=100, hasID=True):
     #orderBook: one of bids or asks (type: list) ps:including orderId
     #return: mergedOrderBook, also one of  bids or asks 
     #return: list of: [price1, amount1, [orderIdList1]],...,[priceN, amountN, [orderIdListN]]
@@ -172,7 +172,7 @@ def mergeOrderBook(orderBook, capacity=1, hasID=True):
 
     return mergedOrderBook
 
-def adjustOrderBook(newState, capacity=1):
+def adjustOrderBook(newState, capacity=100):
     """    
     思路2：将old深度表合并成“价格唯一，数量求和”的合并表，(用mergeOrderBook()函数)
     直接拿这份表和目标深度n表对比，比较价格：

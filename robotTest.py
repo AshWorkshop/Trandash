@@ -102,6 +102,13 @@ class TestRobot(RobotBase):
         actions = []
         #print(newState)
 
+        print('failedActions:', len(newState.get('failedActions', [])))
+        print('undoneActions:', len(newState.get('actions', [])))
+
+        for action in newState['actions']:
+            if action.wait:
+                return []
+
         #订单管理
         if 'sisty' in newState and 'sisty' in oldState:
 
@@ -119,8 +126,8 @@ class TestRobot(RobotBase):
                         break
                     print(orderB)
                     print(orderA)
-                    staFile = open('sistyTest', 'a+')
-                    staFile.write("orderA:%d ,\n orderB:%d" % (orderA,orderB))
+                    staFile = open('sistyTest', 'w+')
+                    staFile.write("orderA:%s ,\n orderB:%s" % (orderA,orderB))
                     staFile.close()
                     exchange = None
                     type = None
@@ -144,22 +151,24 @@ class TestRobot(RobotBase):
 
                     if exchange is not None and type is not None and price is not None and amount is not None:
                         if type == "buy":
-                            action = Action(reactor,EXCHANGES[exchange].sell,key=exchange+"sell",payload={
+                            action = Action(reactor,EXCHANGES[exchange].sell,key=exchange+"sell", wait=True,payload={
                                 "args":[coinPairs,price,amount]
                             })
                         if type == "sell":
-                            action = Action(reactor,EXCHANGES[exchange].buy,key=exchange+"buy",payload={
+                            action = Action(reactor,EXCHANGES[exchange].buy,key=exchange+"buy", wait=True,payload={
                                 "args":[coinPairs,price,amount]
                             })
                         actions.append(action)
         #调整深度
         if 'orderbooks' in newState and 'sisty' in newState :
             if 'orderbook' in newState['sisty'] and newState['sisty']['orderbook']['bids'] is not None and newState['sisty']['orderbook']['asks'] is not None:
-                adjustmentDict = adjustOrderBook(newState, capacity=5)
+                adjustmentDict = adjustOrderBook(newState, capacity=100)
                 print(adjustmentDict)
                 adjustmentDictStr = str(adjustmentDict)
-                staFile = open('sistyAdjustTest', 'a+')
-                staFile.write("adjustmentDict:%s" % (adjustmentDictStr))
+                currentTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')#现在
+                countStr = newState.get('count')
+                staFile = open('sisty_' + '_AdjustTest_' + str(TIME), 'a+')
+                staFile.write("%s, %s,\n adjustmentDict:\n %s" % (countStr,currentTime,adjustmentDictStr))
                 staFile.close()
                 exchange = 'sisty'
                 if adjustmentDict['bids'] is not None:
@@ -197,6 +206,7 @@ class TestRobot(RobotBase):
         # if newState['count'] == 15 and newState.get('tickSource') is None:
         #     print('START LISTEN TICKEVENT')
         #     self.listen(newState['tickBackup'])
+        print('newActions:', len(actions))
         return actions
 
     def gateioOrderBookHandler(self, state, dataRecivedEvent):

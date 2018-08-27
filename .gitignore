@@ -114,6 +114,7 @@ genCertifi.bat
 *.db
 bitfinex_*
 balances_logs/
+sisty_*
 
 # twistd cache
 *.cache
