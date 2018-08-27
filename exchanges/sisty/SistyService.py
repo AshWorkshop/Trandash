@@ -9,6 +9,7 @@ import urllib
 import time
 
 from twisted.internet import reactor
+from twisted.logger import Logger
 
 import json
 
@@ -62,6 +63,7 @@ def getSign(*args):
 
 
 class Sisty(ExchangeService):
+    log = Logger()
 
     def __init__(self, url, md5Key, userId, secret):
         self.__url = url
@@ -74,7 +76,7 @@ class Sisty(ExchangeService):
         return '_'.join((coin, money)).lower()
 
     def ebFailed(self, failure):
-        print(failure)
+        self.log.error("{failure}", failure=failure)
         return failure
 
     def getTicker(self, pairs):
@@ -94,7 +96,7 @@ class Sisty(ExchangeService):
 
     def getOrderBook(self, pairs):
         URL = "/trademarket/v1/api/depth"
-        # print(self.__url)
+        # self.log.debug("{url}", url=self.__url)
 
         params = {
             'market': self.getSymbol(pairs),
@@ -113,7 +115,7 @@ class Sisty(ExchangeService):
         URL = "/tradeOpen/v2/apiAddEntrustV2Robot"
 
         cipherText = getSign(self.__userId, pairs[0], self.__secret, pairs[1], self.__md5Key)
-        # print(cipherText, self.__md5Key)
+        # self.log.debug("{cipherText}{key}", cipherText=cipherText, key=self.__md5Key)
         params = {
             'coinName': pairs[0],
             'payCoinName': pairs[1],
@@ -127,13 +129,13 @@ class Sisty(ExchangeService):
 
 
         def handleBody(body):
-            # print(body)
+            # self.log.debug("{body}", body=body)
             data = json.loads(body)
             assert 'code' in data
             if data['code'] == 0:
                 return data
             else:
-                print('errorCode:', data['code'])
+                self.log.error('errorCode: {code}', code=data['code'])
                 return None
 
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
@@ -154,7 +156,7 @@ class Sisty(ExchangeService):
             if data['code'] == 0:
                 return True
             else:
-                print(data)
+                self.log.debug("{data}", data=data)
                 return False
 
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
@@ -174,7 +176,7 @@ class Sisty(ExchangeService):
             if data['code'] == 0:
                 return data
             else:
-                print('errorCode:', data['code'])
+                self.log.error('errorCode: {code}', code=data['code'])
                 return None
 
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
@@ -196,12 +198,12 @@ class Sisty(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            # print(data)
+            # self.log.debug("{data}", data=data)
             assert 'code' in data
             if data['code'] == 0:
                 return data
             else:
-                print('errorCode:', data['code'])
+                self.log.error('errorCode: {code}', code=data['code'])
                 return None
 
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)

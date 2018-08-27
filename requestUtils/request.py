@@ -35,19 +35,23 @@ def cbBody(body):
     return body
 
 pool = HTTPConnectionPool(reactor)
+endpoint = TCP4ClientEndpoint(reactor, settings.PROXY_ADDRESS, settings.PROXY_PORT)
+tunnelingAgent = TunnelingAgent(reactor, (settings.PROXY_ADDRESS, settings.PROXY_PORT, None), BrowserLikePolicyForHTTPS(), pool=pool)
+proxyAgent = ProxyAgent(endpoint, pool=pool)
+normalAgent = Agent(reactor, pool=pool)
+# pool = None
 
 def get(reactor, url, headers={}, body=None):
 
     ssl = url.split(':')[0]
 
     if ssl == 'https' and settings.USE_PROXY:
-        agent = TunnelingAgent(reactor, (settings.PROXY_ADDRESS, settings.PROXY_PORT, None), BrowserLikePolicyForHTTPS(), pool=pool)
+        agent = tunnelingAgent
     else:
         if settings.USE_PROXY:
-            endpoint = TCP4ClientEndpoint(reactor, settings.PROXY_ADDRESS, settings.PROXY_PORT)
-            agent = ProxyAgent(endpoint, pool=pool)
+            agent = proxyAgent
         else:
-            agent = Agent(reactor, pool=pool)
+            agent = normalAgent
     url = bytes(str(url), encoding="utf8")
     _body = None
     if body:
@@ -65,13 +69,12 @@ def post(reactor, url, headers={}, body=None):
     ssl = url.split(':')[0]
 
     if ssl == 'https' and settings.USE_PROXY:
-        agent = TunnelingAgent(reactor, (settings.PROXY_ADDRESS, settings.PROXY_PORT, None), BrowserLikePolicyForHTTPS(), pool=pool)
+        agent = tunnelingAgent
     else:
         if settings.USE_PROXY:
-            endpoint = TCP4ClientEndpoint(reactor, settings.PROXY_ADDRESS, settings.PROXY_PORT)
-            agent = ProxyAgent(endpoint, pool=pool)
+            agent = proxyAgent
         else:
-            agent = Agent(reactor, pool=pool)
+            agent = normalAgent
     url = bytes(str(url), encoding="utf8")
     _body = None
     if body:

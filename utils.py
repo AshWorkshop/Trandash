@@ -1,3 +1,4 @@
+from twisted.logger import Logger
 import six
 import math
 import time
@@ -43,8 +44,8 @@ def calcMean(dataList, reverse=False):
         result.append((total / totalAmount, totalAmount))
     return result
 
-
 def getLevel(amount, dataList):
+    log = Logger('getLevel')
     """
     用于根据给定市场深度信息（买/卖单方面的[price,amount]列表），
     计算出为了吃掉给定数量，所需的深度level
@@ -58,8 +59,7 @@ def getLevel(amount, dataList):
         else:
             remainAmount -= dataList[level][AMOUNT]
             level += 1
-    print('getLevel:')
-    print(level)
+    log.debug('getLevel:\n{level}', level=level)
     return level
 
 
@@ -77,9 +77,10 @@ def to_bytes(text, encoding=None, errors='strict'):
 
 
 def calcMA(KLines):
+    # log = Logger('calcMA')
     result = 0
     timestamp = KLines[-1][0]
-    # print(len(KLines))
+    # log.debug("{length}", length=len(KLines))
     for KLine in KLines:
         _, _, _, _, close, _, _ = KLine
         result += close
@@ -93,9 +94,10 @@ def calcMAs(KLines, ma=200):
     return result
 
 def calcBoll(KLines):
+    # log = Logger('calcBoll')
     result = 0
     timestamp = KLines[-1][0]
-    # print(timestamp)
+    # log.debug("{timestamp}", timestamp=timestamp)
     N = len(KLines)
     for KLine in KLines:
         _, _, _, _, close, _, _ = KLine
@@ -121,7 +123,7 @@ def calcBolls(KLines, ma=20):
 
 
 PRICE, AMOUNT, ORDERID = range(3)
-def cutOrderBook(orderBook, capacity=1, hasID=False):
+def cutOrderBook(orderBook, capacity=100, hasID=False):
     #orderBook: one of bids or asks (type: list)
     #return: cuttedOrderBook, also one of  bids or asks (list of: [price1, capacity],...,[priceN, remainAmount])
     cuttedOrderBook = list()
@@ -142,7 +144,7 @@ def cutOrderBook(orderBook, capacity=1, hasID=False):
 
     return cuttedOrderBook
 
-def mergeOrderBook(orderBook, capacity=1, hasID=True):
+def mergeOrderBook(orderBook, capacity=100, hasID=True):
     #orderBook: one of bids or asks (type: list) ps:including orderId
     #return: mergedOrderBook, also one of  bids or asks
     #return: list of: [price1, amount1, [orderIdList1]],...,[priceN, amountN, [orderIdListN]]
@@ -173,7 +175,7 @@ def mergeOrderBook(orderBook, capacity=1, hasID=True):
 
     return mergedOrderBook
 
-def adjustOrderBook(newState, capacity=1):
+def adjustOrderBook(newState, capacity=100):
     """
     思路2：将old深度表合并成“价格唯一，数量求和”的合并表，(用mergeOrderBook()函数)
     直接拿这份表和目标深度n表对比，比较价格：
@@ -185,6 +187,7 @@ def adjustOrderBook(newState, capacity=1):
       'asks':[[278, 1], [278, 0.5], ...],
       'cancle':[1357684 (# orderId), 1357898, ...]}
     """
+    # log = Logger('adjustOrderBook')
     adjustmentDict = dict()
     adjustmentDict['bids'] = list()
     adjustmentDict['asks'] = list()
@@ -194,12 +197,10 @@ def adjustOrderBook(newState, capacity=1):
     nAsks = newState['orderbooks']['asks']
     oBids = newState['sisty']['orderbook']['bids']  #including orderId in each level
     oAsks = newState['sisty']['orderbook']['asks']  #including orderId in each level
-    mergedBids = mergeOrderBook(oBids)  #including orderIdList in each level
-    mergedAsks = mergeOrderBook(oAsks)  #including orderIdList in each level
-    # print("mergedBids:")
-    # print(mergedBids)
-    # print("mergedAsks:")
-    # print(mergedAsks)
+    mergedBids = mergeOrderBook(oBids, capacity=capacity)  #including orderIdList in each level
+    mergedAsks = mergeOrderBook(oAsks, capacity=capacity)  #including orderIdList in each level
+    # log.debug("mergedBids:\n{mergedBids}", mergedBids=mergedBids)
+    # log.debug("mergedAsks:\n{mergedAsks}", mergedAsks=mergedAsks)
     notCuttedBids = list()
     notCuttedAsks = list()
     cancleBidsList = list()
@@ -247,8 +248,7 @@ def adjustOrderBook(newState, capacity=1):
     for i in range(len(cancleBidsList)):
         decimal = cancleBidsList[i][AMOUNT] % capacity
         remainAmount = cancleBidsList[i][AMOUNT]
-        # print("remainAmount:")
-        # print(remainAmount)
+        # log.debug("remainAmount:\n{remainAmount}", remainAmount=remainAmount)
         if decimal == 0:
             oBids = oBids
             """
@@ -265,8 +265,7 @@ def adjustOrderBook(newState, capacity=1):
             """
         for j in range(len(oBids)):
             if oBids[j][PRICE] == cancleBidsList[i][PRICE]:
-                # print("inner remainAmount:")
-                # print(remainAmount)
+                # log.debug("inner remainAmount:\n{remainAmount}", remainAmount=remainAmount)
                 if remainAmount > 0:
                     orderId = oBids[j][ORDERID]
                     adjustmentDict['cancle'].append(orderId)
@@ -280,11 +279,9 @@ def adjustOrderBook(newState, capacity=1):
                     break
                 else:
                     raise("handle cancleBidsList error")
-    # print("notCuttedBids inner:")
-    # print(notCuttedBids)
-    # print("cancleBidsList inner:")
-    # print(cancleBidsList)
-    cuttedBids = cutOrderBook(notCuttedBids)
+    # log.debug("notCuttedBids inner:\n{notCuttedBids}", notCuttedBids=notCuttedBids)
+    # log.debug("cancleBidsList inner:\n{cancleBidsList}", cancleBidsList=cancleBidsList)
+    cuttedBids = cutOrderBook(notCuttedBids, capacity=capacity)
     adjustmentDict['bids'].extend(cuttedBids)
 
     """
@@ -329,8 +326,7 @@ def adjustOrderBook(newState, capacity=1):
     for i in range(len(cancleAsksList)):
         decimal = cancleAsksList[i][AMOUNT] % capacity
         remainAmount = cancleAsksList[i][AMOUNT]
-        print("remainAmount:")
-        print(remainAmount)
+        log.debug("remainAmount:\n{remainAmount}", remainAmount=remainAmount)
         if decimal == 0:
             oAsks = oAsks
             """
@@ -347,8 +343,7 @@ def adjustOrderBook(newState, capacity=1):
             """
         for j in range(len(oAsks)):
             if oAsks[j][PRICE] == cancleAsksList[i][PRICE]:
-                print("inner remainAmount:")
-                print(remainAmount)
+                log.debug("inner remainAmount:\n{remainAmount}", remainAmount=remainAmount)
                 if remainAmount > 0:
                     orderId = oAsks[j][ORDERID]
                     adjustmentDict['cancle'].append(orderId)
@@ -363,11 +358,9 @@ def adjustOrderBook(newState, capacity=1):
                 else:
                     raise("handle cancleBidsList error")
 
-    # print("notCuttedAsks inner:")
-    # print(notCuttedAsks)
-    # print("cancleAsksList inner:")
-    # print(cancleAsksList)
-    cuttedAsks = cutOrderBook(notCuttedAsks)
+    # log.debug("notCuttedAsks inner:\n{notCuttedAsks}", notCuttedAsks=notCuttedAsks)
+    # log.debug("cancleAsksList inner:\n{cancleAsksList}", cancleAsksList=cancleAsksList)
+    cuttedAsks = cutOrderBook(notCuttedAsks, capacity=capacity)
     adjustmentDict['asks'].extend(cuttedAsks)
 
     return adjustmentDict

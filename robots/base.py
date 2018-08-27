@@ -1,14 +1,17 @@
 from twisted.internet import task
+from twisted.logger import Logger
 
 import time
 
 class RobotBase(object):
+    log = Logger()
     
     def __init__(self):
         self.state = dict()  # 机器人状态
         self.state['actions'] = list() # 机器人动作执行列表
         self.binds = list()  # 事件绑定列表
         self.bind('actionDoneEvent', self._actionDoneHandler)
+        self.bind('actionFailureEvent', self._actionFailureHandler)
         self.bind('systemEvent', self.systemEventHandler)
         self.doLastWork = False
         self.lastWork = None
@@ -74,7 +77,7 @@ class RobotBase(object):
             self.lastWork(*self.lastWorkArgs, **self.lastWorkKwargs)
 
     def activeEvent(self, event):  # 以同步的方式触发事件
-        print(event)
+        self.log.info("{event!s}", event=event)
         self._setLastWork(self.cbListen, event)
 
     def activeSystemEvent(self, sysEventType, info={}):
@@ -93,17 +96,12 @@ class RobotBase(object):
         return event
 
     def ebListen(self, failure):
-        print(failure)
+        self.log.error("{failure!s}", failure=failure)
 
         return failure
 
     def dispatch(self, event):
         _handlers = list()
-
-        if event.eventType == 'dataRecivedEvent' or event.eventType == 'dataRecivedFailureEvent':
-            for action in self.state['actions']:
-                if action.wait:
-                    return
 
         for _bind in self.binds:
             if _bind['eventType'] == event.eventType:
@@ -127,9 +125,12 @@ class RobotBase(object):
         actions = self.launch(self.state, newState)
         self.state.update(newState)
         for action in actions:
+            self.state['actions'].append(action)
+        for action in actions:
             action.addListener(self)
             action.start()
-            self.state['actions'].append(action)
+
+        self.state['failedActions'] = list()
 
         self._doLastWork()
         
@@ -141,7 +142,22 @@ class RobotBase(object):
         for action in state['actions']:
             if action != actionDoneEvent.data['action']:
                 newState['actions'].append(action)
-        
+        # self.log.warn("undone actions:{actions}", actions=len(newState['actions']))
+        return newState
+
+    def _actionFailureHandler(self, state, actionFailureEvent):
+        newState = dict()
+        newState.update(state)
+        newState['actions'] = list()
+        newState['failedActions'] = list()
+        for action in state['actions']:
+            if action != actionFailureEvent.data['action']:
+                newState['actions'].append(action)
+
+        for action in state['failedActions']:
+            newState['failedActions'].append(action)
+
+        newState['failedActions'].append(actionFailureEvent.data['action'])
         return newState
 
     def systemEventHandler(self, state, systemEvent):
@@ -159,7 +175,7 @@ class Event(object):
         self.data = data
 
     def __str__(self):
-        return "Event(eventType: %s, data: %s, key: %s)" % (self.eventType, self.data, self.key)
+        return "Event(eventType: %s, key: %s)" % (self.eventType, self.key)
 
 
 class ISource(object):
@@ -178,6 +194,7 @@ class ISource(object):
 
 
 class Action(object):
+    log = Logger()
 
     def __init__(self, reactor, func, key=None, wait=False, payload=dict()):
         self.args = payload.get('args', [])
@@ -217,7 +234,7 @@ class Action(object):
         _data['data'] = data
         event = Event('actionDoneEvent', data=_data, key=self.key)
     
-        print(event)
+        self.log.info("{event!s}", event=event)
 
         return event
 
@@ -227,12 +244,14 @@ class Action(object):
         _data['action'] = self
         event = Event('actionFailureEvent', data=_data, key=self.key)
 
-        print(event)
+        self.log.error("{event!s}", event=event)
 
         return event
 
 
 class CycleSource(object):
+    log = Logger()
+    
     def __init__(self, reactor, func, key=None, limit=0, wait=1, payload=dict()):
         self.running = False
         self.func = func
@@ -274,7 +293,7 @@ class CycleSource(object):
 
     def start(self):
         if self.running:
-            print('Cycle is running.')
+            self.log.info('Cycle is running.')
         else:
             self.running = True
             self.reactor.callWhenRunning(self._cbRun)
@@ -298,7 +317,7 @@ class CycleSource(object):
         _data['data'] = data
         event = Event('dataRecivedEvent', data=_data, key=self.key)
     
-        print(event)
+        self.log.info("{event!s}", event=event)
 
         return event
 
@@ -307,12 +326,14 @@ class CycleSource(object):
         _data['failure'] = failure
         event = Event('dataRecivedFailureEvent', data=_data, key=self.key)
 
-        print(event)
+        self.log.error("{event!s}", event=event)
 
         return event
 
 
 class LoopSource(object):
+    log = Logger()
+
     def __init__(self, reactor, func, key=None, seconds=1, payload=dict()):
         self.reactor = reactor
         self.func = func
@@ -339,7 +360,7 @@ class LoopSource(object):
 
     def start(self):
         if self.running:
-            print('Loop is running.')
+            self.log.info('Loop is running.')
         else:
             self.running = True
             self.reactor.callWhenRunning(self._run)
@@ -363,7 +384,7 @@ class LoopSource(object):
         _data['time'] = time.time()
         event = Event('tickEvent', data=_data, key=self.key)
     
-        print(event)
+        self.log.info("{event!s}", event=event)
 
         return event
 
@@ -372,7 +393,7 @@ class LoopSource(object):
         _data['failure'] = failure
         event = Event('tickFailureEvent', data=_data, key=self.key)
 
-        print(event)
+        self.log.error("{event!s}", event=event)
 
         return event
     

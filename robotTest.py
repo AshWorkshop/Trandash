@@ -1,6 +1,7 @@
 from robots.base import RobotBase, CycleSource, Action, LoopSource
 from twisted.internet import reactor, task
 from twisted.application import service
+from twisted.logger import Logger
 from exchanges.gateio.GateIOService import gateio
 from exchanges.huobi.HuobiproService import huobipro
 from exchanges.sisty.SistyService import sisty
@@ -8,6 +9,7 @@ from exchanges.bitfinex.BitfinexService import bitfinex
 from utils import adjustOrderBook,commitOrderBook
 
 import time
+import datetime
 
 TIME = 0.0
 
@@ -26,13 +28,21 @@ EXCHANGES = {
 }
 
 def counter():
-    print('tick')
+    log = Logger('counter')
+    log.info('tick')
 
 class TestRobot(RobotBase):
     def launch(self, oldState, newState):
         global TIME
         actions = []
-        #print(newState)
+        #self.log.debug("{newState}", newState=newState)
+
+        self.log.info('failedActions: {number}', number=len(newState.get('failedActions', [])))
+        self.log.info('undoneActions: {number}', number=len(newState.get('actions', [])))
+
+        for action in newState['actions']:
+            if action.wait:
+                return []
 
         #订单管理
         if 'sisty' in newState and 'sisty' in oldState:
@@ -49,10 +59,10 @@ class TestRobot(RobotBase):
                 for orderB in newOrders:
                     if orderB['createtime'] < TIME:
                         break
-                    print(orderB)
-                    print(orderA)
-                    staFile = open('sistyTest,orderManaged')
-                    staFile.write("orderA:%d ,\n orderB:%d" % (orderA,orderB))
+                    self.log.debug("{orderB}", orderB=orderB)
+                    self.log.debug("{orderA}", orderA=orderA)
+                    staFile = open('sistyTest', 'w+')
+                    staFile.write("orderA:%s ,\n orderB:%s" % (orderA,orderB))
                     staFile.close()
                     exchange = None
                     type = None
@@ -76,53 +86,62 @@ class TestRobot(RobotBase):
 
                     if exchange is not None and type is not None and price is not None and amount is not None:
                         if type == "buy":
-                            action = Action(reactor,EXCHANGES[exchange].sell,key=exchange+"sell",payload={
+                            action = Action(reactor,EXCHANGES[exchange].sell,key=exchange+"sell", wait=True,payload={
                                 "args":[coinPairs,price,amount]
                             })
                         if type == "sell":
-                            action = Action(reactor,EXCHANGES[exchange].buy,key=exchange+"buy",payload={
+                            action = Action(reactor,EXCHANGES[exchange].buy,key=exchange+"buy", wait=True,payload={
                                 "args":[coinPairs,price,amount]
                             })
                         actions.append(action)
         #调整深度
         if 'orderbooks' in newState and 'sisty' in newState :
-            adjustmentDict = adjustOrderBook(newState)
-            exchange = 'sisty'
-            if adjustmentDict['bids'] is not None:
-                for bid in adjustmentDict['bids']:
-                    price = bid[PRICE]
-                    amount = bid[AMOUNT]
-                    action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"buy",wait=True,payload={
-                                        "args":[coinPairs,price,amount,1]
-                                    })
-                    actions.append(action)
+            if 'orderbook' in newState['sisty'] and newState['sisty']['orderbook']['bids'] is not None and newState['sisty']['orderbook']['asks'] is not None:
+                adjustmentDict = adjustOrderBook(newState, capacity=100)
+                self.log.debug("{adjustmentDict}", adjustmentDict=adjustmentDict)
+                adjustmentDictStr = str(adjustmentDict)
+                currentTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')#现在
+                countStr = newState.get('count')
+                staFile = open('sisty_' + '_AdjustTest_' + str(TIME), 'a+')
+                staFile.write("%s, %s,\n adjustmentDict:\n %s" % (countStr,currentTime,adjustmentDictStr))
+                staFile.close()
+                exchange = 'sisty'
+                if adjustmentDict['bids'] is not None:
+                    for bid in adjustmentDict['bids']:
+                        price = bid[PRICE]
+                        amount = bid[AMOUNT]
+                        action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"buy",wait=True,payload={
+                                            "args":[coinPairs,price,amount,1]
+                                        })
+                        actions.append(action)
 
-            if adjustmentDict['asks'] is not None:
-                for ask in adjustmentDict['asks']:
-                    price = ask[PRICE]
-                    amount = ask[AMOUNT]
-                    action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"sell",wait=True,payload={
-                                        "args":[coinPairs,price,amount,2]
-                                    })
-                    actions.append(action)
+                if adjustmentDict['asks'] is not None:
+                    for ask in adjustmentDict['asks']:
+                        price = ask[PRICE]
+                        amount = ask[AMOUNT]
+                        action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"sell",wait=True,payload={
+                                            "args":[coinPairs,price,amount,2]
+                                        })
+                        actions.append(action)
 
-            if adjustmentDict['cancle'] is not None:
-                for cancleId in adjustmentDict['cancle']:
-                    action = Action(reactor,EXCHANGES[exchange].cancle,key=exchange+"cancle",wait=True,payload={
-                                        "args":[coinPairs,cancleId]
-                                    })
-                    actions.append(action)
+                if adjustmentDict['cancle'] is not None:
+                    for cancleId in adjustmentDict['cancle']:
+                        action = Action(reactor,EXCHANGES[exchange].cancle,key=exchange+"cancle",wait=True,payload={
+                                            "args":[coinPairs,cancleId]
+                                        })
+                        actions.append(action)
 
-        #print(newState['data']['content']['datas'])
+        #self.log.debug("{data}", data=newState['data']['content']['datas'])
 
-        print(newState.get('count'))
+        self.log.info("{count}", count=newState.get('count'))
         # if newState['count'] == 10 and newState.get('tickSource') is not None:
-        #     print('STOP LISTEN TICKEVENT')
+        #     self.log.info('STOP LISTEN TICKEVENT')
         #     self.stopListen(newState['tickSource'])
         #     # newState['tickSource'].stop()
         # if newState['count'] == 15 and newState.get('tickSource') is None:
-        #     print('START LISTEN TICKEVENT')
+        #     self.log.info('START LISTEN TICKEVENT')
         #     self.listen(newState['tickBackup'])
+        self.log.info('newActions:{actions}', actions=len(actions))
         return actions
 
     def gateioOrderBookHandler(self, state, dataRecivedEvent):
@@ -191,18 +210,19 @@ class TestRobot(RobotBase):
         newState['sisty']['orderbook'] = dict()
         newState['sisty']['orderbook']['bids'] = list()
         newState['sisty']['orderbook']['asks'] = list()
-        for order in newState['sisty']['orders']['content']['datas']:
-            if order['status'] == 1 or order['status'] == 2:
-                if order['type'] == 1:
-                    price = order['entrustprice']
-                    amount = order['surplusamount']
-                    orderId = order['id']
-                    newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
-                elif order['type'] == 2:
-                    price = order['entrustprice']
-                    amount = order['surplusamount']
-                    orderId = order['id']
-                    newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
+        if newState['sisty']['orders'] is not None:
+            for order in newState['sisty']['orders']['content']['datas']:
+                if order['status'] == 1 or order['status'] == 2:
+                    if order['type'] == 1:
+                        price = order['entrustprice']
+                        amount = order['surplusamount']
+                        orderId = order['id']
+                        newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
+                    elif order['type'] == 2:
+                        price = order['entrustprice']
+                        amount = order['surplusamount']
+                        orderId = order['id']
+                        newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
         return newState
 
     def tickHandler(self, state, tickEvent):
@@ -277,11 +297,11 @@ robot.state.update({
 })
 
 class RobotService(service.Service):
-
+    log = Logger()
     def startService(self):
         global TIME
         TIME = time.time()
-        print('starting robot service...')
+        self.log.info('starting robot service...')
         robot.listen([gateioSource, huobiproSource, sistyOrderSource, tickSource])
         gateioSource.start()
         huobiproSource.start()
@@ -289,7 +309,7 @@ class RobotService(service.Service):
         tickSource.start()
 
     def stopService(self):
-        print('stopping robot service...')
+        self.log.info('stopping robot service...')
         gateioSource.stop()
         huobiproSource.stop()
         sistyOrderSource.stop()

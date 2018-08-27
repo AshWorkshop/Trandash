@@ -27,6 +27,7 @@ buys = []
 sells = []
 lastBuyAmount = 0.0
 lastSellAmount = 0.0
+initAmount = 1.0
 buypId = None
 sellpId = None
 maxRight = 0.0
@@ -263,6 +264,7 @@ def cbRun():
     global maxDrawdown
     global accountRight
     global balance
+    global initAmount
     count += 1
     wait += 1
     # print to file
@@ -316,14 +318,14 @@ def cbRun():
             print('BUY')
             state = 'WAIT'
             buyDelta = 0.005
-            reactor.callWhenRunning(buy)
+            reactor.callWhenRunning(buy, amount=initAmount)
             # reactor.callWhenRunning(buy)
 
         if ticker < ma and sell_amount == 0 and len(sells) == 0:
             print('SELL')
             state = 'WAIT'
             sellDelta = 0.005
-            reactor.callWhenRunning(sell)
+            reactor.callWhenRunning(sell, amount=initAmount)
 
     # 是否平
     if state == 'GO' and orderBookData != None and positionData != None:
@@ -376,7 +378,7 @@ def cbRun():
         buy_amount = position['buy_amount']
         sell_amount = position['sell_amount']
 
-        initAmount = 1.0
+        # initAmount = 1.0
         rate = 1.618
 
         Bolls = calcBolls(KLines)
@@ -461,7 +463,7 @@ def cbRun():
 
         if buy_price_avg != buyAvgPrice or buyAmount != buy_amount:
             print('RESET buys')
-            lastBuyAmount = searchLastAmount(buy_amount)
+            lastBuyAmount = searchLastAmount(buy_amount, initAmount=initAmount)
             if buy_amount != 0:
                 buys = [(buy_price_avg, buy_amount)]
             else:
@@ -472,7 +474,7 @@ def cbRun():
 
         if sell_price_avg != sellAvgPrice or sellAmount != sell_amount:
             print('RESET sells')
-            lastSellAmount = searchLastAmount(sell_amount)
+            lastSellAmount = searchLastAmount(sell_amount, initAmount=initAmount)
             if sell_amount != 0:
                 sells = [(sell_price_avg, sell_amount)]
             else:
