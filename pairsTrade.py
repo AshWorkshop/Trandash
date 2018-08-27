@@ -280,7 +280,7 @@ def cbRunPart(orderBooks, orderBookA, orderBookB):
                 balances = BALANCES[exchangeName].getData()
                 # balancesWr = str(json.dumps(balances))
                 if isinstance(balances,dict):
-                    if coinAin balances:
+                    if coinA in balances:
                         balanceA = balances[coinA]  #balance of 'usdt'
                     if coinC in balances: 
                         balanceC = balances[coinC]  #balance of 'eth'
