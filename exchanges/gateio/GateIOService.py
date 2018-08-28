@@ -12,7 +12,7 @@ from twisted.logger import Logger
 import json
 
 class GateIO(ExchangeService):
-    log = Logger
+    log = Logger()
 
     def defaultErrhandler(self, failure):
         self.log.error(failure)
