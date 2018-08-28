@@ -37,6 +37,7 @@ accountRight = 0.0
 balance = 0.0
 buyDelta = 0.005
 sellDelta = 0.005
+rate = 1.382
 startTime = int(time.time())
 klineCycle = Cycle(reactor, okexFuture.getKLineLastMin, 'getKLineLastMin')
 tickerCycle = Cycle(reactor, okexFuture.getTicker, 'getTicker')
@@ -265,6 +266,7 @@ def cbRun():
     global accountRight
     global balance
     global initAmount
+    global rate
     count += 1
     wait += 1
     # print to file
@@ -379,7 +381,7 @@ def cbRun():
         sell_amount = position['sell_amount']
 
         # initAmount = 1.0
-        rate = 1.618
+        # rate = 1.618
 
         Bolls = calcBolls(KLines)
         klines = KLines[-3:]
@@ -463,7 +465,7 @@ def cbRun():
 
         if buy_price_avg != buyAvgPrice or buyAmount != buy_amount:
             print('RESET buys')
-            lastBuyAmount = searchLastAmount(buy_amount, initAmount=initAmount)
+            lastBuyAmount = searchLastAmount(buy_amount, initAmount=initAmount, rate=rate)
             if buy_amount != 0:
                 buys = [(buy_price_avg, buy_amount)]
             else:
@@ -474,7 +476,7 @@ def cbRun():
 
         if sell_price_avg != sellAvgPrice or sellAmount != sell_amount:
             print('RESET sells')
-            lastSellAmount = searchLastAmount(sell_amount, initAmount=initAmount)
+            lastSellAmount = searchLastAmount(sell_amount, initAmount=initAmount, rate=rate)
             if sell_amount != 0:
                 sells = [(sell_price_avg, sell_amount)]
             else:
