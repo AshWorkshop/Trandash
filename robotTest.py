@@ -1,6 +1,7 @@
 from robots.base import RobotBase, CycleSource, Action, LoopSource
 from twisted.internet import reactor, task
 from twisted.application import service
+from twisted.logger import Logger
 from exchanges.gateio.GateIOService import gateio
 from exchanges.huobi.HuobiproService import huobipro
 from exchanges.sisty.SistyService import sisty
@@ -26,7 +27,8 @@ EXCHANGES = {
 }
 
 def counter():
-    print('tick')
+    log = Logger('counter')
+    log.info('tick')
 
 def books(newState,exchange):
 
@@ -100,10 +102,10 @@ class TestRobot(RobotBase):
     def launch(self, oldState, newState):
         global TIME
         actions = []
-        #print(newState)
+        #self.log.debug("{newState}", newState=newState)
 
-        print('failedActions:', len(newState.get('failedActions', [])))
-        print('undoneActions:', len(newState.get('actions', [])))
+        self.log.info('failedActions: {number}', number=len(newState.get('failedActions', [])))
+        self.log.info('undoneActions: {number}', number=len(newState.get('actions', [])))
 
         for action in newState['actions']:
             if action.wait:
@@ -124,8 +126,8 @@ class TestRobot(RobotBase):
                 for orderB in newOrders:
                     if orderB['createtime'] < TIME:
                         break
-                    print(orderB)
-                    print(orderA)
+                    self.log.debug("{orderB}", orderB=orderB)
+                    self.log.debug("{orderA}", orderA=orderA)
                     staFile = open('sistyTest', 'w+')
                     staFile.write("orderA:%s ,\n orderB:%s" % (orderA,orderB))
                     staFile.close()
@@ -163,7 +165,7 @@ class TestRobot(RobotBase):
         if 'orderbooks' in newState and 'sisty' in newState :
             if 'orderbook' in newState['sisty'] and newState['sisty']['orderbook']['bids'] is not None and newState['sisty']['orderbook']['asks'] is not None:
                 adjustmentDict = adjustOrderBook(newState, capacity=100)
-                print(adjustmentDict)
+                self.log.debug("{adjustmentDict}", adjustmentDict=adjustmentDict)
                 adjustmentDictStr = str(adjustmentDict)
                 currentTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')#现在
                 countStr = newState.get('count')
@@ -196,17 +198,17 @@ class TestRobot(RobotBase):
                                         })
                         actions.append(action)
 
-        #print(newState['data']['content']['datas'])
+        #self.log.debug("{data}", data=newState['data']['content']['datas'])
 
-        print(newState.get('count'))
+        self.log.info("{count}", count=newState.get('count'))
         # if newState['count'] == 10 and newState.get('tickSource') is not None:
-        #     print('STOP LISTEN TICKEVENT')
+        #     self.log.info('STOP LISTEN TICKEVENT')
         #     self.stopListen(newState['tickSource'])
         #     # newState['tickSource'].stop()
         # if newState['count'] == 15 and newState.get('tickSource') is None:
-        #     print('START LISTEN TICKEVENT')
+        #     self.log.info('START LISTEN TICKEVENT')
         #     self.listen(newState['tickBackup'])
-        print('newActions:', len(actions))
+        self.log.info('newActions:{actions}', actions=len(actions))
         return actions
 
     def gateioOrderBookHandler(self, state, dataRecivedEvent):
@@ -261,7 +263,7 @@ class TestRobot(RobotBase):
                 order.append('bitfinex')
 
             newState['orderbooks'] = state.get('orderbooks',dict())
-            #print(newState)
+            #self.log.debug("{newState}", newState=newState)
             newState = books(newState,'bitfinex')
 
         return newState
@@ -362,11 +364,11 @@ robot.state.update({
 })
 
 class RobotService(service.Service):
-
+    log = Logger()
     def startService(self):
         global TIME
         TIME = time.time()
-        print('starting robot service...')
+        self.log.info('starting robot service...')
         robot.listen([gateioSource, huobiproSource, sistyOrderSource, tickSource])
         gateioSource.start()
         huobiproSource.start()
@@ -374,7 +376,7 @@ class RobotService(service.Service):
         tickSource.start()
 
     def stopService(self):
-        print('stopping robot service...')
+        self.log.info('stopping robot service...')
         gateioSource.stop()
         huobiproSource.stop()
         sistyOrderSource.stop()

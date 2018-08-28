@@ -10,11 +10,13 @@ import time
 import base64
 
 from twisted.internet import reactor
+from twisted.logger import Logger
 
 import json
 import urllib.parse
 
 class Huobipro(ExchangeService):
+    log = Logger()
 
     def __init__(self, url, accessKey, secretKey):
         self.__market_url = url['MARKET_URL']
@@ -103,20 +105,20 @@ class Huobipro(ExchangeService):
         d = get(reactor,url,headers = headers)
 
         def handleBody(body):
-            #print(body)
+            #self.log.debug("{body}", body=body)
             data = json.loads(body)
-            #print(data)
+            #self.log.debug("{data}", data=data)
             bids = data['tick']['bids'] #买单
             asks = data['tick']['asks'] #卖单
             return [bids, asks]
 
         def ebFailed(failure):
-            print(failure)
+            self.log.error("{failure}", failure=failure)
             return failure
 
         d.addCallback(handleBody)
         d.addErrback(ebFailed)
-        #print(b)
+        #self.log.debug("{b}", b=b)
         return d
 
     def get_accounts(self):
@@ -137,14 +139,14 @@ class Huobipro(ExchangeService):
         try:
             if response.status_code == 200 and data['status'] == 'ok':
                 return data['data'][0]['id']
-        except :
-            print("No acct_id")
+        except:
+            self.log.error("No acct_id")
             return
 
     def getBalance(self, coin):
 
         #accounts = self.get_accounts()
-        #print(accounts)
+        #self.log.debug("{accounts}", accounts=accounts)
         acct_id = self.getAcctId()
 
         url = "/v1/account/accounts/{0}/balance".format(acct_id)
@@ -174,7 +176,7 @@ class Huobipro(ExchangeService):
     def getBalances(self, coins=[]):
 
         #accounts = self.get_accounts()
-        #print(accounts)
+        #self.log.debug("{accounts}", accounts=accounts)
         acct_id = self.getAcctId()
 
         url = "/v1/account/accounts/{0}/balance".format(acct_id)
@@ -202,7 +204,7 @@ class Huobipro(ExchangeService):
                     b_available = 0.0
                     if 'error' in data:
                         err = data['error']
-                        print(err)
+                        self.log.error("{err}", err=err)
                 if b_type == 'trade':
                     if b_currency in coins:
                         balances[b_currency] = float(b_available)
@@ -231,16 +233,16 @@ class Huobipro(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            print(data)
+            self.log.debug("{data}", data=data)
             try:
                 order_id = data['data']
                 return (True,int(order_id))
             except KeyError:
-                print(data)
+                self.log.debug("{data}", data=data)
                 order_id = '0'
                 if 'err-msg' in data:
                     err = data['err-msg']
-                    print(err)
+                    self.log.error("{err}", err=err)
                     return (False, data['err-msg'])
 
         d.addCallback(handleBody)
@@ -264,16 +266,16 @@ class Huobipro(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            print(data)
+            self.log.debug("{data}", data=data)
             try:
                 order_id = data['data']
                 return (True,int(order_id))
             except KeyError:
-                print(data)
+                self.log.debug("{data}", data=data)
                 order_id = '0'
                 if 'err-msg' in data:
                     err = data['err-msg']
-                    print(err)
+                    self.log.error("{err}", err=err)
                     return (False, data['err-msg'])
 
 
@@ -297,7 +299,7 @@ class Huobipro(ExchangeService):
             elif data['data']['type']=='sell-limit':
                 data['data']['type']='sell'
 
-            #print(data)
+            #self.log.debug("{data}", data=data)
 
             order = {
                 "orderId":orderId,
@@ -375,9 +377,9 @@ class Huobipro(ExchangeService):
         d = get(reactor,url,headers=headers)
 
         def handleBody(body):
-            # print(body)
+            # self.log.debug("{body}", body=body)
             data = json.loads(body)
-            # print(data)
+            # self.log.debug("{data}", data=data)
             orderList = []
 
             if not isinstance(data, dict):
@@ -406,7 +408,7 @@ class Huobipro(ExchangeService):
                 except KeyError:
                     if 'error' in data:
                         err = data['error']
-                        print(err)
+                        self.log.debug("{err}", err=err)
 
             return orderList
 
