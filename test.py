@@ -1,6 +1,6 @@
 
 #from exchanges.okex.OKexService import okexFuture
-# from exchanges.huobi.HuobiproService import huobipro
+from exchanges.huobi.HuobiproService import huobipro
 from exchanges.gateio.GateIOService import gateio
 from exchanges.bitfinex.BitfinexService import bitfinex
 from exchanges.sisty.SistyService import sisty
@@ -17,6 +17,8 @@ pairs = ('eth', 'usdt')
 
 def test():
 
+    #d = huobipro.getAccounts()
+    d = huobipro.getBalance('eth')
     #d = huobipro.getOrderHistory(pairs = pairs,start_date = "2018-8-1",end_date = "2018-8-19")
     #d = okexFuture.cancle(('ltc', 'usdt'), orderId=1276330619587584)
     #d = huobipro.sell(coinPair=('eth','usdt'),price=293,amount=0.05)

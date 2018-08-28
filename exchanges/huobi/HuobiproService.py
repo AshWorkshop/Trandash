@@ -23,7 +23,7 @@ class Huobipro(ExchangeService):
         self.__trade_url = url['TRADE_URL']
         self.__accessKey = accessKey
         self.__secretKey = secretKey
-        self.__acct_id = self.get_accounts()
+        self.__acct_id = self.getAccounts()
     def getHeaders(self):
         return {
             "Content-type": ["application/x-www-form-urlencoded"],
@@ -98,10 +98,7 @@ class Huobipro(ExchangeService):
         postdata = urllib.parse.urlencode(params)
         url = self.__market_url + URL + postdata
 
-        headers = {
-            "Content-type": ["application/x-www-form-urlencoded"],
-            'User-Agent': ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36'],
-        }
+        headers = self.getHeaders()
         d = get(reactor,url,headers = headers)
 
         def handleBody(body):
@@ -121,7 +118,7 @@ class Huobipro(ExchangeService):
         #self.log.debug("{b}", b=b)
         return d
 
-    def get_accounts(self):
+    def getAccounts(self):
         """
         :return:
         """
@@ -134,32 +131,33 @@ class Huobipro(ExchangeService):
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36',
         }
         postdata = urllib.parse.urlencode(params)
+
         response = requests.get(url,postdata, headers=headers,timeout=5)
         data = response.json()
-        try:
-            if response.status_code == 200 and data['status'] == 'ok':
-                return data['data'][0]['id']
-        except:
-            self.log.error("No acct_id")
-            return
+
+        assert response.status_code == 200 and data['status'] == 'ok',str(data)
+
+        return data['data'][0]['id']
 
     def getBalance(self, coin):
 
+        acct_id = self.getAcctId()
+
         #accounts = self.get_accounts()
         #self.log.debug("{accounts}", accounts=accounts)
-        acct_id = self.getAcctId()
 
         url = "/v1/account/accounts/{0}/balance".format(acct_id)
         params = {"account-id": acct_id}
         url,params = self.api_key_get(params, url)
-        headers = self.postHeaders()
+        headers = self.getHeaders()
         postdata = urllib.parse.urlencode(params)
         url = url +'?'+ postdata
-
-        d = get(reactor,url,headers = headers)
+        d = get(reactor,url,headers=headers)
 
         def handleBody(body):
             data = json.loads(body)
+
+            assert isinstance(data, dict),str(data)
             for b in data['data']['list']:
                 if b['currency'] == coin and b['type'] == 'trade':
                     balance = b['balance']
@@ -170,7 +168,7 @@ class Huobipro(ExchangeService):
             return balance
 
         d.addCallback(handleBody)
-
+        d.addErrback(handleBody)
         return d
 
     def getBalances(self, coins=[]):
@@ -191,20 +189,18 @@ class Huobipro(ExchangeService):
         def handleBody(body):
             data = json.loads(body)
             balances = dict()
-            if not isinstance(data, dict):
-                return None
+            assert isinstance(data, dict),str(data)
             for b in data['data']['list']:
-                try:
-                    b_type = b['type']
-                    b_currency = b['currency']
-                    b_available = b['balance']
-                except KeyError:
-                    b_type = ''
-                    b_currency = ''
-                    b_available = 0.0
-                    if 'error' in data:
-                        err = data['error']
-                        self.log.error("{err}", err=err)
+                b_type = b['type']
+                b_currency = b['currency']
+                b_available = b['balance']
+            #    except KeyError:
+            #        b_type = ''
+            #        b_currency = ''
+            #        b_available = 0.0
+            #        if 'error' in data:
+            #            err = data['error']
+            #            self.log.error("{err}", err=err)
                 if b_type == 'trade':
                     if b_currency in coins:
                         balances[b_currency] = float(b_available)
@@ -212,6 +208,7 @@ class Huobipro(ExchangeService):
             return balances
 
         d.addCallback(handleBody)
+        d.addErrback(handleBody)
 
         return d
 
@@ -234,18 +231,19 @@ class Huobipro(ExchangeService):
         def handleBody(body):
             data = json.loads(body)
             self.log.debug("{data}", data=data)
-            try:
-                order_id = data['data']
-                return (True,int(order_id))
-            except KeyError:
-                self.log.debug("{data}", data=data)
-                order_id = '0'
-                if 'err-msg' in data:
-                    err = data['err-msg']
-                    self.log.error("{err}", err=err)
-                    return (False, data['err-msg'])
+            assert 'data' in data,str(data)
+            order_id = data['data']
+            return int(order_id)
+        #    except KeyError:
+        #        self.log.debug("{data}", data=data)
+        #        order_id = '0'
+        #        if 'err-msg' in data:
+        #            err = data['err-msg']
+        #            self.log.error("{err}", err=err)
+        #            return (False, data['err-msg'])
 
         d.addCallback(handleBody)
+        d.addErrback(handleBody)
 
         return d
 
@@ -267,19 +265,22 @@ class Huobipro(ExchangeService):
         def handleBody(body):
             data = json.loads(body)
             self.log.debug("{data}", data=data)
-            try:
-                order_id = data['data']
-                return (True,int(order_id))
-            except KeyError:
-                self.log.debug("{data}", data=data)
-                order_id = '0'
-                if 'err-msg' in data:
-                    err = data['err-msg']
-                    self.log.error("{err}", err=err)
-                    return (False, data['err-msg'])
+            assert 'data' in data
+            order_id = data['data']
+            return int(order_id)
+        #    try:
+        #        return (True,int(order_id))
+        #    except KeyError:
+        #        self.log.debug("{data}", data=data)
+        #        order_id = '0'
+        #        if 'err-msg' in data:
+        #            err = data['err-msg']
+        #            self.log.error("{err}", err=err)
+        #            return (False, data['err-msg'])
 
 
         d.addCallback(handleBody)
+        d.addErrback(handleBody)
 
         return d
 
@@ -294,6 +295,7 @@ class Huobipro(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
+            assert 'data' in data
             if data['data']['type']=='buy-limit':
                 data['data']['type']='buy'
             elif data['data']['type']=='sell-limit':
@@ -313,6 +315,7 @@ class Huobipro(ExchangeService):
             return (True, order)
 
         d.addCallback(handleBody)
+        d.addErrback(handleBody)
 
         return d
 
@@ -326,16 +329,18 @@ class Huobipro(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
+            assert 'status' in data
             if data['status'] == 'ok':
-                return (True,data)
+                return data
             elif data['status'] == 'error':
-                return (False,data['err-code'],data['err-msg'])
+                return (data['err-code'],data['err-msg'])
 
         d.addCallback(handleBody)
+        d.addErrback(handleBody)
 
         return d
 
-    def getOrderHistory(self, pairs, start_date=None,end_date=float(time.time())):
+    def getOrders(self, pairs, start_date=None,end_date=float(time.time())):
         """
 
         :param symbol:
@@ -381,43 +386,36 @@ class Huobipro(ExchangeService):
             data = json.loads(body)
             # self.log.debug("{data}", data=data)
             orderList = []
-
-            if not isinstance(data, dict):
-                return None
+            assert isinstance(data, dict),str(data)
 
             for order in data['data']:
-                try:
-                    if order['type'] == 'sell-limit':
-                        order['type'] = 'sell'
-                    elif order['type'] == 'buy-limit':
-                        order['type'] = 'buy'
+                if order['type'] == 'sell-limit':
+                    order['type'] = 'sell'
+                elif order['type'] == 'buy-limit':
+                    order['type'] = 'buy'
 
-                    if order['state'] == 'filled':
-                        order['state'] = 'done'
-                    elif order['state'] == 'canceled':
-                        order['state'] = 'cancelled'
-                    orderList.append({
-                        'orderId': order['id'],
-                        'timestamp': order['finished-at'],    #返回的字典中添加了时间戳信息
-                        'type': order['type'],
-                        'iniPrice': float(order['price']),
-                        'initAmount': float(order['amount']),
-                        'coinPair': symbol,
-                        'status': order['state']
-                        })
-                except KeyError:
-                    if 'error' in data:
-                        err = data['error']
-                        self.log.debug("{err}", err=err)
+                if order['state'] == 'filled':
+                    order['state'] = 'done'
+                elif order['state'] == 'canceled':
+                    order['state'] = 'cancelled'
+                orderList.append({
+                    'orderId': order['id'],
+                    'timestamp': order['finished-at'],    #返回的字典中添加了时间戳信息
+                    'type': order['type'],
+                    'iniPrice': float(order['price']),
+                    'initAmount': float(order['amount']),
+                    'coinPair': symbol,
+                    'status': order['state']
+                    })
 
             return orderList
 
         d.addCallback(handleBody)
+        d.addErrback(handleBody)
 
         return d
 #1533793328920
 #1533870669146 2018:11:11
-
 
 huobipro = Huobipro({'MARKET_URL':"https://api.huobi.pro",
                 'TRADE_URL':"https://api.huobi.pro"},
