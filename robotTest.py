@@ -6,9 +6,10 @@ from exchanges.gateio.GateIOService import gateio
 from exchanges.huobi.HuobiproService import huobipro
 from exchanges.sisty.SistyService import sisty
 from exchanges.bitfinex.BitfinexService import bitfinex
-from utils import adjustOrderBook
+from utils import adjustOrderBook,commitOrderBook
 
 import time
+import datetime
 
 TIME = 0.0
 
@@ -30,74 +31,6 @@ def counter():
     log = Logger('counter')
     log.info('tick')
 
-def books(newState,exchange):
-
-    newState['orderbooks'] = {'bids':[],'asks':[]}
-    A,B = 0,0
-    maxLevelA = len(newState[exchange[0]]['orderbook'][BIDS])
-    maxLevelB = len(newState[exchange[1]]['orderbook'][BIDS])
-    while A < maxLevelA and B < maxLevelB:
-        orderA = newState[exchange[0]]['orderbook'][BIDS][A]
-        orderB = newState[exchange[1]]['orderbook'][BIDS][B]
-        if orderA[PRICE] == orderB[PRICE]:
-            orderA[AMOUNT] = orderA[AMOUNT]*POWER[0] + orderB[AMOUNT]*POWER[1]
-            newState['orderbooks']['bids'].append(orderA)
-            A += 1
-            B += 1
-        elif orderA[PRICE] > orderB[PRICE]:
-            newState['orderbooks']['bids'].append(orderA)
-            A += 1
-        else:
-            newState['orderbooks']['bids'].append(orderB)
-            B += 1
-    if maxLevelA >= maxLevelB:
-        while A < maxLevelA:
-            orderA = newState[exchange[0]]['orderbook'][BIDS][A]
-            newState['orderbooks']['bids'].append(orderA)
-            A += 1
-    elif maxLevelA < maxLevelB:
-        while B < maxLevelB:
-            orderB = newState[exchange[1]]['orderbook'][BIDS][B]
-            newState['orderbooks']['bids'].append(orderB)
-            B += 1
-
-    A,B = 0,0
-    maxLevelA = len(newState[exchange[0]]['orderbook'][ASKS])
-    maxLevelB = len(newState[exchange[1]]['orderbook'][ASKS])
-    while A < maxLevelA and B < maxLevelB:
-        orderA = newState[exchange[0]]['orderbook'][ASKS][A]
-        orderB = newState[exchange[1]]['orderbook'][ASKS][B]
-        if orderA[PRICE] == orderB[PRICE]:
-            orderA[AMOUNT] = orderA[AMOUNT]*POWER[0] + orderB[AMOUNT]*POWER[1]
-            newState['orderbooks']['asks'].append(orderA)
-            A += 1
-            B += 1
-        elif orderA[PRICE] < orderB[PRICE]:
-            newState['orderbooks']['asks'].append(orderA)
-            A += 1
-        else:
-            newState['orderbooks']['asks'].append(orderB)
-            B += 1
-    if maxLevelA >= maxLevelB:
-        while A < maxLevelA:
-            orderA = newState[exchange[0]]['orderbook'][BIDS][A]
-            newState['orderbooks']['asks'].append(orderA)
-            A += 1
-    elif maxLevelA < maxLevelB:
-        while B < maxLevelB:
-            orderB = newState[exchange[1]]['orderbook'][BIDS][B]
-            newState['orderbooks']['asks'].append(orderB)
-            B += 1
-
-    newState['orderbooks']['time'] = time.time()
-    return newState
-
-
-{'id': '535e96c6-9385-4b39-be93-05e929140b3d', 'userid': 222, 'coinid': 36, 'type': 1, #买
-'entrustprice': 300.0, 'dealsumprice': 280.32516,
-'amount': 1.0, 'status': 3, 'createtime': 1535247027, 'endtime': 1535247116, 'remark': '添加交易买委托单',
-'alternatefield': 69, 'surplusamount': 0.0, 'entrustsource': 'APP', 'dealstatus': None},
-
 class TestRobot(RobotBase):
     def launch(self, oldState, newState):
         global TIME
@@ -112,34 +45,30 @@ class TestRobot(RobotBase):
                 return []
 
         #订单管理
-        if 'sisty' in newState and 'sisty' in oldState:
+        if 'sisty' in newState:
+            if newState['sisty']['orders'] is not None:
 
-            old = oldState['sisty']['orders']['content']
-            new = newState['sisty']['orders']['content']
+                newOrders = newState['sisty']['orders']['content']['datas']
 
-            oldOrders = old['datas']
-            newOrders = new['datas']
-
-            for orderA in oldOrders:
-                if orderA['createtime'] < TIME:
-                    break
-                for orderB in newOrders:
+                for order in newOrders:
                     if orderB['createtime'] < TIME:
                         break
-                    self.log.debug("{orderB}", orderB=orderB)
-                    self.log.debug("{orderA}", orderA=orderA)
-                    staFile = open('sistyTest', 'w+')
-                    staFile.write("orderA:%s ,\n orderB:%s" % (orderA,orderB))
-                    staFile.close()
+                    orderId = order['id']
+                    self.log.debug("{orderA}", order=order)
                     exchange = None
                     type = None
                     price = None
                     amount = None
-                    if orderA['id'] == orderB['id']:
-                        amount = abs(orderA['surplusamount']-orderB['surplusamount'])
-                        if orderA['type'] == 1:
+                    dealInOrder = order['amount']-order['surplusamount']
+                    dealInSource = order.get('dealInSource',0.0)
+                    amount = abs(dealInOrder-dealInSource)
+                    if amount > 0.000000001:
+                        staFile = open('sistyOrderManaged'+str(TIME), 'w+')
+                        staFile.write("orderA:%s\n" % orderA)
+                        staFile.close()
+                        if order['type'] == 1:
                             type = "buy"
-                        elif orderA['type'] == 2:
+                        elif order['type'] == 2:
                             type = "sell"
                         if "orderbooks" in newState:
                             if type == "buy":
@@ -153,13 +82,19 @@ class TestRobot(RobotBase):
 
                     if exchange is not None and type is not None and price is not None and amount is not None:
                         if type == "buy":
-                            action = Action(reactor,EXCHANGES[exchange].sell,key=exchange+"sell", wait=True,payload={
+                            action = Action(reactor,EXCHANGES[exchange].sell,key=exchange+"M?Sell?"+orderId+"?"+str(amount), wait=True,payload={
                                 "args":[coinPairs,price,amount]
                             })
+                            staFile = open('sistyOrderManaged'+str(TIME), 'w+')
+                            staFile.write("exchange:%s,type:%s,price:%s,amount:%s\n" % (exchange,type,price,amount))
+                            staFile.close()
                         if type == "sell":
-                            action = Action(reactor,EXCHANGES[exchange].buy,key=exchange+"buy", wait=True,payload={
+                            action = Action(reactor,EXCHANGES[exchange].buy,key=exchange+"M?Buy?"+orderId+"?"+str(amount), wait=True,payload={
                                 "args":[coinPairs,price,amount]
                             })
+                            taFile = open('sistyOrderManaged'+str(TIME), 'w+')
+                            staFile.write("exchange:%s,type:%s,price:%s,amount:%s\n" % (exchange,type,price,amount))
+                            staFile.close()
                         actions.append(action)
         #调整深度
         if 'orderbooks' in newState and 'sisty' in newState :
@@ -212,6 +147,7 @@ class TestRobot(RobotBase):
         return actions
 
     def gateioOrderBookHandler(self, state, dataRecivedEvent):
+        print(dataRecivedEvent)
         newState = dict()
         newState.update(state)
         newState['gateio'] = dict()
@@ -227,11 +163,12 @@ class TestRobot(RobotBase):
 
             if 'huobipro' in newState:
                 if (time.time()-newState['huobipro']['time']) <= 300 and newState['huobipro']['orderbook'] is not None:
-                    newState = books(newState,['gateio','huobipro'])
+                    newState = commitOrderBook(newState,['gateio','huobipro'])
 
         return newState
 
     def huobiproOrderBookHandler(self, state, dataRecivedEvent):
+        print(dataRecivedEvent)
         newState = dict()
         newState.update(state)
         newState['huobipro'] = dict()
@@ -246,7 +183,7 @@ class TestRobot(RobotBase):
 
             if 'gateio' in newState:
                 if (time.time()-newState['gateio']['time']) <= 300 and newState['gateio']['orderbook'] is not None:
-                    newState = books(newState,['huobipro','gateio'])
+                    newState = commitOrderBook(newState,['huobipro','gateio'])
 
         return newState
 
@@ -263,22 +200,28 @@ class TestRobot(RobotBase):
                 order.append('bitfinex')
 
             newState['orderbooks'] = state.get('orderbooks',dict())
-            #self.log.debug("{newState}", newState=newState)
-            newState = books(newState,'bitfinex')
+            #print(newState)
+            newState = commitOrderBook(newState,'bitfinex')
 
         return newState
 
     def sistyOrderHandler(self,state,dataRecivedEvent):
+        #print(dataRecivedEvent)
         newState = dict()
         newState.update(state)
         newState['ststy'] = dict()
         newState['sisty'] = state.get('sisty',dict())
         newState['sisty']['orders'] = dataRecivedEvent.data['data']
+
         newState['sisty']['orderbook'] = dict()
         newState['sisty']['orderbook']['bids'] = list()
         newState['sisty']['orderbook']['asks'] = list()
         if newState['sisty']['orders'] is not None:
             for order in newState['sisty']['orders']['content']['datas']:
+                if 'dealInSource' in order:
+                    continue
+                else:
+                    order['dealInSource'] = 0.0
                 if order['status'] == 1 or order['status'] == 2:
                     if order['type'] == 1:
                         price = order['entrustprice']
@@ -290,6 +233,25 @@ class TestRobot(RobotBase):
                         amount = order['surplusamount']
                         orderId = order['id']
                         newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
+        return newState
+
+    def actionDoneHandler(self,state,actionDoneEvent):
+        exchanges = ['huobiproM','gateioM','bitfinexM']
+        EXCHANGE,TYPE,ORDERID,AMOUNT = range(4)
+        key = actionDoneEvent.key
+        if key is not None:
+            keys = key.split("?")
+            if keys[EXCHANGE] in exchanges:
+                orderId = keys[ORDERID]
+                amount = keys[AMOUNT]
+                newState = dict()
+                newState.update(state)
+                if 'sisty' in newState:
+                    if newState['sisty']['orders']['content']['datas'] is not None:
+                        for order in newState['sisty']['orders']['content']['datas']:
+                            if order['id'] == orderId:
+                                order['dealInSource'] += amount
+
         return newState
 
     def tickHandler(self, state, tickEvent):
@@ -313,13 +275,13 @@ class TestRobot(RobotBase):
 
         return newState
 
-gateioSource = CycleSource(reactor, gateio.getOrderBook, key='gateio', payload={
+gateioSource = CycleSource(reactor, gateio.getOrderBook, key='gateioOrderBooks', payload={
     'args': [('eth', 'usdt')]
 })
-huobiproSource = CycleSource(reactor,huobipro.getOrderBook, key='huobipro',payload={
+huobiproSource = CycleSource(reactor,huobipro.getOrderBook, key='huobiproOrderBooks',payload={
     'args': [('eth','usdt')]
 })
-bitfinexSource = CycleSource(reactor,bitfinex.getOrderBook, key='bitfinex',payload={
+bitfinexSource = CycleSource(reactor,bitfinex.getOrderBook, key='bitfinexOrderBooks',payload={
     'args': [('eth','usdt')]
 })
 sistyOrderSource = CycleSource(reactor,sisty.getOrders,key='sistyOrder',payload={
@@ -336,17 +298,17 @@ robot = TestRobot()
 robot.bind(
     'dataRecivedEvent',
     robot.gateioOrderBookHandler,
-    'gateio'
+    'gateioOrderBooks'
 )
 robot.bind(
     'dataRecivedEvent',
     robot.huobiproOrderBookHandler,
-    'huobipro'
+    'huobiproOrderBooks'
 )
 robot.bind(
     'dataRecivedEvent',
     robot.bitfinexOrderBookHandler,
-    'bitfinex'
+    'bitfinexOrderBooks'
 )
 robot.bind(
     'dataRecivedEvent',
@@ -357,6 +319,11 @@ robot.bind(
 robot.bind(
     'tickEvent',
     robot.tickHandler
+)
+
+robot.bind(
+    'actionDoneEvent',
+    robot.actionDoneHandler,
 )
 
 robot.state.update({

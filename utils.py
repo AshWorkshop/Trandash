@@ -1,6 +1,7 @@
 from twisted.logger import Logger
 import six
 import math
+import time
 
 class Order:
     orderId = 0
@@ -363,3 +364,68 @@ def adjustOrderBook(newState, capacity=100):
     adjustmentDict['asks'].extend(cuttedAsks)
 
     return adjustmentDict
+
+def commitOrderBook(newState,exchange):
+    BIDS,ASKS = range(2)
+    PRICE,AMOUNT,EXCHANGE = range(3)
+    POWER = [0.5,0.5]
+
+    newState['orderbooks'] = {'bids':[],'asks':[],"time":0}
+    A,B = 0,0
+    maxLevelA = len(newState[exchange[0]]['orderbook'][BIDS])
+    maxLevelB = len(newState[exchange[1]]['orderbook'][BIDS])
+    while A < maxLevelA and B < maxLevelB:
+        orderA = newState[exchange[0]]['orderbook'][BIDS][A]
+        orderB = newState[exchange[1]]['orderbook'][BIDS][B]
+        if orderA[PRICE] == orderB[PRICE]:
+            orderA[AMOUNT] = orderA[AMOUNT]*POWER[0] + orderB[AMOUNT]*POWER[1]
+            newState['orderbooks']['bids'].append(orderA)
+            A += 1
+            B += 1
+        elif orderA[PRICE] > orderB[PRICE]:
+            newState['orderbooks']['bids'].append(orderA)
+            A += 1
+        else:
+            newState['orderbooks']['bids'].append(orderB)
+            B += 1
+    if maxLevelA >= maxLevelB:
+        while A < maxLevelA:
+            orderA = newState[exchange[0]]['orderbook'][BIDS][A]
+            newState['orderbooks']['bids'].append(orderA)
+            A += 1
+    elif maxLevelA < maxLevelB:
+        while B < maxLevelB:
+            orderB = newState[exchange[1]]['orderbook'][BIDS][B]
+            newState['orderbooks']['bids'].append(orderB)
+            B += 1
+
+    A,B = 0,0
+    maxLevelA = len(newState[exchange[0]]['orderbook'][ASKS])
+    maxLevelB = len(newState[exchange[1]]['orderbook'][ASKS])
+    while A < maxLevelA and B < maxLevelB:
+        orderA = newState[exchange[0]]['orderbook'][ASKS][A]
+        orderB = newState[exchange[1]]['orderbook'][ASKS][B]
+        if orderA[PRICE] == orderB[PRICE]:
+            orderA[AMOUNT] = orderA[AMOUNT]*POWER[0] + orderB[AMOUNT]*POWER[1]
+            newState['orderbooks']['asks'].append(orderA)
+            A += 1
+            B += 1
+        elif orderA[PRICE] < orderB[PRICE]:
+            newState['orderbooks']['asks'].append(orderA)
+            A += 1
+        else:
+            newState['orderbooks']['asks'].append(orderB)
+            B += 1
+    if maxLevelA >= maxLevelB:
+        while A < maxLevelA:
+            orderA = newState[exchange[0]]['orderbook'][BIDS][A]
+            newState['orderbooks']['asks'].append(orderA)
+            A += 1
+    elif maxLevelA < maxLevelB:
+        while B < maxLevelB:
+            orderB = newState[exchange[1]]['orderbook'][BIDS][B]
+            newState['orderbooks']['asks'].append(orderB)
+            B += 1
+
+    newState['orderbooks']['time'] = time.time()
+    return newState

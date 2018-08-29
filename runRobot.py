@@ -23,7 +23,7 @@ def defaultErrHandler(failure):
 ### interactive module ###
 
 CMD_STATUS = {
-    'mode': 'background'
+    'mode': 'foreground'
 }
 
 def initCommandConfig():
@@ -88,6 +88,7 @@ def inputLoop():
                     globalLogPublisher.addObserver(logObserver)
                 elif command[0] == 'exit':
                     service.stopService()
+                    reactor.stop()
                     return 'shutdown'
             else:
                 print("unknown command, use 'help' to view the help message")
