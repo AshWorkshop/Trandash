@@ -330,7 +330,7 @@ def adjustOrderBook(newState, capacity=100):
     TO DO: sort cancleAsksList to let it: price from low to high
     """
     log.debug("cancleAsksList:\n{cancleAsksList}", cancleAsksList=cancleAsksList)
-    sortedCancleAsks = sorted(cancleAsksList, key=itemgetter(0,1), reverse=True) 
+    sortedCancleAsks = sorted(cancleAsksList, key=itemgetter(0,1)) 
     log.debug("sortedCancleAsks:\n{sortedCancleAsks}", sortedCancleAsks=sortedCancleAsks)    
     for i in range(len(sortedCancleAsks)):
         decimal = sortedCancleAsks[i][AMOUNT] % capacity
