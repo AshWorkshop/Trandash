@@ -221,13 +221,13 @@ class TestRobot(RobotBase):
                 #确保每次sistyOrderHandler的获得的都是全新的newState['sisty']['orderbook']
                 if order['status'] == 1 or order['status'] == 2:
                     if order['type'] == 1:
-                        price = order['entrustprice']
-                        amount = order['surplusamount']
+                        price = round(order['entrustprice'],3)
+                        amount = round(order['surplusamount'],3)
                         orderId = order['id']
                         newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
                     elif order['type'] == 2:
-                        price = order['entrustprice']
-                        amount = order['surplusamount']
+                        price = round(order['entrustprice'],3)
+                        amount = round(order['surplusamount'],3)
                         orderId = order['id']
                         newState['sisty']['orderbook']['asks'].append([price, amount, orderId])
                 if 'dealInSource' in order:
