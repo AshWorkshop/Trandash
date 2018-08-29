@@ -38,6 +38,7 @@ balance = 0.0
 buyDelta = 0.005
 sellDelta = 0.005
 rate = 1.382
+top = 6
 startTime = int(time.time())
 klineCycle = Cycle(reactor, okexFuture.getKLineLastMin, 'getKLineLastMin')
 tickerCycle = Cycle(reactor, okexFuture.getTicker, 'getTicker')
@@ -267,6 +268,7 @@ def cbRun():
     global balance
     global initAmount
     global rate
+    global top
     count += 1
     wait += 1
     # print to file
@@ -401,7 +403,7 @@ def cbRun():
                 print('bollRate && delta:', bollRate, buyDelta)
                 if bollRate > buyDelta:
                     print('lastBuyAmount:', lastBuyAmount)
-                    if lastBuyAmount < initAmount * rate ** 6:
+                    if lastBuyAmount < initAmount * rate ** top:
                         buy_amount_new = lastBuyAmount * rate
                     else:
                         buy_amount_new = lastBuyAmount
@@ -419,7 +421,7 @@ def cbRun():
                 print('bollRate && delta:', bollRate, sellDelta)
                 if bollRate > sellDelta:
                     print('lastSellAmount:', lastSellAmount)
-                    if lastSellAmount < initAmount * rate ** 6:
+                    if lastSellAmount < initAmount * rate ** top:
                         sell_amount_new = lastSellAmount * rate
                     else:
                         sell_amount_new = lastSellAmount
@@ -465,7 +467,7 @@ def cbRun():
 
         if buy_price_avg != buyAvgPrice or buyAmount != buy_amount:
             print('RESET buys')
-            lastBuyAmount = searchLastAmount(buy_amount, initAmount=initAmount, rate=rate)
+            lastBuyAmount = searchLastAmount(buy_amount, initAmount=initAmount, rate=rate, top=top)
             if buy_amount != 0:
                 buys = [(buy_price_avg, buy_amount)]
             else:
@@ -476,7 +478,7 @@ def cbRun():
 
         if sell_price_avg != sellAvgPrice or sellAmount != sell_amount:
             print('RESET sells')
-            lastSellAmount = searchLastAmount(sell_amount, initAmount=initAmount, rate=rate)
+            lastSellAmount = searchLastAmount(sell_amount, initAmount=initAmount, rate=rate, top=top)
             if sell_amount != 0:
                 sells = [(sell_price_avg, sell_amount)]
             else:
