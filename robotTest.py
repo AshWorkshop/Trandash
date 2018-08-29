@@ -51,10 +51,10 @@ class TestRobot(RobotBase):
                 newOrders = newState['sisty']['orders']['content']['datas']
 
                 for order in newOrders:
-                    if orderB['createtime'] < TIME:
+                    if order['createtime'] < TIME:
                         break
                     orderId = order['id']
-                    self.log.debug("{orderA}", order=order)
+                    self.log.debug("{order}", order=order)
                     exchange = None
                     type = None
                     price = None
@@ -64,7 +64,7 @@ class TestRobot(RobotBase):
                     amount = abs(dealInOrder-dealInSource)
                     if amount > 0.000000001:
                         staFile = open('sistyOrderManaged'+str(TIME), 'w+')
-                        staFile.write("orderA:%s\n" % orderA)
+                        staFile.write("order:%s\n" % order)
                         staFile.close()
                         if order['type'] == 1:
                             type = "buy"
@@ -76,7 +76,7 @@ class TestRobot(RobotBase):
                             elif type == "sell":
                                 book = "asks"
                             for orderC in newState['orderbooks'][book]:
-                                if orderC[PRICE] == orderA['entrustprice']:
+                                if orderC[PRICE] == order['entrustprice']:
                                     price = orderC[PRICE]
                                     exchange = orderC[EXCHANGE]
 
@@ -112,8 +112,8 @@ class TestRobot(RobotBase):
                     for bid in adjustmentDict['bids']:
                         price = bid[PRICE]
                         amount = bid[AMOUNT]
-                        action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"buy",wait=True,payload={
-                                            "args":[coinPairs,price,amount,1]
+                        action = Action(reactor,EXCHANGES[exchange].trade,key='A?Buy?',wait=True,payload={
+                                            'args':[coinPairs,price,amount,1]
                                         })
                         actions.append(action)
 
@@ -121,15 +121,15 @@ class TestRobot(RobotBase):
                     for ask in adjustmentDict['asks']:
                         price = ask[PRICE]
                         amount = ask[AMOUNT]
-                        action = Action(reactor,EXCHANGES[exchange].trade,key=exchange+"sell",wait=True,payload={
-                                            "args":[coinPairs,price,amount,2]
+                        action = Action(reactor,EXCHANGES[exchange].trade,key='A?Sell?',wait=True,payload={
+                                            'args':[coinPairs,price,amount,2]
                                         })
                         actions.append(action)
 
                 if adjustmentDict['cancle'] is not None:
                     for cancleId in adjustmentDict['cancle']:
-                        action = Action(reactor,EXCHANGES[exchange].cancle,key=exchange+"cancle",wait=True,payload={
-                                            "args":[coinPairs,cancleId]
+                        action = Action(reactor,EXCHANGES[exchange].cancle,key=exchange+'cancle',wait=True,payload={
+                                            'args':[coinPairs,cancleId]
                                         })
                         actions.append(action)
 
@@ -218,10 +218,7 @@ class TestRobot(RobotBase):
         newState['sisty']['orderbook']['asks'] = list()
         if newState['sisty']['orders'] is not None:
             for order in newState['sisty']['orders']['content']['datas']:
-                if 'dealInSource' in order:
-                    continue
-                else:
-                    order['dealInSource'] = 0.0
+                #确保每次sistyOrderHandler的获得的都是全新的newState['sisty']['orderbook']
                 if order['status'] == 1 or order['status'] == 2:
                     if order['type'] == 1:
                         price = order['entrustprice']
@@ -232,7 +229,11 @@ class TestRobot(RobotBase):
                         price = order['entrustprice']
                         amount = order['surplusamount']
                         orderId = order['id']
-                        newState['sisty']['orderbook']['bids'].append([price, amount, orderId])
+                        newState['sisty']['orderbook']['asks'].append([price, amount, orderId])
+                if 'dealInSource' in order:
+                    continue
+                else:
+                    order['dealInSource'] = 0.0        
         return newState
 
     def actionDoneHandler(self,state,actionDoneEvent):

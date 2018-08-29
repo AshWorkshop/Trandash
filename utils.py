@@ -246,7 +246,7 @@ def adjustOrderBook(newState, capacity=100):
 
     """
     处理撤单
-    TO DO: sort cancleBidsList to let it: price from high to low
+    DONE: sort cancleBidsList to let it: price from high to low
     """
     log.debug("cancleBidsList:\n{cancleBidsList}", cancleBidsList=cancleBidsList)
     sortedCancleBids = sorted(cancleBidsList, key=itemgetter(0,1), reverse=True) 
@@ -255,24 +255,25 @@ def adjustOrderBook(newState, capacity=100):
     for i in range(len(sortedCancleBids)):
         decimal = sortedCancleBids[i][AMOUNT] % capacity
         remainAmount = sortedCancleBids[i][AMOUNT]
-        # log.debug("remainAmount:\n{remainAmount}", remainAmount=remainAmount)
+        log.debug("remainAmount:\n{remainAmount}", remainAmount=remainAmount)
         if decimal == 0:
-            oBids = oBids
+            oBids = sorted(oBids, key=itemgetter(1), reverse=True)
+            oBids = sorted(oBids, key=itemgetter(0), reverse=True)
             """
-            TO DO: sort oBids to let it:
+            DONE: sort oBids to let it:
             1.price from high to low
             2.amount from high to low
             """
         else:
             oBids = oBids
             """
-            TO DO: sort oBids to let it:
+            DONE: sort oBids to let it:
             1.price from high to low
             2.amount from low to high
             """
         for j in range(len(oBids)):
             if oBids[j][PRICE] == sortedCancleBids[i][PRICE]:
-                # log.debug("inner remainAmount:\n{remainAmount}", remainAmount=remainAmount)
+                log.debug("inner remainAmount:\n{remainAmount}", remainAmount=remainAmount)
                 if remainAmount > 0:
                     orderId = oBids[j][ORDERID]
                     adjustmentDict['cancle'].append(orderId)
@@ -286,8 +287,8 @@ def adjustOrderBook(newState, capacity=100):
                     break
                 else:
                     raise("handle sortedCancleBids error")
-    # log.debug("notCuttedBids inner:\n{notCuttedBids}", notCuttedBids=notCuttedBids)
-    # log.debug("sortedCancleBids inner:\n{sortedCancleBids}", sortedCancleBids=sortedCancleBids)
+    log.debug("notCuttedBids inner:\n{notCuttedBids}", notCuttedBids=notCuttedBids)
+    log.debug("sortedCancleBids inner:\n{sortedCancleBids}", sortedCancleBids=sortedCancleBids)
     cuttedBids = cutOrderBook(notCuttedBids, capacity=capacity)
     adjustmentDict['bids'].extend(cuttedBids)
 
@@ -327,7 +328,7 @@ def adjustOrderBook(newState, capacity=100):
 
     """
     处理撤单
-    TO DO: sort cancleAsksList to let it: price from low to high
+    DONE: sort cancleAsksList to let it: price from low to high
     """
     log.debug("cancleAsksList:\n{cancleAsksList}", cancleAsksList=cancleAsksList)
     sortedCancleAsks = sorted(cancleAsksList, key=itemgetter(0,1)) 
@@ -337,16 +338,19 @@ def adjustOrderBook(newState, capacity=100):
         remainAmount = sortedCancleAsks[i][AMOUNT]
         log.debug("remainAmount:\n{remainAmount}", remainAmount=remainAmount)
         if decimal == 0:
-            oAsks = oAsks
+            oAsks = sorted(oAsks, key=itemgetter(1), reverse=True)
+            oAsks = sorted(oAsks, key=itemgetter(0))
+            log.debug("decimal == 0 oAsks:\n{oAsks}", oAsks=oAsks) 
             """
-            TO DO: sort oAsks to let it:
+            DONE: sort oAsks to let it:
             1.price from low to high
             2.amount from high to low
             """
         else:
             oAsks = oAsks
+            log.debug("decimal != 0 oAsks:\n{oAsks}", oAsks=oAsks) 
             """
-            TO DO: sort oAsks to let it:
+            DONE: sort oAsks to let it:
             1.price from low to high
             2.amount from low to high
             """
@@ -367,8 +371,8 @@ def adjustOrderBook(newState, capacity=100):
                 else:
                     raise("handle sortedCancleAsks error")
 
-    # log.debug("notCuttedAsks inner:\n{notCuttedAsks}", notCuttedAsks=notCuttedAsks)
-    # log.debug("sortedCancleAsks inner:\n{sortedCancleAsks}", sortedCancleAsks=sortedCancleAsks)
+    log.debug("notCuttedAsks inner:\n{notCuttedAsks}", notCuttedAsks=notCuttedAsks)
+    log.debug("sortedCancleAsks inner:\n{sortedCancleAsks}", sortedCancleAsks=sortedCancleAsks)
     cuttedAsks = cutOrderBook(notCuttedAsks, capacity=capacity)
     adjustmentDict['asks'].extend(cuttedAsks)
 
