@@ -1,7 +1,9 @@
 import sys, time
 from datetime import datetime
 from zope.interface import provider
-from twisted.logger import Logger, ILogObserver, formatEvent, globalLogBeginner, FileLogObserver
+from twisted.logger import LogLevelFilterPredicate, LogLevel
+from twisted.logger import Logger, formatEvent, globalLogBeginner, globalLogPublisher
+from twisted.logger import FileLogObserver, FilteringLogObserver
 
 def formator(event):
     if event['log_namespace'] != 'log_legacy':
@@ -11,4 +13,5 @@ def formator(event):
     return f"{datetime.fromtimestamp(event['log_time']):%Y-%m-%dT%H:%M:%S%z} [{sourceAndLevel}] {formatEvent(event)}\n"
 
 def logger():
-    return FileLogObserver(sys.stdout, formator)
+    predicate = LogLevelFilterPredicate(LogLevel.debug)
+    return FilteringLogObserver(FileLogObserver(sys.stdout, formator), [predicate])
