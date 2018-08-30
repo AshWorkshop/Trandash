@@ -162,6 +162,10 @@ class Sisty(ExchangeService):
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
     def cancelAll(self, pairs, cancelType, isAll=False):
+        """
+        isAll: True: cancel all pairs, False: cancel given pairs
+        cancelType: 0: all bids and asks, 1: all bids, 2: all asks
+        """
         URL = "/tradeOpen/v1/batchCancel"
         cipherText = getSign(self.__userId, pairs[0], pairs[1], self.__md5Key)
         # self.log.debug("{cipherText}{key}", cipherText=cipherText, key=self.__md5Key)
