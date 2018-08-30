@@ -23,32 +23,31 @@ def defaultErrHandler(failure):
 ### interactive module ###
 
 CMD_STATUS = {
-    'mode': 'foreground'
+    'mode': 'background'
 }
+
+def ignoreKeyboardInterrupt():
+    signal.signal(signal.SIGINT, lambda _1, _2: print())
 
 def initCommandConfig():
     if CMD_STATUS['mode'] == 'foreground':
         globalLogPublisher.addObserver(logObserver)
+    elif CMD_STATUS['mode'] == 'background':
+        ignoreKeyboardInterrupt()
 
 def getInput(prompt):
     if CMD_STATUS['mode'] == 'background':
         def inputHandler():
-            try:
-                i = input(prompt)
-            except KeyboardInterrupt:
-                return {
-                    'keyboard': True,
-                    'stdin': '',
-                }
-            else:
-                return {
-                    'keyboard': False,
-                    'stdin': i,
-                }
+            command = input(prompt)
+            return {
+                'keyboard': False,
+                'stdin': command,
+            }
         d = threads.deferToThread(inputHandler)
     elif CMD_STATUS['mode'] == 'foreground':
         d = defer.Deferred()
         def KeyboardInterruptHandler(sig, frame):
+            ignoreKeyboardInterrupt()
             d.callback({
                 'keyboard': True,
                 'stdin': '',
@@ -72,26 +71,23 @@ def inputLoop():
                 CMD_STATUS['mode'] = 'background'
         else:
             command = msg['stdin'].split(' ')
-            
+            # print(command)
             if len(command) == 1:
                 if command[0] == '':
-                    print()
                     return
                 elif command[0] == 'foreground':
-                # set to foreground mode
-                    print(
-                        """switch to foreground mode
-                        use 'Ctrl + C' to return to background mode
-                        
-                        """
-                    )
+                    # set to foreground mode
+                    print("switch to foreground mode\n"
+                          "use 'Ctrl + C' to return to background mode\n")
                     globalLogPublisher.addObserver(logObserver)
-                elif command[0] == 'exit':
+                    CMD_STATUS['mode'] = 'foreground'
+                    return
+                elif command[0] == 'shutdown':
+                    print('robot shut down...')
                     service.stopService()
                     reactor.stop()
                     return 'shutdown'
-            else:
-                print("unknown command, use 'help' to view the help message")
+            print("unknown command, use 'help' to view the help message")
             #TODO
 
     d.addCallback(handler)
