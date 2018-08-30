@@ -221,7 +221,7 @@ class OKexFuture(ExchangeService):
 
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
-    def cancle(self, pairs, contractType="quarter", orderId=""):
+    def cancel(self, pairs, contractType="quarter", orderId=""):
         URL = "/api/v1/future_cancel"
         params = {
             "api_key": self.__accessKey,

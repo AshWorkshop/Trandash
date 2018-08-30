@@ -126,10 +126,10 @@ class TestRobot(RobotBase):
                                         })
                         actions.append(action)
 
-                if adjustmentDict['cancle'] is not None:
-                    for cancleId in adjustmentDict['cancle']:
-                        action = Action(reactor,EXCHANGES[exchange].cancle,key=exchange+'cancle',wait=True,payload={
-                                            'args':[coinPairs,cancleId]
+                if adjustmentDict['cancel'] is not None:
+                    for cancelId in adjustmentDict['cancel']:
+                        action = Action(reactor,EXCHANGES[exchange].cancel,key=exchange+'cancel',wait=True,payload={
+                                            'args':[coinPairs,cancelId]
                                         })
                         actions.append(action)
 

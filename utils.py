@@ -186,13 +186,13 @@ def adjustOrderBook(newState, capacity=100):
     return: adjustmentDict ; eg:
     { 'bids': [[276, 1], [276, 1], [274, 1], [274, 1], [274,1], ....],
       'asks':[[278, 1], [278, 0.5], ...],
-      'cancle':[1357684 (# orderId), 1357898, ...]}
+      'cancel':[1357684 (# orderId), 1357898, ...]}
     """
     log = Logger('adjustOrderBook')
     adjustmentDict = dict()
     adjustmentDict['bids'] = list()
     adjustmentDict['asks'] = list()
-    adjustmentDict['cancle'] = list()
+    adjustmentDict['cancel'] = list()
     nBids = newState['orderbooks']['bids']
     nAsks = newState['orderbooks']['asks']
     oBids = newState['sisty']['orderbook']['bids']  #including orderId in each level
@@ -207,8 +207,8 @@ def adjustOrderBook(newState, capacity=100):
     log.debug("mergedAsks:\n{mergedAsks}", mergedAsks=mergedAsks)
     notCuttedBids = list()
     notCuttedAsks = list()
-    cancleBidsList = list()  #including an oringin index list of each cancle level
-    cancleAsksList = list()  #including an oringin index list of each cancle level
+    cancelBidsList = list()  #including an oringin index list of each cancel level
+    cancelAsksList = list()  #including an oringin index list of each cancel level
 
     """
     bids: price from high to low
@@ -236,25 +236,25 @@ def adjustOrderBook(newState, capacity=100):
                 notCuttedBids.append([nBids[n][PRICE], deltaAmount])
             elif nBids[n][AMOUNT] < mergedBids[oIndex][AMOUNT]:
                 deltaAmount = mergedBids[oIndex][AMOUNT] - nBids[n][AMOUNT]
-                cancleBidsList.append([nBids[n][PRICE], deltaAmount, mergedBids[oIndex][ORDERID]])
+                cancelBidsList.append([nBids[n][PRICE], deltaAmount, mergedBids[oIndex][ORDERID]])
     """
     3.若n中无 o中有 的价格，则把全部价格等于此价格的单撤掉。
     """
     for o in range(len(mergedBids)):
         if oBidPrices[o] not in nBidPrices:
-            cancleBidsList.append([mergedBids[o][PRICE], mergedBids[o][AMOUNT], mergedBids[o][ORDERID]])
+            cancelBidsList.append([mergedBids[o][PRICE], mergedBids[o][AMOUNT], mergedBids[o][ORDERID]])
 
     """
     处理撤单
-    DONE: sort cancleBidsList to let it: price from high to low
+    DONE: sort cancelBidsList to let it: price from high to low
     """
-    log.debug("cancleBidsList:\n{cancleBidsList}", cancleBidsList=cancleBidsList)
-    sortedCancleBids = sorted(cancleBidsList, key=itemgetter(0,1), reverse=True) 
-    log.debug("sortedCancleBids:\n{sortedCancleBids}", sortedCancleBids=sortedCancleBids)
+    log.debug("cancelBidsList:\n{cancelBidsList}", cancelBidsList=cancelBidsList)
+    sortedCancelBids = sorted(cancelBidsList, key=itemgetter(0,1), reverse=True) 
+    log.debug("sortedCancelBids:\n{sortedCancelBids}", sortedCancelBids=sortedCancelBids)
 
-    for i in range(len(sortedCancleBids)):
-        decimal = sortedCancleBids[i][AMOUNT] % capacity
-        remainAmount = sortedCancleBids[i][AMOUNT]
+    for i in range(len(sortedCancelBids)):
+        decimal = sortedCancelBids[i][AMOUNT] % capacity
+        remainAmount = sortedCancelBids[i][AMOUNT]
         log.debug("remainAmount:\n{remainAmount}", remainAmount=remainAmount)
         if decimal == 0:
             oBids = sorted(oBids, key=itemgetter(1), reverse=True)
@@ -272,11 +272,11 @@ def adjustOrderBook(newState, capacity=100):
             2.amount from low to high
             """
         for j in range(len(oBids)):
-            if oBids[j][PRICE] == sortedCancleBids[i][PRICE]:
+            if oBids[j][PRICE] == sortedCancelBids[i][PRICE]:
                 log.debug("inner remainAmount:\n{remainAmount}", remainAmount=remainAmount)
                 if remainAmount > 0:
                     orderId = oBids[j][ORDERID]
-                    adjustmentDict['cancle'].append(orderId)
+                    adjustmentDict['cancel'].append(orderId)
                     remainAmount -= oBids[j][AMOUNT]
                 elif remainAmount == 0:
                     
@@ -286,10 +286,10 @@ def adjustOrderBook(newState, capacity=100):
                     
                     break
                 else:
-                    raise("handle sortedCancleBids error")
+                    raise("handle sortedCancelBids error")
     log.debug("notCuttedBids inner:\n{notCuttedBids}", notCuttedBids=notCuttedBids)
-    log.debug("sortedCancleBids inner:\n{sortedCancleBids}", sortedCancleBids=sortedCancleBids)
     cuttedBids = cutOrderBook(notCuttedBids, capacity=capacity)
+    log.debug("cuttedBids inner:\n{cuttedBids}", cuttedBids=cuttedBids)
     adjustmentDict['bids'].extend(cuttedBids)
 
     """
@@ -318,24 +318,24 @@ def adjustOrderBook(newState, capacity=100):
                 notCuttedAsks.append([nAsks[n][PRICE], deltaAmount])
             elif nAsks[n][AMOUNT] < mergedAsks[oIndex][AMOUNT]:
                 deltaAmount = mergedAsks[oIndex][AMOUNT] - nAsks[n][AMOUNT]
-                cancleAsksList.append([nAsks[n][PRICE], deltaAmount, mergedAsks[oIndex][ORDERID]])
+                cancelAsksList.append([nAsks[n][PRICE], deltaAmount, mergedAsks[oIndex][ORDERID]])
     """
     3.若n中无 o中有 的价格，则把全部价格等于此价格的单撤掉。
     """
     for o in range(len(mergedAsks)):
         if oAskPrices[o] not in nAskPrices:
-            cancleAsksList.append([mergedAsks[o][PRICE], mergedAsks[o][AMOUNT], mergedAsks[o][ORDERID]])
+            cancelAsksList.append([mergedAsks[o][PRICE], mergedAsks[o][AMOUNT], mergedAsks[o][ORDERID]])
 
     """
     处理撤单
-    DONE: sort cancleAsksList to let it: price from low to high
+    DONE: sort cancelAsksList to let it: price from low to high
     """
-    log.debug("cancleAsksList:\n{cancleAsksList}", cancleAsksList=cancleAsksList)
-    sortedCancleAsks = sorted(cancleAsksList, key=itemgetter(0,1)) 
-    log.debug("sortedCancleAsks:\n{sortedCancleAsks}", sortedCancleAsks=sortedCancleAsks)    
-    for i in range(len(sortedCancleAsks)):
-        decimal = sortedCancleAsks[i][AMOUNT] % capacity
-        remainAmount = sortedCancleAsks[i][AMOUNT]
+    log.debug("cancelAsksList:\n{cancelAsksList}", cancelAsksList=cancelAsksList)
+    sortedCancelAsks = sorted(cancelAsksList, key=itemgetter(0,1)) 
+    log.debug("sortedCancelAsks:\n{sortedCancelAsks}", sortedCancelAsks=sortedCancelAsks)    
+    for i in range(len(sortedCancelAsks)):
+        decimal = sortedCancelAsks[i][AMOUNT] % capacity
+        remainAmount = sortedCancelAsks[i][AMOUNT]
         log.debug("remainAmount:\n{remainAmount}", remainAmount=remainAmount)
         if decimal == 0:
             oAsks = sorted(oAsks, key=itemgetter(1), reverse=True)
@@ -355,11 +355,11 @@ def adjustOrderBook(newState, capacity=100):
             2.amount from low to high
             """
         for j in range(len(oAsks)):
-            if oAsks[j][PRICE] == sortedCancleAsks[i][PRICE]:
+            if oAsks[j][PRICE] == sortedCancelAsks[i][PRICE]:
                 log.debug("inner remainAmount:\n{remainAmount}", remainAmount=remainAmount)
                 if remainAmount > 0:
                     orderId = oAsks[j][ORDERID]
-                    adjustmentDict['cancle'].append(orderId)
+                    adjustmentDict['cancel'].append(orderId)
                     remainAmount -= oAsks[j][AMOUNT]
                 elif remainAmount == 0:
                     
@@ -369,10 +369,10 @@ def adjustOrderBook(newState, capacity=100):
                     
                     break
                 else:
-                    raise("handle sortedCancleAsks error")
+                    raise("handle sortedCancelAsks error")
 
     log.debug("notCuttedAsks inner:\n{notCuttedAsks}", notCuttedAsks=notCuttedAsks)
-    log.debug("sortedCancleAsks inner:\n{sortedCancleAsks}", sortedCancleAsks=sortedCancleAsks)
+    log.debug("sortedCancelAsks inner:\n{sortedCancelAsks}", sortedCancelAsks=sortedCancelAsks)
     cuttedAsks = cutOrderBook(notCuttedAsks, capacity=capacity)
     adjustmentDict['asks'].extend(cuttedAsks)
 

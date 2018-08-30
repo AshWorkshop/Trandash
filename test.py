@@ -20,7 +20,7 @@ def test():
     #d = huobipro.getAccounts()
     d = huobipro.getBalance('eth')
     #d = huobipro.getOrderHistory(pairs = pairs,start_date = "2018-8-1",end_date = "2018-8-19")
-    #d = okexFuture.cancle(('ltc', 'usdt'), orderId=1276330619587584)
+    #d = okexFuture.cancel(('ltc', 'usdt'), orderId=1276330619587584)
     #d = huobipro.sell(coinPair=('eth','usdt'),price=293,amount=0.05)
     #d = huobipro.getBalances(['eth','usdt'])
     #d = gateio.getBalances(['eth','usdt'])

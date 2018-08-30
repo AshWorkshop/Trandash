@@ -201,19 +201,19 @@ def sellp(amount, price=""):
         state = 'SELLPCHECK'
 
 @defer.inlineCallbacks
-def cancle(orderId):
+def cancel(orderId):
     global state
     result = False
     data = -1
     try:
-        result, data = yield okexFuture.cancle(pairs, orderId=orderId)
+        result, data = yield okexFuture.cancel(pairs, orderId=orderId)
     except Exception as err:
         failure = Failure(err)
         print(failure.getBriefTraceback())
 
     if result:
-        print('SUCCESSFULLY CANCLE:', orderId)
-        print('cancle result:', data)
+        print('SUCCESSFULLY CANCEL:', orderId)
+        print('cancel result:', data)
         state = 'GO'
     else:
         state = 'GO'
@@ -538,7 +538,7 @@ def cbRun():
                 state = 'GO'
             else:
                 state = 'WAITFORBUYPC'
-                reactor.callWhenRunning(cancle, buypId)
+                reactor.callWhenRunning(cancel, buypId)
 
 
     if state == 'SELLPCHECK':
@@ -554,7 +554,7 @@ def cbRun():
                 state = 'GO'
             else:
                 state = 'WAITFORSELLPC'
-                reactor.callWhenRunning(cancle, sellpId)
+                reactor.callWhenRunning(cancel, sellpId)
 
     outputFile.close()
     sys.stdout = output

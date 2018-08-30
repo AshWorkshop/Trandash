@@ -140,8 +140,29 @@ class Sisty(ExchangeService):
 
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
-    def cancle(self, pairs, orderId=""):
+    def cancel(self, pairs, orderId=""):
         URL = "/tradeOpen/v2/apiCancelEntrustV2Robot"
+        cipherText = getSign(self.__userId, orderId, self.__md5Key)
+        params = {
+            'entrustId': orderId,
+            'cipherText': cipherText,
+            'userId': self.__userId
+        }
+
+
+        def handleBody(body):
+            data = json.loads(body)
+            assert 'code' in data
+            if data['code'] == 0:
+                return True
+            else:
+                self.log.debug("{data}", data=data)
+                return False
+
+        return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
+
+    def cancelAll(self, pairs, orderId=""):
+        URL = "/tradeOpen/v1/batchCancel"
         cipherText = getSign(self.__userId, orderId, self.__md5Key)
         params = {
             'entrustId': orderId,
