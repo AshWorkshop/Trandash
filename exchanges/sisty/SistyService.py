@@ -161,11 +161,16 @@ class Sisty(ExchangeService):
 
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
-    def cancelAll(self, pairs, orderId=""):
+    def cancelAll(self, pairs, cancelType, isAll=False):
         URL = "/tradeOpen/v1/batchCancel"
-        cipherText = getSign(self.__userId, orderId, self.__md5Key)
+        cipherText = getSign(self.__userId, pairs[0], pairs[1], self.__md5Key)
+        # self.log.debug("{cipherText}{key}", cipherText=cipherText, key=self.__md5Key)
+        cancelType = bytes(cancelType)
         params = {
-            'entrustId': orderId,
+            'coinName': pairs[0],
+            'payCoinName': pairs[1],
+            'isAll': isAll, # True: cancel all pairs, False: cancel given pairs
+            'type': cancelType, # 0: all bids and asks, 1: all bids, 2: all asks
             'cipherText': cipherText,
             'userId': self.__userId
         }
@@ -173,8 +178,8 @@ class Sisty(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
-            assert 'code' in data
-            if data['code'] == 0:
+            assert 'model' in data
+            if data['model'] == 0:
                 return True
             else:
                 self.log.debug("{data}", data=data)

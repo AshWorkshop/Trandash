@@ -240,13 +240,13 @@ class TestRobot(RobotBase):
         exchanges = ['huobiproM','gateioM','bitfinexM']
         EXCHANGE,TYPE,ORDERID,AMOUNT = range(4)
         key = actionDoneEvent.key
+        newState = dict()
+        newState.update(state)
         if key is not None:
             keys = key.split("?")
             if keys[EXCHANGE] in exchanges:
                 orderId = keys[ORDERID]
                 amount = keys[AMOUNT]
-                newState = dict()
-                newState.update(state)
                 if 'sisty' in newState:
                     if newState['sisty']['orders']['content']['datas'] is not None:
                         for order in newState['sisty']['orders']['content']['datas']:
