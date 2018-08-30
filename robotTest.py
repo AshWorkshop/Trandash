@@ -147,7 +147,8 @@ class TestRobot(RobotBase):
         return actions
 
     def gateioOrderBookHandler(self, state, dataRecivedEvent):
-        print(dataRecivedEvent)
+        log = Logger('gateioOrderBookHandler')
+        log.info(dataRecivedEvent)
         newState = dict()
         newState.update(state)
         newState['gateio'] = dict()
@@ -168,7 +169,8 @@ class TestRobot(RobotBase):
         return newState
 
     def huobiproOrderBookHandler(self, state, dataRecivedEvent):
-        print(dataRecivedEvent)
+        log = Logger('huobiproOrderBookHandler')
+        log.info(dataRecivedEvent)
         newState = dict()
         newState.update(state)
         newState['huobipro'] = dict()
