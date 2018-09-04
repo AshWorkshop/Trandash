@@ -80,6 +80,11 @@ class RobotBase(object):
         self.log.info("{event!s}", event=event)
         self._setLastWork(self.cbListen, event)
 
+    def getNewState(self, state):
+        newState = dict()
+        newState.update(state)
+        return state
+
     def activeSystemEvent(self, sysEventType, info={}):
         return self.activeEvent(Event(
             'systemEvent',

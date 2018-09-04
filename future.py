@@ -35,6 +35,7 @@ maxRightEveryPeriod = 0.0
 maxDrawdown = 0.0
 accountRight = 0.0
 balance = 0.0
+initDelta = 0.005
 buyDelta = 0.005
 sellDelta = 0.005
 rate = 1.382
@@ -269,6 +270,7 @@ def cbRun():
     global initAmount
     global rate
     global top
+    global initDelta
     count += 1
     wait += 1
     # print to file
@@ -401,7 +403,7 @@ def cbRun():
                 buy_price_last, _ = buys[-1]
                 bollRate = (buy_price_last - ticker) / buy_price_last
                 print('bollRate && delta:', bollRate, buyDelta)
-                if bollRate > buyDelta:
+                if bollRate > initDelta:
                     print('lastBuyAmount:', lastBuyAmount)
                     if lastBuyAmount < initAmount * rate ** top:
                         buy_amount_new = lastBuyAmount * rate
@@ -419,7 +421,7 @@ def cbRun():
                 sell_price_last, _ = sells[-1]
                 bollRate = (ticker - sell_price_last) / sell_price_last
                 print('bollRate && delta:', bollRate, sellDelta)
-                if bollRate > sellDelta:
+                if bollRate > initDelta:
                     print('lastSellAmount:', lastSellAmount)
                     if lastSellAmount < initAmount * rate ** top:
                         sell_amount_new = lastSellAmount * rate
