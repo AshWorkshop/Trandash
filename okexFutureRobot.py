@@ -280,7 +280,7 @@ class OKexFutureRobot(RobotBase):
         initBuyFlag = newState.get('initBuyFlag', True)
         initSellFlag = newState.get('initSellFlag', True)
 
-        self.log.info("{a} {b} {c}", a=isExpired(mas), b=isExpired(tickers), c=isExpired(positions))
+        self.log.info("{a} {b} {c}", a=isExpired(KLines, period=50), b=isExpired(tickers), c=isExpired(positions))
 
         # 初始单
         isInit = False
@@ -474,8 +474,7 @@ class OKexFutureRobot(RobotBase):
             MAs = calcMAs(KLines, ma=30)
             Bolls = calcBolls(KLines, ma=20)
         else:
-            MAs = [(None, None)]
-            Bolls = None
+            return newState
         _, ma = MAs[-1]
         newState['ma'] = [time.time(), ma]
         newState['Bolls'] = [time.time(), Bolls]
