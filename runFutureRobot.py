@@ -23,7 +23,7 @@ def defaultErrHandler(failure):
 ### interactive module ###
 
 CMD_STATUS = {
-    'mode': 'background'
+    'mode': 'foreground'
 }
 
 def ignoreKeyboardInterrupt():

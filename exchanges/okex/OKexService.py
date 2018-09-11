@@ -249,7 +249,9 @@ class OKexFuture(ExchangeService):
             "api_key": self.__accessKey,
             "symbol": self.getSymbol(pairs),
             "order_id": orderId,
-            "contract_type": contractType
+            "contract_type": contractType,
+            "current_page": 1,
+            "page_length": 50
         }
         if status:
             params['status'] = status
@@ -258,6 +260,7 @@ class OKexFuture(ExchangeService):
 
         def handleBody(body):
             data = json.loads(body)
+            print(data)
             return data.get('orders', None)
 
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)

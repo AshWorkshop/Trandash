@@ -155,6 +155,7 @@ class RobotBase(object):
         newState.update(state)
         newState['actions'] = list()
         newState['failedActions'] = list()
+        self.log.warn("{failure}", failure=actionFailureEvent.data.get('failure'))
         for action in state['actions']:
             if action != actionFailureEvent.data['action']:
                 newState['actions'].append(action)
