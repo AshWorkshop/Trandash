@@ -365,7 +365,7 @@ class OKexFutureRobot(RobotBase):
                             newSellAmount = lastSellAmount
                         self.log.info("newSellAmount: {amount}", amount=newSellAmount)
 
-                        action = Action(reactor, buy, key='sell', wait=True, payload={
+                        action = Action(reactor, sell, key='sell', wait=True, payload={
                             'kwargs': {
                                 'amount': newSellAmount,
                                 'totalAmount': sell_amount,
