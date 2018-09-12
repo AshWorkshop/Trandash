@@ -459,8 +459,8 @@ class OKexFutureRobot(RobotBase):
                 lastSellPrice = newState.get('lastSellPrice', 0)
                 if lastSellPrice > 0:
                     sellDelta = (price - lastSellPrice) / lastSellPrice
-                newState['lastBuyPrice'] = price
-                newState['lastBuyAmount'] = amount
+                newState['lastSellPrice'] = price
+                newState['lastSellAmount'] = amount
                 
                 if args is not None:
                     init = args['init']
