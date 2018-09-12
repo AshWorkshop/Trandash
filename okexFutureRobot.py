@@ -329,6 +329,8 @@ class OKexFutureRobot(RobotBase):
             _, lb_u, _, lb_d = lb
             _, b_u, _, b_d = b
             action = None
+            self.log.info('llk_close && lk_close: {l1} {l2}', l1=llk_close, l2=lk_close)
+            self.log.info('llb_d && lb_d: {l1} {l2}', l1=llb_d, l2=lb_d)
             if llk_close > llb_d and lk_close < lb_d:
                 self.log.info('BUYBOLL lastBuyPrice: {price}', price=lastBuyPrice)
                 if buy_amount > 0 and lastBuyPrice > 0:
