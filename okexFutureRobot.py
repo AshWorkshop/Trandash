@@ -373,6 +373,9 @@ class OKexFutureRobot(RobotBase):
                             }
                         })
 
+            if action:
+                actions.append(action)
+
         # 检查并挂平单        
         if not isExpired(positions):
             _, position = positions
