@@ -586,7 +586,7 @@ positionSource = CycleSource(
     reactor,
     okexFuture.getPosition,
     'position',
-    limit=5,
+    limit=2,
     payload={
         'args': [pairs]
     }
@@ -595,7 +595,7 @@ userInfoSource = CycleSource(
     reactor,
     okexFuture.getUserInfo,
     'userInfo',
-    limit=5,
+    limit=2,
     payload={
         'args': [pairs[0]]
     }
