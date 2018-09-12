@@ -275,7 +275,8 @@ class OKexFutureRobot(RobotBase):
         tickers = newState.get('ticker')
         lastBuyAmount, lastSellAmount = newState.get('lastAmounts', (0.0, 0.0))
         lastBuyPrice, lastSellPrice = newState.get('lastPrices', (0.0, 0.0))
-        buyDelta, sellDelta = newState.get('lastDeltas', (delta, delta))
+        buyDelta = newState.get('buyDelta', delta)
+        sellDelta = newState.get('sellDelta', delta)
         positions = newState.get('position')
         initBuyFlag = newState.get('initBuyFlag', True)
         initSellFlag = newState.get('initSellFlag', True)
@@ -351,7 +352,7 @@ class OKexFutureRobot(RobotBase):
                                 'avgPrice': buy_avg_price
                             }
                         })
-                        newState['buyDelta'] = bollRate
+                        # newState['buyDelta'] = bollRate
             elif llk_close < llb_u and lk_close > lb_u:
                 self.log.info('SELLBOLL lastSellPrice: {price}', price=lastSellPrice)
                 if sell_amount > 0 and lastSellPrice > 0:
