@@ -356,7 +356,7 @@ class OKexFutureRobot(RobotBase):
             elif llk_close < llb_u and lk_close > lb_u:
                 self.log.info('SELLBOLL lastSellPrice: {price}', price=lastSellPrice)
                 if sell_amount > 0 and lastSellPrice > 0:
-                    bollRate = (ticker - lastSellAmount) / lastSellPrice
+                    bollRate = (ticker - lastSellPrice) / lastSellPrice
                     self.log.info("bollRate && delta: {bollRate}, {delta}", bollRate=bollRate, delta=sellDelta)
                     if bollRate > sellDelta:
                         self.log.info("lastSellAmount: {amount}", amount=lastSellAmount)
