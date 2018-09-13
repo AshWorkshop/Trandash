@@ -383,6 +383,7 @@ class OKexFutureRobot(RobotBase):
             buy_amount, sell_amount, buy_avg_price, sell_avg_price, buy_available, sell_available = position
             self.log.info("buy_available && sell_available: {buy} {sell}", buy=buy_available, sell=sell_available)
             self.log.info('lastBuyPrice && lastSellPrice: {buy} {sell}', buy=lastBuyPrice, sell=lastSellPrice)
+            self.log.info('lastBuyAmount && lastSellAmount: {buy} {sell}', buy=lastBuyAmount, sell=lastSellAmount)
             if buy_available != 0:
                 action = Action(
                     reactor,
