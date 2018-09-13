@@ -475,7 +475,7 @@ class OKexFutureRobot(RobotBase):
                 
                 if args is not None:
                     init = args['init']
-                    if init:
+                    if init == 'True':
                         newState['buyDelta'] = delta
                         newState['initBuyFlag'] = False
                     else:
@@ -496,7 +496,7 @@ class OKexFutureRobot(RobotBase):
                 
                 if args is not None:
                     init = args['init']
-                    if init:
+                    if init == 'True':
                         newState['sellDelta'] = delta
                         newState['initSellFlag'] = False
                     else:
