@@ -253,6 +253,20 @@ def getAvg(orders):
         return (0.0, 0.0)
     return (total / totalAmount, totalAmount)
 
+def searchLastAmount(amount, initAmount=1.0, rate=1.618, top=6):
+    total = 0.0
+    factor = 0
+    if amount == 0.0:
+        return 0.0
+    for i in range(round(amount)):
+        if i < top:
+            factor = i
+        else:
+            factor = top - 1
+        total += round(initAmount * rate ** factor)
+        if total >= amount:
+            break
+    return initAmount * rate ** factor
 
 
 class OKexFutureRobot(RobotBase):
@@ -273,8 +287,10 @@ class OKexFutureRobot(RobotBase):
         Bolls = newState.get('Bolls')
         KLines = newState.get('KLines')
         tickers = newState.get('ticker')
-        lastBuyAmount, lastSellAmount = newState.get('lastAmounts', (0.0, 0.0))
-        lastBuyPrice, lastSellPrice = newState.get('lastPrices', (0.0, 0.0))
+        lastBuyAmount = newState.get('lastBuyAmount', 0.0)
+        lastSellAmount = newState.get('lastSellAmount', 0.0)
+        lastBuyPrice = newState.get('lastBuyPrice', 0.0)
+        lastSellPrice = newState.get('lastSellPrice', 0.0)
         buyDelta = newState.get('buyDelta', delta)
         sellDelta = newState.get('sellDelta', delta)
         positions = newState.get('position')
@@ -516,16 +532,20 @@ class OKexFutureRobot(RobotBase):
                         positions['sell_available']
                     ]
         newState['position'] = [time.time(), position]
-        lastBuyPrice, lastSellPrice = newState.get('lastPrices', (0.0, 0.0))
-        lastBuyAmount, lastSellAmount = newState.get('lastAmounts', (0.0, 0.0))
+        lastBuyAmount = newState.get('lastBuyAmount', 0.0)
+        lastSellAmount = newState.get('lastSellAmount', 0.0)
+        lastBuyPrice = newState.get('lastBuyPrice', 0.0)
+        lastSellPrice = newState.get('lastSellPrice', 0.0)
         if lastBuyPrice == 0 and position[0] > 0:
             lastBuyPrice = position[2]
             lastBuyAmount = position[0]
+            newState['lastBuyPrice'] = lastBuyPrice
+            newState['lastBuyAmount'] = searchLastAmount(lastBuyAmount, initAmount=initAmount, rate=rate, top=top)
         if lastSellPrice == 0 and position[1] > 0:
             lastSellPrice = position[3]
             lastSellAmount = position[1]
-        newState['lastPrices'] = (lastBuyPrice, lastSellPrice)
-        newState['lastAmounts'] = (lastBuyAmount, lastSellAmount)
+            newState['lastSellPrice'] = lastSellPrice
+            newState['lastSellAmount'] = searchLastAmount(lastSellAmount, initAmount=initAmount, rate=rate, top=top)
 
         return newState
 
