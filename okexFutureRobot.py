@@ -3,7 +3,7 @@ from twisted.internet import reactor, task, defer
 from twisted.application import service
 from twisted.logger import Logger
 from exchanges.okex.OKexService import okexFuture
-from okexFutureSettings import pairs, rate, top, initAmount, delta, leverage, profitRate
+from okexFutureSettings import pairs, rate, top, initAmount, delta, leverage, profitRate, useInitDelta, lossLimit
 from utils import calcMAs, calcBolls
 from twisted.python.failure import Failure
 
@@ -163,7 +163,7 @@ def sell(amount=1.0, price="", totalAmount=0, avgPrice=0):
             return (sellInfo, sellpInfo)
 
 @defer.inlineCallbacks
-def cancle_p(pType="buy", avgPrice=0.0, totalAmount=0.0):
+def cancle_p(pType="buy", avgPrice=0.0, totalAmount=0.0, must=False):
     orders = None
     try:
         orders = yield okexFuture.getOrder(pairs, status="1", orderId="-1")
@@ -196,9 +196,15 @@ def cancle_p(pType="buy", avgPrice=0.0, totalAmount=0.0):
         pInfo = None
         try:
             if pType == 3:
-                pInfo = yield buyp(amount=totalAmount, price=str(avgPrice * (1 + profitRate / leverage)))
+                if not must:
+                    pInfo = yield buyp(amount=totalAmount, price=str(avgPrice * (1 + profitRate / leverage)))
+                else:
+                    pInfo = yield buyp(amount=totalAmount)
             elif pType == 4:
-                pInfo = yield sellp(amount=totalAmount, price=str(avgPrice * (1 - profitRate / leverage)))
+                if not must:
+                    pInfo = yield sellp(amount=totalAmount, price=str(avgPrice * (1 - profitRate / leverage)))
+                else:
+                    pInfo = yield sellp(amount=totalAmount)
         except Exception as err:
             log = Logger('cancle_p')
             failure = Failure(err)
@@ -360,7 +366,7 @@ class OKexFutureRobot(RobotBase):
                 if buy_amount > 0 and lastBuyPrice > 0:
                     bollRate = (lastBuyPrice - ticker) / lastBuyPrice
                     self.log.info("bollRate && delta: {bollRate}, {delta}", bollRate=bollRate, delta=buyDelta)
-                    if bollRate > buyDelta:
+                    if bollRate > buyDelta or (useInitDelta and bollRate > delta):
                         self.log.info("lastBuyAmount: {amount}", amount=lastBuyAmount)
                         if lastBuyAmount < initAmount * rate ** top:
                             newBuyAmount = lastBuyAmount * rate
@@ -381,7 +387,7 @@ class OKexFutureRobot(RobotBase):
                 if sell_amount > 0 and lastSellPrice > 0:
                     bollRate = (ticker - lastSellPrice) / lastSellPrice
                     self.log.info("bollRate && delta: {bollRate}, {delta}", bollRate=bollRate, delta=sellDelta)
-                    if bollRate > sellDelta:
+                    if bollRate > sellDelta or (useInitDelta and bollRate > delta):
                         self.log.info("lastSellAmount: {amount}", amount=lastSellAmount)
                         if lastSellAmount < initAmount * rate ** top:
                             newSellAmount = lastSellAmount * rate
@@ -440,10 +446,44 @@ class OKexFutureRobot(RobotBase):
                 )
                 actions.append(action)
 
-        if not isExpired(userInfos):
+        if not isExpired(userInfos) and not isExpired(positions):
             t, userInfo = userInfos
+            _, position = positions
+            buy_amount, sell_amount, buy_avg_price, sell_avg_price, buy_available, sell_available = position
             filename = 'data/' + 'okex_' + pairs[0] + '_' + str(startTime)
             writeAccountRight(filename, t, userInfo.get('account_rights', 0.0), userInfo.get('profit_unreal', 0.0))
+            lossRate = newState.get('lossRate', 0.0)
+            if lossRate > lossLimit:
+                action = Action(
+                    reactor,
+                    cancle_p,
+                    key="cancle_p",
+                    wait=True,
+                    payload={
+                        'kwargs': {
+                            'pType': 'buy',
+                            'avgPrice': buy_avg_price,
+                            'totalAmount': buy_amount,
+                            'must': True
+                        }
+                    }
+                )
+                actions.append(action)
+                action = Action(
+                    reactor,
+                    cancle_p,
+                    key="cancle_p",
+                    wait=True,
+                    payload={
+                        'kwargs': {
+                            'pType': 'sell',
+                            'avgPrice': sell_avg_price,
+                            'totalAmount': sell_amount,
+                            'must': True
+                        }
+                    }
+                )
+                actions.append(action)
 
 
         self.log.info("{count}", count=newState.get('count'))
@@ -574,7 +614,16 @@ class OKexFutureRobot(RobotBase):
     def userInfoHandler(self, state, userInfoEvent):
         newState = self.getNewState(state)
         self.log.info('got userInfoEvent')
-        newState['userInfo'] = [time.time(), userInfoEvent.data['data']]
+        userInfo = userInfoEvent.data['data']
+        newState['userInfo'] = [time.time(), userInfo]
+        accountRight = userInfo['account_rights']
+        if accountRight > newState.get('maxRight', 0.0):
+            newState['maxRight'] = accountRight
+
+        lossRate = 0.0
+        if newState.get('maxRight', 0.0) > 0:
+            lossRate = (newState['maxRight'] - accountRight) / newState['maxRight']
+            newState['lossRate'] = lossRate
 
         return newState
     
