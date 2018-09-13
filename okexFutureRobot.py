@@ -212,6 +212,11 @@ def counter():
     log = Logger('counter')
     log.info('tick')
 
+def writeAccountRight(filename, t, right, unreal):
+    staFile = open(filename, 'a+')
+    staFile.write("%f,%f,%f\n" % (t, right, unreal))
+    staFile.close()
+
 def isExpired(data, period=2):
     if data is None:
         return True
@@ -287,6 +292,7 @@ class OKexFutureRobot(RobotBase):
         Bolls = newState.get('Bolls')
         KLines = newState.get('KLines')
         tickers = newState.get('ticker')
+        startTime = newState.get('startTime', 0.0)
         lastBuyAmount = newState.get('lastBuyAmount', 0.0)
         lastSellAmount = newState.get('lastSellAmount', 0.0)
         lastBuyPrice = newState.get('lastBuyPrice', 0.0)
@@ -296,6 +302,7 @@ class OKexFutureRobot(RobotBase):
         positions = newState.get('position')
         initBuyFlag = newState.get('initBuyFlag', True)
         initSellFlag = newState.get('initSellFlag', True)
+        userInfos = newState.get('userInfo')
 
         self.log.info("{a} {b} {c}", a=isExpired(KLines, period=50), b=isExpired(tickers), c=isExpired(positions))
 
@@ -400,6 +407,7 @@ class OKexFutureRobot(RobotBase):
             self.log.info("buy_available && sell_available: {buy} {sell}", buy=buy_available, sell=sell_available)
             self.log.info('lastBuyPrice && lastSellPrice: {buy} {sell}', buy=lastBuyPrice, sell=lastSellPrice)
             self.log.info('lastBuyAmount && lastSellAmount: {buy} {sell}', buy=lastBuyAmount, sell=lastSellAmount)
+            self.log.info('lastBuyDelta && lastSellDelta: {buy} {sell}', buy=buyDelta, sell=sellDelta)
             if buy_available != 0:
                 action = Action(
                     reactor,
@@ -432,7 +440,12 @@ class OKexFutureRobot(RobotBase):
                 )
                 actions.append(action)
 
-        
+        if not isExpired(userInfos):
+            t, userInfo = userInfos
+            filename = 'data/' + 'okex_' + pairs[0] + '_' + str(startTime)
+            writeAccountRight(filename, t, userInfo.get('account_rights', 0.0), userInfo.get('profit_unreal', 0.0))
+
+
         self.log.info("{count}", count=newState.get('count'))
         
 
@@ -698,6 +711,7 @@ robot.bind(
 
 robot.state.update({
     'tickSource': tickSource,
+    'startTime': round(time.time()),
 })
 
 class RobotService(service.Service):
