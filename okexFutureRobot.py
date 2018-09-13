@@ -305,7 +305,7 @@ class OKexFutureRobot(RobotBase):
         userInfos = newState.get('userInfo')
 
         self.log.info("{a} {b} {c}", a=isExpired(KLines, period=50), b=isExpired(tickers), c=isExpired(positions))
-
+        self.log.info("buyDelta && sellDelta: {buy} {sell}", buy=newState.get('buyDelta'), sell=newState.get('sellDelta'))
         # 初始单
         isInit = False
         if not isExpired(mas, period=50) and not isExpired(tickers) and not isExpired(positions):
@@ -469,6 +469,7 @@ class OKexFutureRobot(RobotBase):
                 lastBuyPrice = newState.get('lastBuyPrice', 0)
                 if lastBuyPrice > 0:
                     buyDelta = (lastBuyPrice - price) / lastBuyPrice
+                    self.log.info("buyDelta: {delta}", delta=buyDelta)
                 newState['lastBuyPrice'] = price
                 newState['lastBuyAmount'] = amount
                 
@@ -489,6 +490,7 @@ class OKexFutureRobot(RobotBase):
                 lastSellPrice = newState.get('lastSellPrice', 0)
                 if lastSellPrice > 0:
                     sellDelta = (price - lastSellPrice) / lastSellPrice
+                    self.log.info("sellDelta: {delta}", delta=sellDelta)
                 newState['lastSellPrice'] = price
                 newState['lastSellAmount'] = amount
                 
