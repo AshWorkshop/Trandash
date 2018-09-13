@@ -210,6 +210,7 @@ class Action(object):
         self.wait = wait
         self.listeners = list()
         self.reactor = reactor
+        self.time = time.time()
 
     def _act(self):
         d = self.func(*self.args, **self.kwargs)

@@ -551,6 +551,14 @@ class OKexFutureRobot(RobotBase):
             newState['initBuyFlag'] = True
             newState['initSellFlag'] = True
 
+        aliveActions = []
+
+        for action in newState.get('actions', []):
+            if time.time() <= action.time + 60 * 5:
+                aliveActions.append(action)
+        
+        newState['actions'] = aliveActions
+
         # data = shelve.open(pairs[0] + "_db")
         # data['state'] = newState
         # data.close()
