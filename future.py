@@ -27,7 +27,7 @@ buys = []
 sells = []
 lastBuyAmount = 0.0
 lastSellAmount = 0.0
-initAmount = 1.0
+initAmount = 5.5
 buypId = None
 sellpId = None
 maxRight = 0.0
@@ -38,8 +38,8 @@ balance = 0.0
 initDelta = 0.005
 buyDelta = 0.005
 sellDelta = 0.005
-rate = 1.382
-top = 6
+rate = 1.618
+top = 9
 startTime = int(time.time())
 klineCycle = Cycle(reactor, okexFuture.getKLineLastMin, 'getKLineLastMin')
 tickerCycle = Cycle(reactor, okexFuture.getTicker, 'getTicker')
@@ -403,7 +403,7 @@ def cbRun():
                 buy_price_last, _ = buys[-1]
                 bollRate = (buy_price_last - ticker) / buy_price_last
                 print('bollRate && delta:', bollRate, buyDelta)
-                if bollRate > initDelta:
+                if bollRate > buyDelta:
                     print('lastBuyAmount:', lastBuyAmount)
                     if lastBuyAmount < initAmount * rate ** top:
                         buy_amount_new = lastBuyAmount * rate
@@ -421,7 +421,7 @@ def cbRun():
                 sell_price_last, _ = sells[-1]
                 bollRate = (ticker - sell_price_last) / sell_price_last
                 print('bollRate && delta:', bollRate, sellDelta)
-                if bollRate > initDelta:
+                if bollRate > sellDelta:
                     print('lastSellAmount:', lastSellAmount)
                     if lastSellAmount < initAmount * rate ** top:
                         sell_amount_new = lastSellAmount * rate
@@ -467,7 +467,7 @@ def cbRun():
         buyAvgPrice, buyAmount = getAvg(buys)
         sellAvgPrice, sellAmount = getAvg(sells)
 
-        if buy_price_avg != buyAvgPrice or buyAmount != buy_amount:
+        if buyAmount != buy_amount:
             print('RESET buys')
             lastBuyAmount = searchLastAmount(buy_amount, initAmount=initAmount, rate=rate, top=top)
             if buy_amount != 0:
@@ -478,7 +478,7 @@ def cbRun():
             data['buys'] = buys
             data.close()
 
-        if sell_price_avg != sellAvgPrice or sellAmount != sell_amount:
+        if sellAmount != sell_amount:
             print('RESET sells')
             lastSellAmount = searchLastAmount(sell_amount, initAmount=initAmount, rate=rate, top=top)
             if sell_amount != 0:
