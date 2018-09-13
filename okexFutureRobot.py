@@ -453,6 +453,7 @@ class OKexFutureRobot(RobotBase):
             filename = 'data/' + 'okex_' + pairs[0] + '_' + str(startTime)
             writeAccountRight(filename, t, userInfo.get('account_rights', 0.0), userInfo.get('profit_unreal', 0.0))
             lossRate = newState.get('lossRate', 0.0)
+            self.log.info('lossRate: {rate}', rate=lossRate)
             if lossRate > lossLimit:
                 action = Action(
                     reactor,
