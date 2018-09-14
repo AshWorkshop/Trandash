@@ -638,6 +638,10 @@ class OKexFutureRobot(RobotBase):
         self.log.info('got userInfoEvent')
         userInfo = userInfoEvent.data['data']
         newState['userInfo'] = [time.time(), userInfo]
+
+        if not userInfo:
+            return newState
+
         accountRight = userInfo['account_rights']
         if accountRight > newState.get('maxRight', 0.0):
             newState['maxRight'] = accountRight
