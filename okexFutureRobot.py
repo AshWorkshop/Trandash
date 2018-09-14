@@ -310,7 +310,7 @@ class OKexFutureRobot(RobotBase):
         initSellFlag = newState.get('initSellFlag', True)
         userInfos = newState.get('userInfo')
 
-        self.log.info("{a} {b} {c}", a=isExpired(KLines, period=50), b=isExpired(tickers), c=isExpired(positions))
+        self.log.info("{a} {b} {c} {d}", a=isExpired(KLines, period=50), b=isExpired(tickers), c=isExpired(positions), d=isExpired(userInfos))
         self.log.info("buyDelta && sellDelta: {buy} {sell}", buy=newState.get('buyDelta'), sell=newState.get('sellDelta'))
         # 初始单
         isInit = False
@@ -455,36 +455,46 @@ class OKexFutureRobot(RobotBase):
             lossRate = newState.get('lossRate', 0.0)
             self.log.info('lossRate: {rate}', rate=lossRate)
             if lossRate > lossLimit:
-                action = Action(
+                if buy_amount > 0:
+                    key = "ppp?wait=False"
+                    if sell_amount > 0:
+                        key = "ppp?wait=True"
+                    else:
+                        key = "ppp?wait=False"
+                    action = Action(
                     reactor,
                     cancle_p,
-                    key="cancle_p",
+                    key=key,
                     wait=True,
                     payload={
-                        'kwargs': {
-                            'pType': 'buy',
-                            'avgPrice': buy_avg_price,
-                            'totalAmount': buy_amount,
-                            'must': True
+                            'kwargs': {
+                                'pType': 'buy',
+                                'avgPrice': buy_avg_price,
+                                'totalAmount': buy_amount,
+                                'must': True
+                            }
                         }
-                    }
-                )
-                actions.append(action)
-                action = Action(
-                    reactor,
-                    cancle_p,
-                    key="cancle_p",
-                    wait=True,
-                    payload={
-                        'kwargs': {
-                            'pType': 'sell',
-                            'avgPrice': sell_avg_price,
-                            'totalAmount': sell_amount,
-                            'must': True
+                    )
+                    actions.append(action)
+                if sell_amount > 0:
+                    key = "ppp?wait=False"
+                    if buy_amount > 0:
+                        key = "ppp?wait=True"
+                    action = Action(
+                        reactor,
+                        cancle_p,
+                        key=key,
+                        wait=True,
+                        payload={
+                            'kwargs': {
+                                'pType': 'sell',
+                                'avgPrice': sell_avg_price,
+                                'totalAmount': sell_amount,
+                                'must': True
                         }
-                    }
-                )
-                actions.append(action)
+                        }
+                    )
+                    actions.append(action)
 
 
         self.log.info("{count}", count=newState.get('count'))
@@ -542,6 +552,17 @@ class OKexFutureRobot(RobotBase):
                         newState['initSellFlag'] = False
                     else:
                         newState['sellDelta'] = sellDelta
+
+            elif key == "ppp":
+                if args:
+                    if args.get('wait', False):
+                        newState['pppCount'] = newState.get('pppCount', 0) + 1
+                        if newState['pppCount'] == 2:
+                            reactor.stop()
+                    else:
+                        reactor.stop()
+                else:
+                    reactor.stop()
             
         return newState
 
@@ -625,6 +646,8 @@ class OKexFutureRobot(RobotBase):
         if newState.get('maxRight', 0.0) > 0:
             lossRate = (newState['maxRight'] - accountRight) / newState['maxRight']
             newState['lossRate'] = lossRate
+            if lossRate <= lossLimit:
+                newState['pppCount'] = 0
 
         return newState
     
