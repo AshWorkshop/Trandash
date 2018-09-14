@@ -10,6 +10,12 @@ from twisted.python.failure import Failure
 import time
 import datetime
 import shelve
+from sys import argv
+
+if len(argv) == 3:
+    _, coin, money = argv
+    pairs = [coin, money]
+    print(pairs)
 
 
 @defer.inlineCallbacks
