@@ -603,7 +603,7 @@ class OKexFutureRobot(RobotBase):
             ticker = None
         else:
             ticker = tickers['last']
-            buysell = (tickers['buy'], tickers['sell']))
+            buysell = (tickers['buy'], tickers['sell'])
         newState['ticker'] = [time.time(), ticker]
         newState['buysell'] = [time.time(), buysell]
 
