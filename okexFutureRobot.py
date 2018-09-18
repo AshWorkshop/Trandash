@@ -657,11 +657,12 @@ class OKexFutureRobot(RobotBase):
         accountRight = userInfo['account_rights']
         profit_unreal = userInfo['profit_unreal']
         keep_deposit = userInfo['keep_deposit']
-        _, ticker = newState.get('ticker', (None, None))
+        _, ticker = newState.get('ticker', (None, 0.0))
 
-        if ticker:
+        if ticker > 0:
             balance = accountRight - profit_unreal - keep_deposit
             initAmount = balance * ticker * leverage / 100 * amountRate
+            print(initAmount)
             if initAmount < 1.0:
                 initAmount = 1.0
             newState['initAmount'] = initAmount
