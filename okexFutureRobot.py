@@ -305,6 +305,7 @@ class OKexFutureRobot(RobotBase):
         Bolls = newState.get('Bolls')
         KLines = newState.get('KLines')
         tickers = newState.get('ticker')
+        buysells = newState.get('buysell')
         startTime = newState.get('startTime', 0.0)
         lastBuyAmount = newState.get('lastBuyAmount', 0.0)
         lastSellAmount = newState.get('lastSellAmount', 0.0)
@@ -326,6 +327,8 @@ class OKexFutureRobot(RobotBase):
             _, ma = mas
             _, ticker = tickers
             _, position = positions
+            _, buysell = buysells
+            buy1, sell1 = buysell
             buy_amount, sell_amount, buy_avg_price, sell_avg_price, _, _ = position
             self.log.info("ma && ticker: {ma} {ticker}", ma=ma, ticker=ticker)
             self.log.info("buy && sell: {buy_amount} {sell_amount}", buy_amount=buy_amount, sell_amount=sell_amount)
@@ -334,6 +337,7 @@ class OKexFutureRobot(RobotBase):
                 action = Action(reactor, buy, key='buy?init=True', wait=True, payload={
                     'kwargs': {
                         'amount': initAmount,
+                        'price': (buy1 + sell1) / 2,
                         'totalAmount': buy_amount,
                         'avgPrice': buy_avg_price
                     }
@@ -342,6 +346,7 @@ class OKexFutureRobot(RobotBase):
                 action = Action(reactor, sell, key='sell?init=True', wait=True, payload={
                     'kwargs': {
                         'amount': initAmount,
+                        'price': (buy1 + sell1) / 2,
                         'totalAmount': sell_amount,
                         'avgPrice': sell_avg_price
                     }
@@ -598,7 +603,9 @@ class OKexFutureRobot(RobotBase):
             ticker = None
         else:
             ticker = tickers['last']
+            buysell = (tickers['buy'], tickers['sell']))
         newState['ticker'] = [time.time(), ticker]
+        newState['buysell'] = [time.time(), buysell]
 
         return newState
 
