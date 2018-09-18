@@ -3,7 +3,7 @@ from twisted.internet import reactor, task, defer
 from twisted.application import service
 from twisted.logger import Logger
 from exchanges.okex.OKexService import okexFuture
-from okexFutureSettings import pairs, rate, top, initAmount, delta, leverage, profitRate, useInitDelta, lossLimit
+from okexFutureSettings import pairs, rate, top, defaultInitAmount, delta, leverage, profitRate, useInitDelta, lossLimit, amountRate
 from utils import calcMAs, calcBolls
 from twisted.python.failure import Failure
 
@@ -301,6 +301,7 @@ class OKexFutureRobot(RobotBase):
 
 
         mas = newState.get('ma')
+        initAmount = newState.get('initAmount', defaultInitAmount)
         Bolls = newState.get('Bolls')
         KLines = newState.get('KLines')
         tickers = newState.get('ticker')
@@ -619,6 +620,10 @@ class OKexFutureRobot(RobotBase):
         lastSellAmount = newState.get('lastSellAmount', 0.0)
         lastBuyPrice = newState.get('lastBuyPrice', 0.0)
         lastSellPrice = newState.get('lastSellPrice', 0.0)
+        initAmount = newState.get('initAmount', defaultInitAmount)
+
+
+
         if lastBuyPrice == 0 and position[0] > 0:
             lastBuyPrice = position[2]
             lastBuyAmount = position[0]
@@ -649,6 +654,15 @@ class OKexFutureRobot(RobotBase):
             return newState
 
         accountRight = userInfo['account_rights']
+        profit_unreal = userInfo['profit_unreal']
+        keep_deposit = userInfo['keep_deposit']
+        _, ticker = newState.get('ticker', (None, None))
+
+        if ticker:
+            balance = accountRight - profit_unreal - keep_deposit
+            initAmount = balance * ticker * leverage / 100 * amountRate
+            newState['initAmount'] = initAmount
+        
         if accountRight > newState.get('maxRight', 0.0):
             newState['maxRight'] = accountRight
 

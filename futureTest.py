@@ -1,10 +1,5 @@
 
 from exchanges.okex.OKexService import okexFuture
-# from exchanges.huobi.HuobiproService import huobipro
-# from exchanges.gateio.GateIOService import gateio
-# from exchanges.bitfinex.BitfinexService import bitfinex
-from exchanges.sisty.sisty_key import MD5Key
-from exchanges.sisty.SistyService import sisty
 from requestUtils.request import get, post
 
 
@@ -22,10 +17,7 @@ pairs = ('ETH', 'USDT')
 start = time.time()
 
 def test():
-    # d = sisty.getOrders(pairs, -1, -1)
-    d = sisty.trade(pairs, 254.50, 20, 2)
-    # d = sisty.getOrder(pairs, '535e96c6-9385-4b39-be93-05e929140b3d')
-    # d = okexFuture.getKLineLastMin(('eth', 'usdt'), last=30)
+    d = okexFuture.getPosition(pairs)
     def cbTest(result):
         print(result)
         return result
