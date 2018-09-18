@@ -319,6 +319,7 @@ class OKexFutureRobot(RobotBase):
 
         self.log.info("{a} {b} {c} {d}", a=isExpired(KLines, period=50), b=isExpired(tickers), c=isExpired(positions), d=isExpired(userInfos))
         self.log.info("buyDelta && sellDelta: {buy} {sell}", buy=newState.get('buyDelta'), sell=newState.get('sellDelta'))
+        self.log.info("initAmount: {amount}", amount=initAmount)
         # 初始单
         isInit = False
         if not isExpired(mas, period=50) and not isExpired(tickers) and not isExpired(positions):
