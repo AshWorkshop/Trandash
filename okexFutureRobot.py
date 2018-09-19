@@ -234,9 +234,9 @@ def isExpired(data, period=2):
         return True
     dataTime, _ = data
     if (time.time() - dataTime) > period:
-        return True and bool(data)
+        return True
     else:
-        return False
+        return not bool(data)
 
 def keyParse(keys):
     key_args = keys.split('?')
