@@ -536,6 +536,8 @@ class OKexFutureRobot(RobotBase):
         newState = self.getNewState(state)
         if key is not None:
             if key == 'buy':
+                if not data:
+                    return newState
                 buyInfo, buypInfo = data['data']
                 self.log.info("buyInfo: {info}", info=buyInfo)
                 _, price, amount = buyInfo
@@ -557,6 +559,8 @@ class OKexFutureRobot(RobotBase):
                     else:
                         newState['buyDelta'] = buyDelta
             elif key == 'sell':
+                if not data:
+                    return newState
                 sellInfo, sellpInfo = data['data']
                 self.log.info("sellInfo: {info}", info=sellInfo)
                 _, price, amount = sellInfo
@@ -702,7 +706,7 @@ class OKexFutureRobot(RobotBase):
         newState = dict()
         newState.update(state)
         newState['count'] = state.get('count', 0) + 1
-        if newState['count'] % 10 == 0:
+        if newState['count'] % 30 == 0:
             newState['initBuyFlag'] = True
             newState['initSellFlag'] = True
 
