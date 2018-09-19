@@ -302,6 +302,7 @@ class OKexFutureRobot(RobotBase):
 
         mas = newState.get('ma')
         initAmount = newState.get('initAmount', defaultInitAmount)
+        orderBooks = newState.get('orderBook')
         Bolls = newState.get('Bolls')
         KLines = newState.get('KLines')
         tickers = newState.get('ticker')
@@ -318,16 +319,18 @@ class OKexFutureRobot(RobotBase):
         initSellFlag = newState.get('initSellFlag', True)
         userInfos = newState.get('userInfo')
 
-        self.log.info("{a} {b} {c} {d}", a=isExpired(KLines, period=50), b=isExpired(tickers), c=isExpired(positions), d=isExpired(userInfos))
+        self.log.info("{a} {b} {c} {d} {e}", a=isExpired(KLines, period=50), b=isExpired(tickers), c=isExpired(positions), d=isExpired(userInfos), e=isExpired(orderBooks))
         self.log.info("buyDelta && sellDelta: {buy} {sell}", buy=newState.get('buyDelta'), sell=newState.get('sellDelta'))
         self.log.info("initAmount: {amount}", amount=initAmount)
         # 初始单
         isInit = False
-        if not isExpired(mas, period=50) and not isExpired(tickers) and not isExpired(positions):
+        if not isExpired(mas, period=50) and not isExpired(tickers) and not isExpired(positions) and not isExpired(orderBooks):
             _, ma = mas
             _, ticker = tickers
             _, position = positions
             _, buysell = buysells
+            _, orderBook = orderBooks
+            bids, asks = orderBook
             buy1, sell1 = buysell
             buy_amount, sell_amount, buy_avg_price, sell_avg_price, _, _ = position
             self.log.info("ma && ticker: {ma} {ticker}", ma=ma, ticker=ticker)
@@ -337,7 +340,7 @@ class OKexFutureRobot(RobotBase):
                 action = Action(reactor, buy, key='buy?init=True', wait=True, payload={
                     'kwargs': {
                         'amount': initAmount,
-                        'price': (buy1 + sell1) / 2,
+                        'price': bids[1],
                         'totalAmount': buy_amount,
                         'avgPrice': buy_avg_price
                     }
@@ -346,7 +349,7 @@ class OKexFutureRobot(RobotBase):
                 action = Action(reactor, sell, key='sell?init=True', wait=True, payload={
                     'kwargs': {
                         'amount': initAmount,
-                        'price': (buy1 + sell1) / 2,
+                        'price': asks[1],
                         'totalAmount': sell_amount,
                         'avgPrice': sell_avg_price
                     }
