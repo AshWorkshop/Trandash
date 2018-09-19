@@ -347,7 +347,7 @@ class OKexFutureRobot(RobotBase):
                 action = Action(reactor, buy, key='buy?init=True', wait=True, payload={
                     'kwargs': {
                         'amount': initAmount,
-                        'price': buy2,
+                        'price': buy1,
                         'totalAmount': buy_amount,
                         'avgPrice': buy_avg_price
                     }
@@ -356,7 +356,7 @@ class OKexFutureRobot(RobotBase):
                 action = Action(reactor, sell, key='sell?init=True', wait=True, payload={
                     'kwargs': {
                         'amount': initAmount,
-                        'price': sell2,
+                        'price': sell1,
                         'totalAmount': sell_amount,
                         'avgPrice': sell_avg_price
                     }
