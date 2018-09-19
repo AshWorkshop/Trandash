@@ -707,7 +707,7 @@ class OKexFutureRobot(RobotBase):
         aliveActions = []
 
         for action in newState.get('actions', []):
-            if time.time() <= action.time + 60 * 5:
+            if time.time() <= action.time + 60 * 1:
                 aliveActions.append(action)
         
         newState['actions'] = aliveActions
