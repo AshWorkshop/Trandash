@@ -332,13 +332,18 @@ class OKexFutureRobot(RobotBase):
             _, orderBook = orderBooks
             bids, asks = orderBook
             buy1, sell1 = buysell
+
+            buy2, _ = bids[1]
+            self.log.info('buy2:{buy}', buy=buy2)
+
+            sell2, _ = asks[1]
+            self.log.info('sell2:{sell}', sell=sell2)
+
             buy_amount, sell_amount, buy_avg_price, sell_avg_price, _, _ = position
             self.log.info("ma && ticker: {ma} {ticker}", ma=ma, ticker=ticker)
             self.log.info("buy && sell: {buy_amount} {sell_amount}", buy_amount=buy_amount, sell_amount=sell_amount)
             action = None
             if ticker > ma and buy_amount == 0 and initBuyFlag:
-                buy2, _ = bids[1]
-                self.log.info('buy2:{buy}', buy=buy2)
                 action = Action(reactor, buy, key='buy?init=True', wait=True, payload={
                     'kwargs': {
                         'amount': initAmount,
@@ -348,8 +353,6 @@ class OKexFutureRobot(RobotBase):
                     }
                 })
             elif ticker < ma and sell_amount == 0 and initSellFlag:
-                sell2, _ = asks[1]
-                self.log.info('sell2:{sell}', sell=sell2)
                 action = Action(reactor, sell, key='sell?init=True', wait=True, payload={
                     'kwargs': {
                         'amount': initAmount,
