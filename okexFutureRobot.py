@@ -112,8 +112,8 @@ def buy(amount=1.0, price="", totalAmount=0, avgPrice=0):
             avgPrice = avgPrice * totalAmount + price * round(float(amount))
             totalAmount += round(float(amount))
             avgPrice = avgPrice / totalAmount
-            buypInfo = yield buyp(amount=totalAmount, price=str(float(avgPrice) * (1 + profitRate / leverage)))
-
+            # buypInfo = yield buyp(amount=totalAmount, price=str(float(avgPrice) * (1 + profitRate / leverage)))
+            buypInfo = None
             return (buyInfo, buypInfo)
             
         
@@ -164,8 +164,8 @@ def sell(amount=1.0, price="", totalAmount=0, avgPrice=0):
             avgPrice = avgPrice * totalAmount + price * round(float(amount))
             totalAmount += round(float(amount))
             avgPrice = avgPrice / totalAmount
-            sellpInfo = yield sellp(amount=totalAmount, price=str(float(avgPrice) * (1 - profitRate / leverage)))
-
+            # sellpInfo = yield sellp(amount=totalAmount, price=str(float(avgPrice) * (1 - profitRate / leverage)))
+            sellpInfo = None
             return (sellInfo, sellpInfo)
 
 @defer.inlineCallbacks
