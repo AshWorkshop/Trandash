@@ -112,8 +112,8 @@ def buy(amount=1.0, price="", totalAmount=0, avgPrice=0):
             avgPrice = avgPrice * totalAmount + price * round(float(amount))
             totalAmount += round(float(amount))
             avgPrice = avgPrice / totalAmount
-            # buypInfo = yield buyp(amount=totalAmount, price=str(float(avgPrice) * (1 + profitRate / leverage)))
-            buypInfo = None
+            buypInfo = yield buyp(amount=totalAmount, price=str(float(avgPrice) * (1 + profitRate / leverage)))
+            # buypInfo = None
             return (buyInfo, buypInfo)
             
         
@@ -164,8 +164,8 @@ def sell(amount=1.0, price="", totalAmount=0, avgPrice=0):
             avgPrice = avgPrice * totalAmount + price * round(float(amount))
             totalAmount += round(float(amount))
             avgPrice = avgPrice / totalAmount
-            # sellpInfo = yield sellp(amount=totalAmount, price=str(float(avgPrice) * (1 - profitRate / leverage)))
-            sellpInfo = None
+            sellpInfo = yield sellp(amount=totalAmount, price=str(float(avgPrice) * (1 - profitRate / leverage)))
+            # sellpInfo = None
             return (sellInfo, sellpInfo)
 
 @defer.inlineCallbacks
@@ -337,19 +337,21 @@ class OKexFutureRobot(RobotBase):
             self.log.info("buy && sell: {buy_amount} {sell_amount}", buy_amount=buy_amount, sell_amount=sell_amount)
             action = None
             if ticker > ma and buy_amount == 0 and initBuyFlag:
+                buy2, _ = bids[1]
                 action = Action(reactor, buy, key='buy?init=True', wait=True, payload={
                     'kwargs': {
                         'amount': initAmount,
-                        'price': bids[1],
+                        'price': buy2,
                         'totalAmount': buy_amount,
                         'avgPrice': buy_avg_price
                     }
                 })
             elif ticker < ma and sell_amount == 0 and initSellFlag:
+                sell2, _ = asks[1]
                 action = Action(reactor, sell, key='sell?init=True', wait=True, payload={
                     'kwargs': {
                         'amount': initAmount,
-                        'price': asks[1],
+                        'price': sell2,
                         'totalAmount': sell_amount,
                         'avgPrice': sell_avg_price
                     }
