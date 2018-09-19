@@ -471,6 +471,8 @@ class OKexFutureRobot(RobotBase):
 
         if not isExpired(userInfos) and not isExpired(positions):
             t, userInfo = userInfos
+            if not userInfo:
+                return actions
             _, position = positions
             buy_amount, sell_amount, buy_avg_price, sell_avg_price, buy_available, sell_available = position
             filename = 'data/' + 'okex_' + pairs[0] + '_' + str(startTime)
