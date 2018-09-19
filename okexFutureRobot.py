@@ -234,7 +234,7 @@ def isExpired(data, period=2):
         return True
     dataTime, _ = data
     if (time.time() - dataTime) > period:
-        return True
+        return True and bool(data)
     else:
         return False
 
