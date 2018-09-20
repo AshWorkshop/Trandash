@@ -317,11 +317,14 @@ class OKexFutureRobot(RobotBase):
         positions = newState.get('position')
         initBuyFlag = newState.get('initBuyFlag', True)
         initSellFlag = newState.get('initSellFlag', True)
+        initBuyPrice = newState.get('initBuyPrice', 0.0)
+        initSellPrice = newState.get('initSellPrice', 0.0)
         userInfos = newState.get('userInfo')
 
         self.log.info("{a} {b} {c} {d} {e}", a=isExpired(KLines, period=50), b=isExpired(tickers), c=isExpired(positions), d=isExpired(userInfos), e=isExpired(orderBooks))
         self.log.info("buyDelta && sellDelta: {buy} {sell}", buy=newState.get('buyDelta'), sell=newState.get('sellDelta'))
         self.log.info("initAmount: {amount}", amount=initAmount)
+        self.log.info("initPrice: {buy} {sell}", buy=initBuyPrice, sell=initSellPrice)
         # 初始单
         isInit = False
         if not isExpired(mas, period=50) and not isExpired(tickers) and not isExpired(positions) and not isExpired(orderBooks):
@@ -333,30 +336,30 @@ class OKexFutureRobot(RobotBase):
             bids, asks = orderBook
             buy1, sell1 = buysell
 
-            buy2, _ = bids[1]
-            self.log.info('buy2:{buy}', buy=buy2)
+            buy3, _ = bids[2]
+            self.log.info('buy3:{buy}', buy=buy3)
 
-            sell2, _ = asks[1]
-            self.log.info('sell2:{sell}', sell=sell2)
+            sell3, _ = asks[2]
+            self.log.info('sell3:{sell}', sell=sell3)
 
             buy_amount, sell_amount, buy_avg_price, sell_avg_price, _, _ = position
             self.log.info("ma && ticker: {ma} {ticker}", ma=ma, ticker=ticker)
             self.log.info("buy && sell: {buy_amount} {sell_amount}", buy_amount=buy_amount, sell_amount=sell_amount)
             action = None
-            if ticker > ma and buy_amount == 0 and initBuyFlag:
+            if ticker > ma and buy_amount == 0 and initBuyFlag and buy3 > initBuyPrice:
                 action = Action(reactor, buy, key='buy?init=True', wait=True, payload={
                     'kwargs': {
                         'amount': initAmount,
-                        'price': buy1,
+                        'price': buy3,
                         'totalAmount': buy_amount,
                         'avgPrice': buy_avg_price
                     }
                 })
-            elif ticker < ma and sell_amount == 0 and initSellFlag:
+            elif ticker < ma and sell_amount == 0 and initSellFlag and sell3 < initSellPrice:
                 action = Action(reactor, sell, key='sell?init=True', wait=True, payload={
                     'kwargs': {
                         'amount': initAmount,
-                        'price': sell1,
+                        'price': sell3,
                         'totalAmount': sell_amount,
                         'avgPrice': sell_avg_price
                     }
@@ -556,8 +559,10 @@ class OKexFutureRobot(RobotBase):
                     if init == 'True':
                         newState['buyDelta'] = delta
                         newState['initBuyFlag'] = False
+                        newState['initBuyPrice'] = price
                     else:
                         newState['buyDelta'] = buyDelta
+                        newState['initBuyPrice'] = 0
             elif key == 'sell':
                 if not data:
                     return newState
@@ -579,8 +584,10 @@ class OKexFutureRobot(RobotBase):
                     if init == 'True':
                         newState['sellDelta'] = delta
                         newState['initSellFlag'] = False
+                        newState['initSellPrice'] = price
                     else:
                         newState['sellDelta'] = sellDelta
+                        newState['initSellPrice'] = 0
 
             elif key == "ppp":
                 if args:
@@ -706,7 +713,7 @@ class OKexFutureRobot(RobotBase):
         newState = dict()
         newState.update(state)
         newState['count'] = state.get('count', 0) + 1
-        if newState['count'] % 30 == 0:
+        if newState['count'] % 5 == 0:
             newState['initBuyFlag'] = True
             newState['initSellFlag'] = True
 
