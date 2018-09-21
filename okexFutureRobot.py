@@ -338,10 +338,10 @@ class OKexFutureRobot(RobotBase):
             bids, asks = orderBook
             buy1, sell1 = buysell
 
-            buy3, _ = bids[2]
+            buy3, _ = bids[1]
             self.log.info('buy3:{buy}', buy=buy3)
 
-            sell3, _ = asks[2]
+            sell3, _ = asks[1]
             self.log.info('sell3:{sell}', sell=sell3)
 
             buy_amount, sell_amount, buy_avg_price, sell_avg_price, _, _ = position
@@ -719,7 +719,7 @@ class OKexFutureRobot(RobotBase):
         newState = dict()
         newState.update(state)
         newState['count'] = state.get('count', 0) + 1
-        if newState['count'] % 10 == 0:
+        if newState['count'] % 5 == 0:
             newState['initBuyFlag'] = True
             newState['initSellFlag'] = True
 
