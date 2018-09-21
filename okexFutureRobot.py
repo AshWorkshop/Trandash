@@ -653,7 +653,11 @@ class OKexFutureRobot(RobotBase):
         lastSellPrice = newState.get('lastSellPrice', 0.0)
         initAmount = newState.get('initAmount', defaultInitAmount)
 
-
+        if position[0] > 0:
+            newState['initBuyPrice'] = 0
+        
+        if position[1] > 0:
+            newState['initSellPrice'] = 0
 
         if lastBuyPrice == 0 and position[0] > 0:
             lastBuyPrice = position[2]

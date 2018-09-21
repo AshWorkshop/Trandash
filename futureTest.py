@@ -12,12 +12,12 @@ import hashlib
 import time
 import json
 
-pairs = ('ETH', 'USDT')
+pairs = ('EOS', 'USDT')
 
 start = time.time()
 
 def test():
-    d = okexFuture.getPosition(pairs)
+    d = okexFuture.spotTrade(pairs, amount="220", tradeType="sell_market")
     def cbTest(result):
         print(result)
         return result

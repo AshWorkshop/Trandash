@@ -284,8 +284,32 @@ class OKexFuture(ExchangeService):
 
         return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
 
+    def spotTrade(self, pairs, price="", amount="", tradeType=""):
+        URL = "/api/v1/trade.do"
+        params = {
+            "api_key": self.__accessKey,
+            "symbol": self.getSymbol(pairs),
+            'amount': amount,
+            'type': tradeType,
+        }
+
+        if price:
+            params['price'] = price
+
+        sign = buildMySign(params, self.__secretKey)
+        params['sign'] = sign
+
+        def handleBody(body):
+            print(body)
+            data = json.loads(body)
+            
+            return data
+
+        return httpPost(self.__url, URL, params, callback=handleBody, errback=self.ebFailed)
+
 okexFuture = OKexFuture(
     'https://www.okex.com',
     ApiKey,
     SecretKey
 )
+
