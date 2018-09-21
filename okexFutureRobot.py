@@ -12,6 +12,8 @@ import datetime
 import shelve
 from sys import argv
 
+MAXSELLPRICE = 100000000
+
 if len(argv) == 3:
     _, coin, money = argv
     pairs = [coin, money]
@@ -318,7 +320,7 @@ class OKexFutureRobot(RobotBase):
         initBuyFlag = newState.get('initBuyFlag', True)
         initSellFlag = newState.get('initSellFlag', True)
         initBuyPrice = newState.get('initBuyPrice', 0.0)
-        initSellPrice = newState.get('initSellPrice', 0.0)
+        initSellPrice = newState.get('initSellPrice', MAXSELLPRICE)
         userInfos = newState.get('userInfo')
 
         self.log.info("{a} {b} {c} {d} {e}", a=isExpired(KLines, period=50), b=isExpired(tickers), c=isExpired(positions), d=isExpired(userInfos), e=isExpired(orderBooks))
@@ -587,7 +589,7 @@ class OKexFutureRobot(RobotBase):
                         newState['initSellPrice'] = price
                     else:
                         newState['sellDelta'] = sellDelta
-                        newState['initSellPrice'] = 0
+                        newState['initSellPrice'] = MAXSELLPRICE
 
             elif key == "ppp":
                 if args:
@@ -657,7 +659,7 @@ class OKexFutureRobot(RobotBase):
             newState['initBuyPrice'] = 0
         
         if position[1] > 0:
-            newState['initSellPrice'] = 0
+            newState['initSellPrice'] = MAXSELLPRICE
 
         if lastBuyPrice == 0 and position[0] > 0:
             lastBuyPrice = position[2]
