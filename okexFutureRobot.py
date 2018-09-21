@@ -719,7 +719,7 @@ class OKexFutureRobot(RobotBase):
         newState = dict()
         newState.update(state)
         newState['count'] = state.get('count', 0) + 1
-        if newState['count'] % 5 == 0:
+        if newState['count'] % 10 == 0:
             newState['initBuyFlag'] = True
             newState['initSellFlag'] = True
 
