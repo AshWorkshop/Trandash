@@ -348,20 +348,18 @@ class OKexFutureRobot(RobotBase):
             self.log.info("ma && ticker: {ma} {ticker}", ma=ma, ticker=ticker)
             self.log.info("buy && sell: {buy_amount} {sell_amount}", buy_amount=buy_amount, sell_amount=sell_amount)
             action = None
-            if ticker > ma and buy_amount == 0 and initBuyFlag and buy3 > initBuyPrice:
+            if ticker > ma and buy_amount == 0 and initBuyFlag:
                 action = Action(reactor, buy, key='buy?init=True', wait=True, payload={
                     'kwargs': {
                         'amount': initAmount,
-                        'price': buy3,
                         'totalAmount': buy_amount,
                         'avgPrice': buy_avg_price
                     }
                 })
-            elif ticker < ma and sell_amount == 0 and initSellFlag and sell3 < initSellPrice:
+            elif ticker < ma and sell_amount == 0 and initSellFlag:
                 action = Action(reactor, sell, key='sell?init=True', wait=True, payload={
                     'kwargs': {
                         'amount': initAmount,
-                        'price': sell3,
                         'totalAmount': sell_amount,
                         'avgPrice': sell_avg_price
                     }
@@ -719,7 +717,7 @@ class OKexFutureRobot(RobotBase):
         newState = dict()
         newState.update(state)
         newState['count'] = state.get('count', 0) + 1
-        if newState['count'] % 10 == 0:
+        if newState['count'] % 30 == 0:
             newState['initBuyFlag'] = True
             newState['initSellFlag'] = True
 
