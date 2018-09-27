@@ -16,7 +16,6 @@ def run(coin):
     return p
 
 _, coin = argv
-
 p = run(coin)
 
 while True:
@@ -39,7 +38,7 @@ while True:
 
     t, status = log.split(',')
     t = float(t)
-    if (time.time() - t) > 60 * 60 and (status == 'OK' or status == 'START') and not(ctrl == 'STOP'):
+    if (time.time() - t) > 20 * 60 and (status == 'OK' or status == 'START') and not(ctrl == 'STOP'):
         print('RESTART')
         p.kill()
         p = run(coin)
