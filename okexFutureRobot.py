@@ -231,6 +231,11 @@ def writeAccountRight(filename, t, right, unreal):
     staFile.write("%f,%f,%f\n" % (t, right, unreal))
     staFile.close()
 
+def writeBeat(filename, t, beat):
+    staFile = open(filename, 'w+')
+    staFile.write("%f,%s\n" % (t, beat))
+    staFile.close()
+
 def isExpired(data, period=2):
     if data is None:
         return True
@@ -310,6 +315,7 @@ class OKexFutureRobot(RobotBase):
         tickers = newState.get('ticker')
         buysells = newState.get('buysell')
         startTime = newState.get('startTime', 0.0)
+        beatFilename = 'log/' + 'okex_' + pairs[0]
         lastBuyAmount = newState.get('lastBuyAmount', 0.0)
         lastSellAmount = newState.get('lastSellAmount', 0.0)
         lastBuyPrice = newState.get('lastBuyPrice', 0.0)
@@ -323,7 +329,17 @@ class OKexFutureRobot(RobotBase):
         initSellPrice = newState.get('initSellPrice', MAXSELLPRICE)
         userInfos = newState.get('userInfo')
 
-        self.log.info("{a} {b} {c} {d} {e}", a=isExpired(KLines, period=50), b=isExpired(tickers), c=isExpired(positions), d=isExpired(userInfos), e=isExpired(orderBooks))
+        aFlag = isExpired(KLines, period=50)
+        bFlag = isExpired(tickers)
+        cFlag = isExpired(positions)
+        dFlag = isExpired(userInfos)
+        eFlag = isExpired(orderBooks)
+
+        self.log.info("{a} {b} {c} {d} {e}", a=aFlag, b=bFlag, c=cFlag, d=dFlag, e=eFlag)
+        beat = 'OK'
+        if not(aFlag or bFlag or cFlag or dFlag or eFlag):
+            writeBeat(beatFilename, time.time(), beat)
+        
         self.log.info("buyDelta && sellDelta: {buy} {sell}", buy=newState.get('buyDelta'), sell=newState.get('sellDelta'))
         self.log.info("initAmount: {amount}", amount=initAmount)
         self.log.info("initPrice: {buy} {sell}", buy=initBuyPrice, sell=initSellPrice)
@@ -594,10 +610,19 @@ class OKexFutureRobot(RobotBase):
                     if args.get('wait', False):
                         newState['pppCount'] = newState.get('pppCount', 0) + 1
                         if newState['pppCount'] == 2:
+                            beatFilename = 'log/' + 'okex_' + pairs[0]
+                            beat = 'PPP'
+                            writeBeat(beatFilename, time.time(), beat)
                             reactor.stop()
                     else:
+                        beatFilename = 'log/' + 'okex_' + pairs[0]
+                        beat = 'PPP'
+                        writeBeat(beatFilename, time.time(), beat)
                         reactor.stop()
                 else:
+                    beatFilename = 'log/' + 'okex_' + pairs[0]
+                    beat = 'PPP'
+                    writeBeat(beatFilename, time.time(), beat)
                     reactor.stop()
             
         return newState
