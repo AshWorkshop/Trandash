@@ -28,13 +28,13 @@ while True:
     logFile.close()
 
     ctrlFilename = 'log/okex_' + coin + '_ctrl'
-    ctrlFile = open(ctrlFilename, 'r+')
+    ctrlFile = open(ctrlFilename, 'r')
     lines = list(ctrlFile.readlines())
     line = lines[-1]
     ctrl = line.strip()
     ctrlFile.close()
 
-    print(ctrl)
+    print(ctrlFilename, ctrl)
 
     t, status = log.split(',')
     t = float(t)
