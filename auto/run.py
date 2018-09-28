@@ -19,7 +19,7 @@ _, coin = argv
 p = run(coin)
 
 while True:
-    time.sleep(5)
+    time.sleep(1)
     logFilename = 'log/okex_' + coin
     logFile = open(logFilename, 'r+')
     lines = list(logFile.readlines())
