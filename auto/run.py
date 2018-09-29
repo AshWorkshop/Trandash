@@ -34,10 +34,11 @@ while True:
     ctrl = line.strip()
     ctrlFile.close()
 
-    print(ctrlFilename, ctrl)
-
     t, status = log.split(',')
     t = float(t)
+
+    print(status, ctrl)
+
     if (time.time() - t) > 20 * 60 and (status == 'OK' or status == 'START') and not(ctrl == 'STOP'):
         print('RESTART')
         p.kill()
