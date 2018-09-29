@@ -23,7 +23,7 @@ while True:
     logFilename = 'log/okex_' + coin
     logFile = open(logFilename, 'r+')
     lines = list(logFile.readlines())
-    line = lines[-1]
+    line = lines[0]
     log = line.strip()
     logFile.close()
 
