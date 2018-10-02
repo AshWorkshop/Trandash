@@ -3,7 +3,7 @@ from twisted.internet import reactor, task, defer
 from twisted.application import service
 from twisted.logger import Logger
 from exchanges.okex.OKexService import okexFuture
-from okexFutureSettings import pairs, rate, top, defaultInitAmount, delta, leverage, profitRate, useInitDelta, lossLimit, amountRate
+from okexFutureSettings import pairs, rate, top, defaultInitAmount, delta, leverage, profitRates, useInitDelta, lossLimit, amountRate
 from utils import calcMAs, calcBolls
 from twisted.python.failure import Failure
 
@@ -18,6 +18,35 @@ if len(argv) == 3:
     _, coin, money = argv
     pairs = [coin, money]
     print(pairs)
+
+
+def getAvg(orders):
+    total = 0
+    totalAmount = 0
+    for orderId, order in orders:
+        price = order['price']
+        amount = order['amount']
+        amount = round(amount)
+        total += price * amount
+        totalAmount += amount
+    if totalAmount == 0:
+        return (0.0, 0.0)
+    return (total / totalAmount, totalAmount)
+
+def searchLastAmount(amount, initAmount=1.0, rate=1.618, top=6):
+    total = 0.0
+    factor = 0
+    if amount == 0.0:
+        return 0.0
+    for i in range(round(amount)):
+        if i < top:
+            factor = i
+        else:
+            factor = top - 1
+        total += round(initAmount * rate ** factor)
+        if total >= amount:
+            break
+    return initAmount * rate ** factor
 
 
 @defer.inlineCallbacks
@@ -67,6 +96,41 @@ def sellp(amount, price=""):
             return (orderId, price, float(amount))
 
 
+@defer.inlineCallbacks
+def doP(totalAmount, avgPrice, lastAmount, lastPrice, profitRates, leverage, pType=0):
+    totalPrice = avgPrice * totalAmount
+    basePrice = totalPrice - lastPrice * lastAmount
+    baseAmount = totalAmount - lastAmount
+    baseAvgPrice = basePrice / baseAmount
+    baseRate, lastRate = profitRates
+
+    pInfos = []
+
+    if pType == 0:
+        if baseAmount > 0:
+            pInfo = yield buyp(amount=baseAmount, price=str(float(baseAvgPrice) * (1 + baseRate / leverage)))
+            pInfos.append(pInfo)
+        else:
+            lastRate = baseRate
+        if lastAmount > 0:
+            pInfo = yield buyp(amount=lastAmount, price=str(float(lastPrice) * (1 + lastRate / leverage)))
+            pInfos.append(pInfo)
+    elif pType == 1:
+        if baseAmount > 0:
+            pInfo = yield sellp(amount=baseAmount, price=str(float(baseAvgPrice) * (1 - baseRate / leverage)))
+            pInfos.append(pInfo)
+        else:
+            lastRate = baseRate
+        if lastAmount > 0:
+            pInfo = yield sellp(amount=lastAmount, price=str(float(lastPrice) * (1 - lastRate / leverage)))
+            pInfos.append(pInfo)
+    else:
+        pInfos = None
+
+    return pInfos
+        
+    
+
 
 @defer.inlineCallbacks
 def buy(amount=1.0, price="", totalAmount=0, avgPrice=0):
@@ -114,9 +178,9 @@ def buy(amount=1.0, price="", totalAmount=0, avgPrice=0):
             avgPrice = avgPrice * totalAmount + price * round(float(amount))
             totalAmount += round(float(amount))
             avgPrice = avgPrice / totalAmount
-            buypInfo = yield buyp(amount=totalAmount, price=str(float(avgPrice) * (1 + profitRate / leverage)))
+            buypInfos = yield doP(totalAmount, avgPrice, round(float(amount)), price, profitRates, leverage)
             # buypInfo = None
-            return (buyInfo, buypInfo)
+            return (buyInfo, buypInfos)
             
         
 
@@ -166,12 +230,12 @@ def sell(amount=1.0, price="", totalAmount=0, avgPrice=0):
             avgPrice = avgPrice * totalAmount + price * round(float(amount))
             totalAmount += round(float(amount))
             avgPrice = avgPrice / totalAmount
-            sellpInfo = yield sellp(amount=totalAmount, price=str(float(avgPrice) * (1 - profitRate / leverage)))
+            sellpInfos = yield doP(totalAmount, avgPrice, round(float(amount)), price, profitRates, leverage, pType=1)
             # sellpInfo = None
-            return (sellInfo, sellpInfo)
+            return (sellInfo, sellpInfos)
 
 @defer.inlineCallbacks
-def cancle_p(pType="buy", avgPrice=0.0, totalAmount=0.0, must=False):
+def cancle_p(lastAmount, lastPrice, pType="buy", avgPrice=0.0, totalAmount=0.0, must=False):
     orders = None
     try:
         orders = yield okexFuture.getOrder(pairs, status="1", orderId="-1")
@@ -201,25 +265,29 @@ def cancle_p(pType="buy", avgPrice=0.0, totalAmount=0.0, must=False):
                     except Exception as err:
                         failure = Failure(err)
 
-        pInfo = None
+        pInfos = None
         try:
             if pType == 3:
                 if not must:
-                    pInfo = yield buyp(amount=totalAmount, price=str(avgPrice * (1 + profitRate / leverage)))
+                    pInfos = yield doP(totalAmount, avgPrice, round(float(lastAmount)), lastPrice, profitRates, leverage, pType=0)
                 else:
+                    pInfos = []
                     pInfo = yield buyp(amount=totalAmount)
+                    pInfos.append(pInfo)
             elif pType == 4:
                 if not must:
-                    pInfo = yield sellp(amount=totalAmount, price=str(avgPrice * (1 - profitRate / leverage)))
+                    pInfos = yield doP(totalAmount, avgPrice, round(float(lastAmount)), lastPrice, profitRates, leverage, pType=1)
                 else:
+                    pInfos = []
                     pInfo = yield sellp(amount=totalAmount)
+                    pInfos.append(pInfo)
         except Exception as err:
             log = Logger('cancle_p')
             failure = Failure(err)
             log.info("{failure}", failure=failure)
             return failure
         else:
-            return pInfo
+            return pInfos
 
 
 def counter():
@@ -263,34 +331,6 @@ def keyParse(keys):
 
     return (None, None)
 
-
-def getAvg(orders):
-    total = 0
-    totalAmount = 0
-    for orderId, order in orders:
-        price = order['price']
-        amount = order['amount']
-        amount = round(amount)
-        total += price * amount
-        totalAmount += amount
-    if totalAmount == 0:
-        return (0.0, 0.0)
-    return (total / totalAmount, totalAmount)
-
-def searchLastAmount(amount, initAmount=1.0, rate=1.618, top=6):
-    total = 0.0
-    factor = 0
-    if amount == 0.0:
-        return 0.0
-    for i in range(round(amount)):
-        if i < top:
-            factor = i
-        else:
-            factor = top - 1
-        total += round(initAmount * rate ** factor)
-        if total >= amount:
-            break
-    return initAmount * rate ** factor
 
 
 class OKexFutureRobot(RobotBase):
@@ -369,7 +409,7 @@ class OKexFutureRobot(RobotBase):
                     'kwargs': {
                         'amount': initAmount,
                         'totalAmount': buy_amount,
-                        'avgPrice': buy_avg_price
+                        'avgPrice': buy_avg_price,
                     }
                 })
             elif ticker < ma and sell_amount == 0 and initSellFlag:
@@ -377,7 +417,7 @@ class OKexFutureRobot(RobotBase):
                     'kwargs': {
                         'amount': initAmount,
                         'totalAmount': sell_amount,
-                        'avgPrice': sell_avg_price
+                        'avgPrice': sell_avg_price,
                     }
                 })
 
@@ -466,7 +506,9 @@ class OKexFutureRobot(RobotBase):
                         'kwargs': {
                             'pType': 'buy',
                             'avgPrice': buy_avg_price,
-                            'totalAmount': buy_amount
+                            'totalAmount': buy_amount,
+                            'lastPrice': lastBuyPrice,
+                            'lastAmount': lastBuyAmount
                         }
                     }
                 )
@@ -482,7 +524,9 @@ class OKexFutureRobot(RobotBase):
                         'kwargs': {
                             'pType': 'sell',
                             'avgPrice': sell_avg_price,
-                            'totalAmount': sell_amount
+                            'totalAmount': sell_amount,
+                            'lastPrice': lastSellPrice,
+                            'lastAmount': lastSellAmount
                         }
                     }
                 )
