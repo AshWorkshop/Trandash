@@ -101,7 +101,10 @@ def doP(totalAmount, avgPrice, lastAmount, lastPrice, profitRates, leverage, pTy
     totalPrice = avgPrice * totalAmount
     basePrice = totalPrice - lastPrice * lastAmount
     baseAmount = totalAmount - lastAmount
-    baseAvgPrice = basePrice / baseAmount
+    if baseAmount > 0:
+        baseAvgPrice = basePrice / baseAmount
+    else:
+        baseAvgPrice = 0.0
     baseRate, lastRate = profitRates
 
     pInfos = []
