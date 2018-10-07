@@ -272,17 +272,17 @@ def cancle_p(lastAmount, lastPrice, pType="buy", avgPrice=0.0, totalAmount=0.0, 
         try:
             if pType == 3:
                 if not must:
-                    pInfos = yield doP(totalAmount, avgPrice, round(float(lastAmount)), lastPrice, profitRates, leverage, pType=0)
+                    pInfos = yield doP(round(float(totalAmount)), avgPrice, round(float(lastAmount)), lastPrice, profitRates, leverage, pType=0)
                 else:
                     pInfos = []
-                    pInfo = yield buyp(amount=totalAmount)
+                    pInfo = yield buyp(amount=round(float(totalAmount)))
                     pInfos.append(pInfo)
             elif pType == 4:
                 if not must:
-                    pInfos = yield doP(totalAmount, avgPrice, round(float(lastAmount)), lastPrice, profitRates, leverage, pType=1)
+                    pInfos = yield doP(round(float(totalAmount)), avgPrice, round(float(lastAmount)), lastPrice, profitRates, leverage, pType=1)
                 else:
                     pInfos = []
-                    pInfo = yield sellp(amount=totalAmount)
+                    pInfo = yield sellp(amount=round(float(totalAmount)))
                     pInfos.append(pInfo)
         except Exception as err:
             log = Logger('cancle_p')
