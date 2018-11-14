@@ -385,7 +385,8 @@ class OKexFutureRobot(RobotBase):
                 isInit = True
                 actions.append(action)
 
-        if not isInit and not isExpired(Bolls, period=50) and not isExpired(KLines, period=50) and not isExpired(positions) and not isExpired(tickers):
+        if not isInit and not isExpired(mas, period=50) and not isExpired(Bolls, period=50) and not isExpired(KLines, period=50) and not isExpired(positions) and not isExpired(tickers):
+            _, ma = mas
             _, ticker = tickers
             _, position = positions
             buy_amount, sell_amount, buy_avg_price, sell_avg_price, _, _ = position
@@ -408,7 +409,7 @@ class OKexFutureRobot(RobotBase):
                 if buy_amount > 0 and lastBuyPrice > 0:
                     bollRate = (lastBuyPrice - ticker) / lastBuyPrice
                     self.log.info("bollRate && delta: {bollRate}, {delta}", bollRate=bollRate, delta=buyDelta)
-                    if bollRate > buyDelta or (useInitDelta and bollRate > delta):
+                    if bollRate > buyDelta or (useInitDelta and bollRate > delta) and (ticker > ma or (lastBuyPrice - ticker) > (b_u - b_d)):
                         self.log.info("lastBuyAmount: {amount}", amount=lastBuyAmount)
                         if lastBuyAmount < initAmount * rate ** top:
                             newBuyAmount = lastBuyAmount * rate
@@ -429,7 +430,7 @@ class OKexFutureRobot(RobotBase):
                 if sell_amount > 0 and lastSellPrice > 0:
                     bollRate = (ticker - lastSellPrice) / lastSellPrice
                     self.log.info("bollRate && delta: {bollRate}, {delta}", bollRate=bollRate, delta=sellDelta)
-                    if bollRate > sellDelta or (useInitDelta and bollRate > delta):
+                    if bollRate > sellDelta or (useInitDelta and bollRate > delta) and (ticker < ma or (ticker - lastSellPrice) > (b_u - b_d)):
                         self.log.info("lastSellAmount: {amount}", amount=lastSellAmount)
                         if lastSellAmount < initAmount * rate ** top:
                             newSellAmount = lastSellAmount * rate
@@ -632,7 +633,7 @@ class OKexFutureRobot(RobotBase):
         self.log.info('got KLinesEvent')
         KLines = KLinesEvent.data['data']
         if KLines:
-            MAs = calcMAs(KLines, ma=30)
+            MAs = calcMAs(KLines, ma=60)
             Bolls = calcBolls(KLines, ma=20)
         else:
             return newState
@@ -742,7 +743,7 @@ class OKexFutureRobot(RobotBase):
         newState = dict()
         newState.update(state)
         newState['count'] = state.get('count', 0) + 1
-        if newState['count'] % 30 == 0:
+        if newState['count'] % 5 * 60 == 0:
             newState['initBuyFlag'] = True
             newState['initSellFlag'] = True
 
@@ -772,7 +773,7 @@ class OKexFutureRobot(RobotBase):
 
 KLinesSource = CycleSource(
     reactor,
-    okexFuture.getKLineLastMin,
+    okexFuture.getKLineLast5Min,
     'KLines',
     payload={
         'args': [pairs],

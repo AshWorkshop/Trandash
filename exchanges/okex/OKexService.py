@@ -124,6 +124,23 @@ class OKexFuture(ExchangeService):
 
         return d
 
+    def getKLineLast5Min(self, pairs, contractType='quarter', last=0):
+        t = int(round(time.time() * 1000))
+        sincet = t - last * 60 * 5 * 1100
+        d = self.getKLine(pairs, contractType=contractType, ktype='5min', since=sincet)
+
+        def handleList(KLines):
+            result = []
+            assert KLines is not None
+            assert len(KLines) >= last
+            result = KLines[-last:]
+            return result
+
+        d.addCallback(handleList)
+        d.addErrback(self.ebFailed)
+
+        return d
+
 
     def getHoldAmount(self, pairs, contractType='quarter'):
         URL = "/api/v1/future_hold_amount"
