@@ -277,6 +277,7 @@ def getAvg(orders):
         return (0.0, 0.0)
     return (total / totalAmount, totalAmount)
 
+
 def searchLastAmount(amount, initAmount=1.0, rate=1.618, top=6):
     total = 0.0
     factor = 0
@@ -317,6 +318,8 @@ class OKexFutureRobot(RobotBase):
         startTime = newState.get('startTime', 0.0)
         beatFilename = 'log/' + 'okex_' + pairs[0]
         lastBuyAmount = newState.get('lastBuyAmount', 0.0)
+        lastLastBuyAmount = newState.get('lastLastBuyAmount', 0.0)
+        lastLastSellAmount = newState.get('lastLastSellAmount', 0)
         lastSellAmount = newState.get('lastSellAmount', 0.0)
         lastBuyPrice = newState.get('lastBuyPrice', 0.0)
         lastSellPrice = newState.get('lastSellPrice', 0.0)
@@ -415,6 +418,12 @@ class OKexFutureRobot(RobotBase):
                             newBuyAmount = lastBuyAmount * rate
                         else:
                             newBuyAmount = lastBuyAmount
+                        
+                        if lastLastBuyAmount > lastBuyAmount:
+                            newBuyAmount = lastLastBuyAmount
+                        elif lastBuyAmount == newBuyAmount:
+                            newBuyAmount = initAmount
+                        
                         self.log.info("newBuyAmount: {amount}", amount=newBuyAmount)
 
                         action = Action(reactor, buy, key='buy?init=False', wait=True, payload={
@@ -436,6 +445,12 @@ class OKexFutureRobot(RobotBase):
                             newSellAmount = lastSellAmount * rate
                         else:
                             newSellAmount = lastSellAmount
+
+                        if lastLastSellAmount > lastSellAmount:
+                            newSellAmount = lastLastSellAmount
+                        elif lastSellAmount == newSellAmount:
+                            newSellAmount = initAmount
+
                         self.log.info("newSellAmount: {amount}", amount=newSellAmount)
 
                         action = Action(reactor, sell, key='sell?init=False', wait=True, payload={
@@ -569,6 +584,7 @@ class OKexFutureRobot(RobotBase):
                     buyDelta = (lastBuyPrice - price) / lastBuyPrice
                     self.log.info("buyDelta: {delta}", delta=buyDelta)
                 newState['lastBuyPrice'] = price
+                newState['lastLastBuyAmount'] = newState.get('lastBuyAmount', 0.0)
                 newState['lastBuyAmount'] = amount
                 
                 if args is not None:
@@ -577,6 +593,7 @@ class OKexFutureRobot(RobotBase):
                         newState['buyDelta'] = delta
                         newState['initBuyFlag'] = False
                         newState['initBuyPrice'] = price
+                        newState['lastLastBuyAmount'] = 0.0
                     else:
                         newState['buyDelta'] = buyDelta
                         newState['initBuyPrice'] = 0
@@ -594,6 +611,7 @@ class OKexFutureRobot(RobotBase):
                     sellDelta = (price - lastSellPrice) / lastSellPrice
                     self.log.info("sellDelta: {delta}", delta=sellDelta)
                 newState['lastSellPrice'] = price
+                newState['lastLastSellAmount'] = newState.get('lastSellAmount', 0.0)
                 newState['lastSellAmount'] = amount
                 
                 if args is not None:
@@ -602,6 +620,7 @@ class OKexFutureRobot(RobotBase):
                         newState['sellDelta'] = delta
                         newState['initSellFlag'] = False
                         newState['initSellPrice'] = price
+                        newState['lastLastSellAmount'] = 0.0
                     else:
                         newState['sellDelta'] = sellDelta
                         newState['initSellPrice'] = MAXSELLPRICE
